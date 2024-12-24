@@ -5,7 +5,7 @@ import {
   Routes,
   Link
 } from "react-router-dom";
-import LoginPage from "./app/login/page";
+import LoginPage from "./pages/Login"
 
 const App: React.FC = () => {
   return (
