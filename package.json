@@ -5,6 +5,10 @@
     "lint": "cd frontend && npm run lint",
     "preview": "cd frontend && npm run preview",
     "install": "cd frontend && npm install",
-    "format": "cd frontend && npm run format"
+    "format": "cd frontend && npm run format",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^8.0.0"
   }
 }
