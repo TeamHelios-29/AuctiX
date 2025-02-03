@@ -1,17 +1,12 @@
-import React from "react";
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  Link
-} from "react-router-dom";
-import LoginPage from "./pages/Login"
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import LoginPage from './pages/Login';
 
 const App: React.FC = () => {
   return (
     <Router>
       <div>
-        <nav>
+        {/* <nav>
           <ul>
             <li>
               <Link to="/">
@@ -19,10 +14,11 @@ const App: React.FC = () => {
               </Link>
             </li>
           </ul>
-        </nav>
+        </nav> */}
 
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<LoginPage />} />
         </Routes>
       </div>
     </Router>

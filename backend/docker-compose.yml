@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  database:
+    image: postgres
+    container_name: auctix_postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      POSTGRES_USER: auctix_user
+      POSTGRES_PASSWORD: auctix_password_change_me_in_prod
+      POSTGRES_DB: auctix_db
