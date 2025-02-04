@@ -34,5 +34,35 @@ docker compose up
 ./mvnw spring-boot:run 
 ```
 
+#### Creating migrations for the database using Flyway
+
+Flyway is used to manage the database migrations in AuctiX application.
+
+The migrations are stored in the `backend/src/main/resources/db/migration` directory.
+
+The migrations should be created in the following format:
+```
+V{version}__{description}.sql
+```
+
+Example: 
+- `V1__create_user_table.sql`
+
+    ```sql
+    CREATE TABLE user (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL
+    );
+    ```
+
+ 
+- `V2__add_profile_pic_url_col_to_user_table.sql` 
+    
+    ```sql
+    ALTER TABLE user
+    ADD COLUMN profile_pic_url VARCHAR(255);
+    ```
 
 
+The migrations will be applied to the database when the application is started.
