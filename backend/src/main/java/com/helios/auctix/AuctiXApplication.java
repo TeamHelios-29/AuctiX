@@ -1,5 +1,6 @@
 package com.helios.auctix;
 
+import com.helios.auctix.repositories.NotificationRepository;
 import com.helios.auctix.repositories.UserRepository;
 import lombok.extern.java.Log;
 import org.springframework.boot.CommandLineRunner;
@@ -12,9 +13,11 @@ import javax.sql.DataSource;
 public class AuctiXApplication implements CommandLineRunner {
 
 	private final UserRepository userRepository;
+	private final NotificationRepository notificationRepository;
 
-	public AuctiXApplication( UserRepository userRepository) {
+	public AuctiXApplication( UserRepository userRepository, NotificationRepository notificationRepository) {
 		this.userRepository = userRepository;
+		this.notificationRepository = notificationRepository;
 	}
 
 	public static void main(String[] args) {
@@ -28,6 +31,14 @@ public class AuctiXApplication implements CommandLineRunner {
 		userRepository.findAll().forEach(abc->{
 			System.out.println("user info: " + abc.toString());
 		});
+
+
+		System.out.println("Test if notifications can be fetched");
+		notificationRepository.findAll().forEach( n -> {
+			System.out.println("Notificaiton " + n.toString());
+		});
+
+
 
 	}
 
