@@ -32,6 +32,8 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     private NotificationCategory notificationCategory;
 
+    private String title;
+
     private String content;
 
     @Column(name = "sent_at")

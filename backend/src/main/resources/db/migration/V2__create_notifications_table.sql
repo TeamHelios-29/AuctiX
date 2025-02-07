@@ -4,6 +4,7 @@ CREATE TABLE notifications (
     notification_event TEXT,
     notification_type VARCHAR(50),
     notification_category VARCHAR(50),
+    title TEXT,
     content TEXT NOT NULL,
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
