@@ -26,6 +26,7 @@ public class NotificationListener implements ApplicationListener<NotificationEve
                         .user(event.getUserToNotify())
                         .notificationCategory(event.getNotificationCategory())
                         .notificationEvent(event.toString()) // TODO decide if we are storing this
+                        .title(event.getTitle())
                         .content(event.getMessage())
                 ;
 

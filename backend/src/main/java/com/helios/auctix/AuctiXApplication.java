@@ -14,12 +14,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @Log
 public class AuctiXApplication implements CommandLineRunner {
 
-//	private final UserRepository userRepository;
+	private final UserRepository userRepository;
 //	private final NotificationRepository notificationRepository;
 	private final NotificationEventPublisher notificationEventPublisher;
 
 	public AuctiXApplication(UserRepository userRepository, NotificationRepository notificationRepository, NotificationEventPublisher notificationEventPublisher) {
-//		this.userRepository = userRepository;
+		this.userRepository = userRepository;
 //		this.notificationRepository = notificationRepository;
         this.notificationEventPublisher = notificationEventPublisher;
     }
@@ -42,9 +42,17 @@ public class AuctiXApplication implements CommandLineRunner {
 //			System.out.println("Notificaiton " + n.toString());
 //		});
 
-		for (int i = 0; i < 6; i++) {
-			notificationEventPublisher.publishNotificationEvent("HI" + i, NotificationCategory.DEFAULT, new User("01", "Jake"));
-		}
+		User user = new User("01", "Jake", "jake@example.com", "adsfadsf");
+
+//		userRepository.save(user);
+
+		notificationEventPublisher.publishNotificationEvent(
+				"Hi from AuctiX",
+			"Hello this is test email",
+					NotificationCategory.DEFAULT,
+					user
+		);
+
 
 	}
 

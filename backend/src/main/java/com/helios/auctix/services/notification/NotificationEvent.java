@@ -6,14 +6,18 @@ import org.springframework.context.ApplicationEvent;
 
 
 public class NotificationEvent  extends ApplicationEvent {
+
+    private final String title;
+
     private final String message;
 
     private final NotificationCategory notificationCategory;
 
     private final User userToNotify;
 
-    public NotificationEvent(Object source, String message, NotificationCategory notificationCategory, User userToNotify) {
+    public NotificationEvent(Object source, String title, String message, NotificationCategory notificationCategory, User userToNotify) {
         super(source);
+        this.title = title;
         this.message = message;
         this.notificationCategory = notificationCategory;
         this.userToNotify = userToNotify;
@@ -29,5 +33,9 @@ public class NotificationEvent  extends ApplicationEvent {
 
     public User getUserToNotify() {
         return userToNotify;
+    }
+
+    public String getTitle() {
+        return title;
     }
 }
