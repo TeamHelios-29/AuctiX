@@ -46,12 +46,12 @@ public class AuctiXApplication implements CommandLineRunner {
 
 //		userRepository.save(user);
 
-		notificationEventPublisher.publishNotificationEvent(
-				"Hi from AuctiX",
-			"Hello this is test email",
-					NotificationCategory.DEFAULT,
-					user
-		);
+		// notificationEventPublisher.publishNotificationEvent(
+		// 		"Hi from AuctiX",
+		// 	"Hello this is test email",
+		// 			NotificationCategory.DEFAULT,
+		// 			user
+		// );
 
 
 	}
