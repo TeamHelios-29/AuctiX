@@ -60,6 +60,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<version>1.18.36</version>
 			<optional>true</optional>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/de.huxhorn.sulky/de.huxhorn.sulky.ulid -->
@@ -86,6 +87,12 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 			<version>11.2.0</version>
 			<scope>runtime</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-mail -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+			<version>3.4.0</version>
 		</dependency>
 
 
