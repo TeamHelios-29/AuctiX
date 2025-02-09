@@ -1,10 +1,9 @@
 package com.helios.auctix;
 
 import com.helios.auctix.domain.User;
-import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.repositories.NotificationRepository;
 import com.helios.auctix.repositories.UserRepository;
-import com.helios.auctix.services.notification.NotificationEventPublisher;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import lombok.extern.java.Log;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
