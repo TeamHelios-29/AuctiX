@@ -1,6 +1,6 @@
 package com.helios.auctix.services.notification;
 
-import com.helios.auctix.domain.User;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.notification.NotificationCategory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;

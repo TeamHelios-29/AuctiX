@@ -1,4 +1,4 @@
-package com.helios.auctix.domain;
+package com.helios.auctix.domain.user;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
