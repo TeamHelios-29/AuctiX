@@ -1,4 +1,4 @@
-package com.helios.auctix.services.notification;
+package com.helios.auctix.events.notification;
 
 import com.helios.auctix.domain.User;
 import com.helios.auctix.domain.notification.NotificationCategory;
