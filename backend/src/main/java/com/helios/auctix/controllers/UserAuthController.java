@@ -64,7 +64,7 @@ public class UserAuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email or password is incorrect 1");
         }
 
-        String jwt = userAuthenticationService.verify(user);
+        String jwt = userAuthenticationService.verify(user, loginRequestDTO.getPassword());
 
         System.out.println("Menna jwt: "+jwt);
 

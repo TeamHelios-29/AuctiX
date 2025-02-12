@@ -29,7 +29,7 @@ public class UserAuthenticationService {
         this.userDetailsService = userDetailsService;
     }
 
-    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(15);
+    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     public User register(String email, String username, String password, String role) {
         User user = User.builder()
@@ -44,7 +44,7 @@ public class UserAuthenticationService {
         return user;
     }
 
-    public String verify(User user) {
+    public String verify(User user, String rawPasswordFromLogin) {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
 
@@ -52,12 +52,10 @@ public class UserAuthenticationService {
                 .authenticate(
                         new UsernamePasswordAuthenticationToken(
                                 userDetails.getUsername(),
-                                userDetails.getPassword(),
+                                rawPasswordFromLogin,
                                 userDetails.getAuthorities()
                         )
                 );
-
-//        SecurityContextHolder.getContext().setAuthentication(authentication);//  TODO check this: https://stackoverflow.com/a/78259831
 
         if (authentication.isAuthenticated()) {
             String jwt = jwtService.generateToken(user.getUsername(), user.getRole());
