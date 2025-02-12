@@ -1,13 +1,4 @@
 package com.helios.auctix.config;
-
-<<<<<<< HEAD
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-=======
 import com.helios.auctix.services.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,14 +21,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
->>>>>>> authentication
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-<<<<<<< HEAD
-=======
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService userDetailsService;
 
@@ -46,25 +35,10 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
->>>>>>> authentication
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-<<<<<<< HEAD
-                .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/api/user/**").permitAll() // public endpoints
-//                        .requestMatchers("/api/auth/").permitAll()
-                                .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-//                .authenticationProvider(authenticationProvider())
-//                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
-}
-=======
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/public/**").permitAll() // public endpoints
@@ -112,4 +86,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
->>>>>>> authentication

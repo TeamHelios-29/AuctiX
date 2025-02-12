@@ -17,7 +17,6 @@ const App: React.FC = () => {
           path="/dashboard"
           element={
             <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/login">
-              {' '}
               <Dashboard />
             </ProtectedRoute>
           }

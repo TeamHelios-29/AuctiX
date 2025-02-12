@@ -1,6 +1,6 @@
 package com.helios.auctix.services;
 
-import com.helios.auctix.domain.User;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.UserRoleEnum;
 import com.helios.auctix.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +11,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class UserAuthenticationService {
@@ -33,7 +35,7 @@ public class UserAuthenticationService {
 
     public User register(String email, String username, String password, String role) {
         User user = User.builder()
-                .id("1 " + email)
+                .id(UUID.randomUUID())
                 .email(email)
                 .username(username)
                 .role(UserRoleEnum.valueOf(role))

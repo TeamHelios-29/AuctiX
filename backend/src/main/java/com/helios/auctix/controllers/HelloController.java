@@ -1,7 +1,7 @@
 package com.helios.auctix.controllers;
 
-import com.helios.auctix.domain.User;
 import com.helios.auctix.domain.UserRoleEnum;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.CustomUserDetailsService;
 import com.helios.auctix.services.JwtService;

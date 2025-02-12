@@ -1,9 +1,6 @@
 package com.helios.auctix.domain.user;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.helios.auctix.domain.UserRoleEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,18 +18,10 @@ import java.util.UUID;
 public class User {
     @Id
     private UUID id;
-
-    @Column(unique = true, nullable = false)
     private String username;
-
-    @Column(unique = true, nullable = false)
     private String email;
-
     private String passwordHash;
 
-    private String first_name;
-
-    private String last_name;
     @Enumerated(EnumType.STRING)
     private UserRoleEnum role;
 }
