@@ -17,7 +17,7 @@ export function LoginForm({
   const login = (email: string, password: string) => {
     axiosInstance
       .post('/auth/login', {
-        username: email,
+        email: email,
         password: password,
       })
       .then((response) => {
