@@ -1,7 +1,11 @@
 package com.helios.auctix.controllers;
 
+import com.helios.auctix.domain.User;
 import com.helios.auctix.domain.UserRoleEnum;
+import com.helios.auctix.repositories.UserRepository;
+import com.helios.auctix.services.CustomUserDetailsService;
 import com.helios.auctix.services.JwtService;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -11,9 +15,13 @@ import java.security.Principal;
 public class HelloController {
 
     private JwtService jwtService;
+    private UserRepository userRepository;
+    private CustomUserDetailsService customUserDetailsService;
 
-    public HelloController(JwtService jwtService) {
+    public HelloController(JwtService jwtService, UserRepository userRepository, CustomUserDetailsService customUserDetailsService) {
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
+        this.customUserDetailsService = customUserDetailsService;
     }
 
     @GetMapping("/hello")
@@ -38,6 +46,25 @@ public class HelloController {
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    @GetMapping("/jwt/role/{email}/{token}")
+    public String getRole(@PathVariable String email, @PathVariable String token) {
+
+//        return "hi" + email + " " + token;
+        User user = userRepository.findByEmail(email);
+
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
+
+        boolean isValid = jwtService.isValidToken(token, userDetails);
+
+        System.out.println("User : " + user + "userDetails" + userDetails + " isValid : " + isValid);
+
+        if (isValid) {
+            return jwtService.extractRole(token).name();
+        } else {
+            return null;
         }
     }
 
