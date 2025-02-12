@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import LoginPage from './pages/Login';
+import WalletPage from './pages/Wallet';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/wallet" element={<WalletPage />} />
         </Routes>
       </div>
     </Router>
@@ -28,3 +30,4 @@ const App: React.FC = () => {
 const Home: React.FC = () => <h2>Home</h2>;
 
 export default App;
+
