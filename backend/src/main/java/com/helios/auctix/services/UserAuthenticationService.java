@@ -58,7 +58,7 @@ public class UserAuthenticationService {
                 );
 
         if (authentication.isAuthenticated()) {
-            String jwt = jwtService.generateToken(user.getUsername(), user.getRole());
+            String jwt = jwtService.generateToken(user.getEmail(), user.getRole());
             System.out.println("JWT: " + jwt);
             return jwt;
         }
