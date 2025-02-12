@@ -58,10 +58,10 @@ public class AuctiXApplication implements CommandLineRunner {
 		// 			user
 		// );
 
-	    User u = userRepository.findByEmail("tom2@test.com");
+	    // User u = userRepository.findByEmail("tom2@test.com");
 
-		log.info("User found: " + u.toString());
-		System.out.println("User found-: " + u.toString());
+		// log.info("User found: " + u.toString());
+		// System.out.println("User found-: " + u.toString());
 
 
 	}
