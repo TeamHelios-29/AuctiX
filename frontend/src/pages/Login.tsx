@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { LoginForm } from '../components/login-form';
-import AxiosInstance from '@/services/AxiosInstence';
 
 export default function LoginPage() {
   return (
@@ -11,9 +9,11 @@ export default function LoginPage() {
             {/* <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <GalleryVerticalEnd className="size-4" />
             </div> */}
-            <div className="text-3xl leading-none">
+            <div className="text-3xl leading-none font-normal font-productsans">
               Aucti
-              <span className="text-[#FFD21E]">X</span>
+              <span className="text-[#FFD21E] font-normal font-productsans">
+                X
+              </span>
             </div>
           </a>
         </div>

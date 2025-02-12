@@ -2,11 +2,10 @@ package com.helios.auctix.domain.notification;
 
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.Builder.Default;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-import com.helios.auctix.domain.User;
+import com.helios.auctix.domain.user.User;
 
 @Data
 @NoArgsConstructor

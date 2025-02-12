@@ -1,9 +1,9 @@
 package com.helios.auctix;
 
-import com.helios.auctix.domain.User;
+import com.helios.auctix.domain.notification.NotificationCategory;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.repositories.NotificationRepository;
 import com.helios.auctix.repositories.UserRepository;
-import com.helios.auctix.events.notification.NotificationEventPublisher;
 import lombok.extern.java.Log;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -42,6 +42,7 @@ public class AuctiXApplication implements CommandLineRunner {
 //			System.out.println("Notificaiton " + n.toString());
 //		});
 
+//		User user = new User("01", "Jake", "jake@example.com", "adsfadsf");
 //		User user = User.builder()
 //				.id("01")
 //				.username("Jake")
@@ -58,10 +59,10 @@ public class AuctiXApplication implements CommandLineRunner {
 		// 			user
 		// );
 
-	    User u = userRepository.findByEmail("tom2@test.com");
+	    // User u = userRepository.findByEmail("tom2@test.com");
 
-		log.info("User found: " + u.toString());
-		System.out.println("User found-: " + u.toString());
+		// log.info("User found: " + u.toString());
+		// System.out.println("User found-: " + u.toString());
 
 
 	}
