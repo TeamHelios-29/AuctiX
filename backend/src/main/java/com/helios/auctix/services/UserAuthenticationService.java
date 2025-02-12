@@ -8,7 +8,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -53,11 +52,12 @@ public class UserAuthenticationService {
                 .authenticate(
                         new UsernamePasswordAuthenticationToken(
                                 userDetails.getUsername(),
-                                userDetails.getPassword()
+                                userDetails.getPassword(),
+                                userDetails.getAuthorities()
                         )
                 );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);//  TODO check this: https://stackoverflow.com/a/78259831
+//        SecurityContextHolder.getContext().setAuthentication(authentication);//  TODO check this: https://stackoverflow.com/a/78259831
 
         if (authentication.isAuthenticated()) {
             String jwt = jwtService.generateToken(user.getUsername(), user.getRole());
