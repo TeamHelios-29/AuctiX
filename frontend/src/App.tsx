@@ -1,7 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import LoginPage from './pages/Login';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
+
+import LoginPage from './pages/Login';
 import CreateBidPage from './pages/create-bid';
 import Home from './pages/Home';
 import Register from './pages/Register';
@@ -9,18 +12,8 @@ import Register from './pages/Register';
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <div>
-        {/* <nav>
-          <ul>
-            <li>
-              <Link to="/">
-                <LoginPage />
-              </Link>
-            </li>
-          </ul>
-        </nav> */}
-
+    <AuthProvider>
+      <Router>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
@@ -29,10 +22,21 @@ const App: React.FC = () => {
 
           <Route path="/create-bid" element={<CreateBidPage />} />{' '}
 
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/login">
+                {' '}
+                <Dashboard />{' '}
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-      </div>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 };
+
+const Dashboard: React.FC = () => <h2>Dashboard</h2>;
 
 export default App;
