@@ -24,9 +24,6 @@ public class UserAuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register( @RequestBody RegistrationRequestDTO registrationRequestDTO) {
-//        if (true) {
-//            return ResponseEntity.status(HttpStatus.OK).body("HI");
-//        }
 
         if (registrationRequestDTO == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request");
@@ -42,9 +39,12 @@ public class UserAuthController {
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request");
-        } else {
-            return ResponseEntity.ok("User registered successfully");
         }
+
+        // send a jwt to log the user in when registration is successful
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                userAuthenticationService.verify(user, registrationRequestDTO.getPassword()));
+
     }
 
     @PostMapping("/login")
