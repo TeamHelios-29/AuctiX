@@ -5,7 +5,7 @@ import com.helios.auctix.services.ResponseDTO;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class EmailValidationService {
+public class UserInputValidationService {
 
     public static ResponseDTO validateEmail(String email){
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";

@@ -28,4 +28,8 @@ public class User {
     private String email;
 
     private String passwordHash;
+
+    private String first_name;
+
+    private String last_name;
 }

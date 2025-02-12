@@ -1,10 +1,14 @@
 package com.helios.auctix.controllers.user;
 
+import com.helios.auctix.config.ErrorConfig;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.ResponseDTO;
+import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.user.UserService;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -59,6 +63,23 @@ public class UserController {
                 userExists = userService.isUserExistsOnId(id);
             }
             return String.valueOf(userExists);
+        }
+    }
+
+    @PostMapping("/uploadVerificationDocs")
+    public String uploadVerificationDocs(@RequestParam("file") MultipartFile file){
+        ErrorConfig errorConf = new ErrorConfig();
+        FileUploadService uploader = new FileUploadService();
+        ResponseDTO res = uploader.uploadFile(file,"userVerifications");
+        if(res.isSuccess){
+            return res.message;
+        }else{
+            if(errorConf.isShowDetailed()) {
+                return res.message;
+            }
+            else{
+                return "File upload failed";
+            }
         }
     }
 
