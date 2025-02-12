@@ -8,8 +8,9 @@ import lombok.extern.java.Log;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
 @Log
 public class AuctiXApplication implements CommandLineRunner {
 
@@ -42,6 +43,12 @@ public class AuctiXApplication implements CommandLineRunner {
 //		});
 
 //		User user = new User("01", "Jake", "jake@example.com", "adsfadsf");
+//		User user = User.builder()
+//				.id("01")
+//				.username("Jake")
+//				.email("jake@example.com")
+//				.passwordHash("sdljfdsf")
+//				.build();
 
 //		userRepository.save(user);
 
@@ -51,6 +58,11 @@ public class AuctiXApplication implements CommandLineRunner {
 		// 			NotificationCategory.DEFAULT,
 		// 			user
 		// );
+
+	    // User u = userRepository.findByEmail("tom2@test.com");
+
+		// log.info("User found: " + u.toString());
+		// System.out.println("User found-: " + u.toString());
 
 
 	}

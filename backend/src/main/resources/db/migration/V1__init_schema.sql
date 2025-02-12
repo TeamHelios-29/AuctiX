@@ -4,6 +4,7 @@ CREATE TABLE Users
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255),
+    role VARCHAR(255),
 
     CONSTRAINT pk_users PRIMARY KEY (id)
 );

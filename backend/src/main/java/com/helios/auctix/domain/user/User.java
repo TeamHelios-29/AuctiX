@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,4 +33,6 @@ public class User {
     private String first_name;
 
     private String last_name;
+    @Enumerated(EnumType.STRING)
+    private UserRoleEnum role;
 }
