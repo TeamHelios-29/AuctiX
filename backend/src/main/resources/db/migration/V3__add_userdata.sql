@@ -1,0 +1,5 @@
+
+ALTER TABLE Users
+    ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'user',
+    ADD COLUMN first_name VARCHAR(255),
+    ADD COLUMN last_name VARCHAR(255);
