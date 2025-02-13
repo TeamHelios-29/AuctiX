@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import LoginPage from './pages/Login';
 import WalletPage from './pages/Wallet';
+import SellerProfile from './pages/SellerProfile'; 
 
 const App: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/seller" element={<SellerProfile />} />
         </Routes>
       </div>
     </Router>
