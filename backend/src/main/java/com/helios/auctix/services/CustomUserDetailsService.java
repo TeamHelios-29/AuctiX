@@ -38,7 +38,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private Collection<SimpleGrantedAuthority> mapRolesToAuthorities(User userEntity) {
         return Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().name())
+                new SimpleGrantedAuthority("ROLE_" + userEntity.getRoleEnum())
         );
     }
 }

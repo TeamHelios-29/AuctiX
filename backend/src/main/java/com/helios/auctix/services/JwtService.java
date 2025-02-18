@@ -1,6 +1,6 @@
 package com.helios.auctix.services;
 
-import com.helios.auctix.domain.UserRoleEnum;
+import com.helios.auctix.domain.user.UserRoleEnum;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;

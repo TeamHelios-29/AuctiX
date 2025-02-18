@@ -1,6 +1,5 @@
 package com.helios.auctix.domain.user;
 
-import com.helios.auctix.domain.UserRoleEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,10 +26,16 @@ public class User {
 
     private String passwordHash;
 
-    private String first_name;
+    private String firstName;
+    private String lastName;
 
-    private String last_name;
+    @ManyToOne
+    @JoinColumn(name = "role_id", nullable = false)
+    private UserRole role;
 
-    @Enumerated(EnumType.STRING)
-    private UserRoleEnum role;
+    // helper method to make things clearer
+    public UserRoleEnum getRoleEnum() {
+        return role.getName();
+    }
+
 }

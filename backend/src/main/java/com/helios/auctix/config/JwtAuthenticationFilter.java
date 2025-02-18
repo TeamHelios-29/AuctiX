@@ -1,6 +1,6 @@
 package com.helios.auctix.config;
 
-import com.helios.auctix.domain.UserRoleEnum;
+import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.services.JwtService;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;

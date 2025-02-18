@@ -1,6 +1,7 @@
 package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.LoginRequestDTO;
 import com.helios.auctix.dtos.RegistrationRequestDTO;
 import com.helios.auctix.repositories.UserRepository;
@@ -35,7 +36,7 @@ public class UserAuthController {
                 registrationRequestDTO.getEmail(),
                 registrationRequestDTO.getUsername(),
                 registrationRequestDTO.getPassword(),
-                registrationRequestDTO.getRole());
+                UserRoleEnum.valueOf(registrationRequestDTO.getRole()));
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request");
