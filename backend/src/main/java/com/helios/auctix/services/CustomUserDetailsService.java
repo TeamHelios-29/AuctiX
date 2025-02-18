@@ -1,6 +1,6 @@
 package com.helios.auctix.services;
 
-import com.helios.auctix.domain.User;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.repositories.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -1,6 +1,6 @@
 package com.helios.auctix;
 
-import com.helios.auctix.domain.User;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.repositories.NotificationRepository;
@@ -59,10 +59,10 @@ public class AuctiXApplication implements CommandLineRunner {
 		// 			user
 		// );
 
-	    User u = userRepository.findByEmail("tom2@test.com");
-
-		log.info("User found: " + u.toString());
-		System.out.println("User found-: " + u.toString());
+//	    User u = userRepository.findByEmail("tom2@test.com");
+//
+//		log.info("User found: " + u.toString());
+//		System.out.println("User found-: " + u.toString());
 
 
 	}

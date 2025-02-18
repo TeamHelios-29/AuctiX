@@ -1,9 +1,7 @@
 package com.helios.auctix.domain.user;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.helios.auctix.domain.UserRoleEnum;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,6 +31,6 @@ public class User {
 
     private String last_name;
 
-//    @Enumerated(EnumType.STRING)
-//    private UserRoleEnum role;
+    @Enumerated(EnumType.STRING)
+    private UserRoleEnum role;
 }
