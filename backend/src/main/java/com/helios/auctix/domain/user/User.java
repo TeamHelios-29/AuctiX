@@ -18,6 +18,11 @@ public class User {
     @Id
     private UUID id;
 
+    @PrePersist
+    protected void addRandUUID() {
+        this.id = UUID.randomUUID();  // so it won't give an error when we try to save a user without an id
+    }
+
     @Column(unique = true, nullable = false)
     private String username;
 
@@ -37,5 +42,4 @@ public class User {
     public UserRoleEnum getRoleEnum() {
         return role.getName();
     }
-
 }
