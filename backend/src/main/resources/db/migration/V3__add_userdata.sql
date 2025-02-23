@@ -10,4 +10,4 @@ ALTER TABLE Users
     ADD COLUMN role_id INT NOT NULL DEFAULT 1,
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES User_roles(id);
 
-INSERT INTO User_roles (role_name) VALUES ('buyer'),('seller'),('admin'),('super admin');
+INSERT INTO User_roles (role_name) VALUES ('SUPER_ADMIN'),('ADMIN'),('BIDDER'),('SELLER');

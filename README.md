@@ -68,3 +68,53 @@ Example:
 
 
 The migrations will be applied to the database when the application is started.
+
+
+#### Authentication Backend API
+
+##### Register a User
+
+**Endpoint:**  
+`POST /api/auth/register`
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "username": "exampleUser",
+  "password": "securePassword",
+  "role": "SELLER"
+}
+```
+
+Response:
+
+200 OK → User registered successfully
+
+400 Bad Request → Invalid request
+
+##### Login
+
+*Endpoint:*
+`POST /api/auth/login`
+
+*Request Body:*
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword"
+}
+```
+Response:
+
+200 OK → Returns JWT token
+
+401 Unauthorized → Email or password incorrect
+
+##### Use JWT for Authentication
+
+Include the token in the Authorization header for protected routes.
+
+Example:
+
+`Authorization: Bearer <your-jwt-token>`

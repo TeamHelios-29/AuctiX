@@ -1,9 +1,6 @@
 package com.helios.auctix.domain.user;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +18,11 @@ public class User {
     @Id
     private UUID id;
 
+    @PrePersist
+    protected void addRandUUID() {
+        this.id = UUID.randomUUID();  // so it won't give an error when we try to save a user without an id
+    }
+
     @Column(unique = true, nullable = false)
     private String username;
 
@@ -29,7 +31,15 @@ public class User {
 
     private String passwordHash;
 
-    private String first_name;
+    private String firstName;
+    private String lastName;
 
-    private String last_name;
+    @ManyToOne
+    @JoinColumn(name = "role_id", nullable = false)
+    private UserRole role;
+
+    // helper method to make things clearer
+    public UserRoleEnum getRoleEnum() {
+        return role.getName();
+    }
 }
