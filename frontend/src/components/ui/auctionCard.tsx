@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react";
+import { Clock } from 'lucide-react';
 
 interface AuctionCardProps {
   imageUrl: string;
@@ -20,7 +20,7 @@ export default function AuctionCard({
   timeRemaining,
 }: AuctionCardProps) {
   // Check if the timeRemaining starts with "0d" (indicating the last day)
-  const isEndingSoon = timeRemaining.startsWith("0d");
+  const isEndingSoon = timeRemaining.startsWith('0d');
 
   return (
     <div className="w-72 border rounded-lg shadow-lg overflow-hidden bg-white">
@@ -33,7 +33,7 @@ export default function AuctionCard({
         />
         <div
           className={`absolute top-2 left-2 ${
-            isEndingSoon ? "bg-red-500" : "bg-yellow-400"
+            isEndingSoon ? 'bg-red-500' : 'bg-yellow-400'
           } text-white font-semibold px-3 py-1 rounded-md text-sm flex items-center`}
         >
           <Clock className="w-4 h-4 mr-1" /> {timeRemaining}

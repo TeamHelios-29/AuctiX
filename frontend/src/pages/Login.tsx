@@ -1,4 +1,6 @@
-import { LoginForm } from "../components/login-form"
+import { useState } from 'react';
+import { LoginForm } from '../components/login-form';
+import AxiosInstance from '@/services/AxiosInstence';
 
 export default function LoginPage() {
   return (
@@ -9,11 +11,13 @@ export default function LoginPage() {
             {/* <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <GalleryVerticalEnd className="size-4" />
             </div> */}
-            <div className="text-3xl leading-none">
+            <div className="text-3xl leading-none font-normal font-productsans">
               Aucti
-              <span className="text-[#FFD21E]">X</span>
-            </div>       
-            </a>
+              <span className="text-[#FFD21E] font-normal font-productsans">
+                X
+              </span>
+            </div>
+          </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
@@ -24,10 +28,10 @@ export default function LoginPage() {
       <div className="relative hidden bg-muted lg:block">
         <img
           src="/loginpageimage.jpg"
-          alt="s"
+          alt="login page image"
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
         />
       </div>
     </div>
-  )
+  );
 }
