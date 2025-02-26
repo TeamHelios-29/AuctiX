@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import Register from './pages/Register';
 import WalletPage from './pages/Wallet';
 import SellerProfile from './pages/SellerProfile';
+import AuctionChat from './components/auction-chat';
 
 const App: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ const App: React.FC = () => {
           />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/seller" element={<SellerProfile />} />
+          <Route path="/test-chat" element={<AuctionChat />} />
         </Routes>
       </Router>
     </AuthProvider>
