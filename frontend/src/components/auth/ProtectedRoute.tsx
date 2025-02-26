@@ -1,25 +1,22 @@
-import { Navigate, Route } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
-
-interface ProtectedRouteProps {
-  children: ReactNode;
-}
+import { useAppSelector } from '@/services/hooks';
 
 const ProtectedRoute = ({
   children,
   allowedUsers,
-  redirectPath,
+  redirectPath = '/403',
 }: {
   children: ReactNode;
   allowedUsers: string[];
-  redirectPath: string;
+  redirectPath?: string;
 }): ReactNode => {
-  const { user } = useAuth();
-  return user && allowedUsers.includes(user.role as string) ? (
+  const userRole = useAppSelector((state) => state.auth.role);
+  console.log(userRole);
+  return userRole && allowedUsers.includes(userRole) ? (
     children
   ) : (
-    <Navigate to={redirectPath ? redirectPath : '/login'} />
+    <Navigate to={redirectPath} />
   );
 };
 
