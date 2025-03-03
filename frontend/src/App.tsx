@@ -3,10 +3,14 @@ import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import LoginPage from '@/pages/Login';
 import Register from '@/pages/Register';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import Home from './pages/Home';
+import Home from '@/pages/Home';
 import { Provider } from 'react-redux';
 import { store } from './services/store';
 import Dashboard from './pages/Dashboard';
+// import { AuthProvider } from './context/AuthContext';
+import CreateBidPage from './pages/create-bid';
+import WalletPage from './pages/Wallet';
+import SellerProfile from './pages/SellerProfile';
 
 const App: React.FC = () => {
   return (
@@ -16,6 +20,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/create-bid" element={<CreateBidPage />} />{' '}
           <Route
             path="/dashboard"
             element={
@@ -28,6 +33,8 @@ const App: React.FC = () => {
             }
           />
           <Route path="/403" element={<h2>403 Unautherized</h2>} />
+          <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/seller" element={<SellerProfile />} />
         </Routes>
       </Router>
     </Provider>
