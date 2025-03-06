@@ -5,6 +5,10 @@ import { Label } from '@/components/ui/label';
 import { ChangeEvent, useState } from 'react';
 import AxiosRequest from '@/services/AxiosInstence';
 import { AxiosInstance } from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch } from '@/services/hooks';
+import { login } from './auth/authSlice';
+import { IAuthUser } from '@/Interfaces/IAuthUser';
 
 export function LoginForm({
   className,
@@ -13,15 +17,27 @@ export function LoginForm({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
+  const navigate = useNavigate();
 
-  const login = (email: string, password: string) => {
+  const dispatch = useAppDispatch();
+  const loginHandler = (email: string, password: string) => {
     axiosInstance
       .post('/auth/login', {
         email: email,
         password: password,
       })
       .then((response) => {
-        console.log(response);
+        console.log(response.data);
+        const token = response.data;
+        dispatch(
+          login({
+            token: token,
+            username: 'SR009',
+            role: 'BIDDER',
+          } as IAuthUser),
+        );
+        console.log('Logged in');
+        navigate('/dashboard');
       })
       .catch((error) => {
         console.error(error);
@@ -30,7 +46,7 @@ export function LoginForm({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    login(email, password);
+    loginHandler(email, password);
   };
 
   const handleInputType = (e: ChangeEvent<HTMLInputElement>): void => {

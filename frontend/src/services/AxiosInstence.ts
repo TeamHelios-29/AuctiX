@@ -1,5 +1,7 @@
+import { IAuthUser } from '@/Interfaces/IAuthUser';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAppSelector } from './hooks';
 
 const AxiosReqest = () => {
   const navigate = useNavigate();
@@ -13,12 +15,14 @@ const AxiosReqest = () => {
   });
 
   // Request Interceptor
+  const authUser: IAuthUser = useAppSelector(
+    (state) => state.auth as IAuthUser,
+  );
   axiosInstance.interceptors.request.use(
     (config) => {
       // Attach token when available
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      if (authUser && authUser.token) {
+        config.headers.Authorization = `Bearer ${authUser.token}`;
       }
       return config;
     },

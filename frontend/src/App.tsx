@@ -1,18 +1,20 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-
-import LoginPage from './pages/Login';
+import LoginPage from '@/pages/Login';
+import Register from '@/pages/Register';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import Home from '@/pages/Home';
+import { Provider } from 'react-redux';
+import { store } from './services/store';
+import Dashboard from './pages/Dashboard';
+// import { AuthProvider } from './context/AuthContext';
 import CreateBidPage from './pages/create-bid';
-import Home from './pages/Home';
-import Register from './pages/Register';
 import WalletPage from './pages/Wallet';
 import SellerProfile from './pages/SellerProfile';
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
+    <Provider store={store}>
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -22,20 +24,21 @@ const App: React.FC = () => {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/login">
-                {' '}
-                <Dashboard />{' '}
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER']}
+                redirectPath="/login"
+              >
+                <Dashboard />
               </ProtectedRoute>
             }
           />
+          <Route path="/403" element={<h2>403 Unautherized</h2>} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/seller" element={<SellerProfile />} />
         </Routes>
       </Router>
-    </AuthProvider>
+    </Provider>
   );
 };
-
-const Dashboard: React.FC = () => <h2>Dashboard</h2>;
 
 export default App;
