@@ -11,7 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export function TabsDemo({ onTabChange }) {
+export function TabsDemo({
+  onTabChange,
+}: {
+  onTabChange: (value: string) => void;
+}) {
   return (
     <Tabs
       defaultValue="Buyers"

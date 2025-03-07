@@ -1,4 +1,5 @@
 import { logout } from '@/components/auth/authSlice';
+import { DataTable } from '@/components/userMangement/admin/userList';
 import { IAuthUser } from '@/Interfaces/IAuthUser';
 import { useAppDispatch, useAppSelector } from '@/services/hooks';
 import React from 'react';
@@ -15,7 +16,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
-      <h1>Dashboard</h1>
+      <h1>{user.role}'s Dashboard</h1>
       <div className="dashboard-content">
         <p>Hello {user.username} Welcome to the dashboard</p>
         <input
@@ -32,6 +33,35 @@ const Dashboard: React.FC = () => {
           value="Logout"
         />
       </div>
+
+      <DataTable
+        columns={[
+          {
+            header: 'Username',
+            accessorKey: 'username',
+          },
+          {
+            header: 'Email',
+            accessorKey: 'email',
+          },
+          {
+            header: 'Role',
+            accessorKey: 'role',
+          },
+        ]}
+        data={[
+          {
+            username: 'admin',
+            email: 'test1@test.com',
+            role: 'ADMIN',
+          },
+          {
+            username: 'seller',
+            email: 'test2@test.com',
+            role: 'SELLER',
+          },
+        ]}
+      />
     </div>
   );
 };
