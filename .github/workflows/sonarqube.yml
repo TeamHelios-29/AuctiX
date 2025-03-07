@@ -47,8 +47,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_BACKEND_TOKEN }}
         run: cd backend && mvn -B clean compile org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=teamhelios-29_auctix-backend
 
-      - name: Build frontend
-        run: cd frontend && npm install && npm run build
+      # - name: Build frontend
+      #   run: cd frontend && npm install && npm run build
 
       - name: SonarQube Scan Frontend
         uses: SonarSource/sonarqube-scan-action@v5
