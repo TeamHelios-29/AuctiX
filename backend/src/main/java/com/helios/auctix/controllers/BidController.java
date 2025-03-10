@@ -1,12 +1,13 @@
-package com.example.biddingapp.controller;
+package com.helios.auctix.controllers;
 
-import com.example.biddingapp.entity.Bid;
-import com.example.biddingapp.service.BidService;
+import com.helios.auctix.domain.bid.Bid;
+import com.helios.auctix.services.BidService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/bids")

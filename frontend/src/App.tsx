@@ -8,7 +8,7 @@ import { Provider } from 'react-redux';
 import { store } from './services/store';
 import Dashboard from './pages/Dashboard';
 // import { AuthProvider } from './context/AuthContext';
-import CreateBidPage from './pages/create-bid';
+import CreateBidPage from './pages/create-auction';
 import WalletPage from './pages/Wallet';
 import SellerProfile from './pages/SellerProfile';
 
