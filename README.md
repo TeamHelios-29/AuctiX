@@ -31,7 +31,8 @@ docker compose up
 
 3. Run the backend
 ```shell
-./mvnw spring-boot:run 
+
+
 ### without wrapper
 mvn spring-boot:run
 ```

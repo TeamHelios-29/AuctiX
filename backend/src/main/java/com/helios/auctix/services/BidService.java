@@ -1,12 +1,12 @@
-package com.example.biddingapp.service;
+package com.helios.auctix.services;
 
-import com.example.biddingapp.entity.Bid;
-import com.example.biddingapp.repository.BidRepository;
+import com.helios.auctix.domain.bid.Bid;
+import com.helios.auctix.repositories.BidRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Service

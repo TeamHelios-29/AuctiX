@@ -111,6 +111,16 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>11.2.0</version> <!-- Use the same version as your Flyway dependency -->
+				<configuration>
+					<url>jdbc:postgresql://localhost:5432/auctix_db</url> <!-- Replace with your database URL -->
+					<user>auctix_user</user> <!-- Replace with your database username -->
+					<password>auctix_password_change_me_in_prod</password> <!-- Replace with your database password -->
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
