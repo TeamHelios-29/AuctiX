@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/services/hooks';
 import { login } from './auth/authSlice';
 import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { jwtDecode } from 'jwt-decode';
+import { IJwtData } from '@/Interfaces/IJwtData';
 
 export function LoginForm({
   className,
@@ -27,13 +29,15 @@ export function LoginForm({
         password: password,
       })
       .then((response) => {
-        console.log(response.data);
         const token = response.data;
+        console.log('token:', token);
+        const decoded = jwtDecode(token) as IJwtData;
+        console.log('decoded token:', decoded);
         dispatch(
           login({
             token: token,
-            username: 'SR009',
-            role: 'BIDDER',
+            username: decoded.username,
+            role: decoded.role,
           } as IAuthUser),
         );
         console.log('Logged in');
