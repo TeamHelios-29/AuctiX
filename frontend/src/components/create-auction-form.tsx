@@ -6,15 +6,16 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const BidForm: React.FC = () => {
+const AuctionForm: React.FC = () => {
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [startingPrice, setStartingPrice] = useState<number>(0);
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
-  const [images, setImages] = useState<FileList | null>(null);
+  const [images, setImages] = useState<File[]>([]);
   const [isPublic, setIsPublic] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [category, setCategory] = useState<string>('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,45 +26,90 @@ const BidForm: React.FC = () => {
       return;
     }
 
+    if (images.length > 5) {
+      toast.error('You can upload a maximum of 5 images');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const bidData = {
-        title,
-        description,
-        startingPrice,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
-        isPublic,
-      };
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('startingPrice', startingPrice.toString());
+      formData.append('startTime', new Date(startTime).toISOString());
+      formData.append('endTime', new Date(endTime).toISOString());
+      formData.append('isPublic', isPublic.toString());
+      formData.append('category', category);
+      images.forEach((image) => formData.append('images', image));
 
-      const response = await axios.post('/api/bids', bidData);
+      const response = await axios.post('/api/auctions', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       if (response.status === 201) {
-        toast.success('Bid created successfully!');
-        navigate('/bids');
+        toast.success('Auction created successfully!');
+        navigate('/auctions');
       }
     } catch (error) {
-      console.error('Error creating bid:', error);
-      toast.error('Failed to create bid. Please try again.');
+      console.error('Error creating auction:', error);
+      toast.error('Failed to create auction. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      if (files.length + images.length > 5) {
+        toast.error('You can upload a maximum of 5 images');
+        return;
+      }
+      setImages((prevImages) => [...prevImages, ...files]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label htmlFor="title" className="block font-medium mb-2">
-          Auction Name
+          Product Name
         </label>
         <Input
           id="title"
-          placeholder="Enter auction name"
+          placeholder="Enter product name"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
         />
+      </div>
+
+      <div>
+        <label htmlFor="category" className="block font-medium mb-2">
+          Auction Category
+        </label>
+        <select
+          id="category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full p-3 border rounded-md"
+          required
+        >
+          <option value="">Select a category</option>
+          <option value="electronics">Electronics</option>
+          <option value="fashion">Fashion</option>
+          <option value="home">Home & Garden</option>
+          <option value="art">Art</option>
+          <option value="other">Other</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -109,15 +155,34 @@ const BidForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="images" className="block font-medium mb-2">
-            Images
+            Images (Max 5)
           </label>
           <input
             id="images"
             type="file"
             multiple
-            onChange={(e) => setImages(e.target.files)}
+            onChange={handleImageUpload}
+            accept="image/*"
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:border-gray-300"
           />
+          <div className="mt-2 flex flex-wrap gap-2">
+            {images.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={URL.createObjectURL(image)}
+                  alt={`Uploaded ${index + 1}`}
+                  className="w-16 h-16 object-cover rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -174,4 +239,4 @@ const BidForm: React.FC = () => {
   );
 };
 
-export default BidForm;
+export default AuctionForm;
