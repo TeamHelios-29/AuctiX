@@ -1,4 +1,4 @@
-package com.example.biddingapp.entity;
+package com.helios.auctix.domain.bid;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
+@Table(name = "bids")
 public class Bid {
 
     @Id

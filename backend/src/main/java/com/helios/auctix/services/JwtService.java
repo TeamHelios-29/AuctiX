@@ -9,6 +9,7 @@ import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.java.Log;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.SecretKey;
 import java.util.Base64;
@@ -16,7 +17,7 @@ import java.util.Date;
 import java.util.function.Function;
 import java.util.logging.Level;
 
-@Log
+@Slf4j
 @Service
 public class JwtService {
 
@@ -27,7 +28,7 @@ public class JwtService {
             SecretKey key = Jwts.SIG.HS256.key().build();
             base64EncodedSecretKey = Base64.getEncoder().encodeToString(key.getEncoded());
         } catch (Exception e) {
-            log.severe("Error while generating secret key" + e.getMessage());
+            log.error("Error while generating secret key" + e.getMessage());
             throw new RuntimeException();
         }
     }
@@ -74,10 +75,10 @@ public class JwtService {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (SignatureException e) {
-            log.warning("Error while parsing claims: " + e.getMessage());
+            log.warn("Error while parsing claims: " + e.getMessage());
             throw new RuntimeException();
         } catch (Exception e) {
-            log.log(Level.SEVERE,"Error while parsing jwt claims: " + e.getMessage());
+            log.error("Error while parsing jwt claims: " + e.getMessage());
             throw new RuntimeException();
         }
 
