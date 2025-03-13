@@ -78,8 +78,8 @@ public class AuctiXApplication implements CommandLineRunner {
         */
 
 		// Add initialization logic for Bidding module
-		initializeSampleBids();
-	}
+//		initializeSampleBids();
+//	}
 
 	// Method to initialize sample bids (optional)
 //	private void initializeSampleBids() {
