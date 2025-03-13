@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
-import { DataTable } from '@/components/ui/DataTable';
+import { DataTable } from '@/components/ui/common/DataTable';
 import { ITableUser } from '@/Interfaces/IUser';
 
 export default function UserDataTable() {
