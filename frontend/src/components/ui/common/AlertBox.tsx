@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { motion } from 'motion/react';
+import React, { ReactNode } from 'react';
 
 export const AlertBox = ({
   title,
@@ -28,7 +29,7 @@ export const AlertBox = ({
   onAlertOpenChange: (open: boolean) => void;
   continueAction?: () => void;
   cancelAction?: () => void;
-  IconElement?: (() => JSX.Element) | null;
+  IconElement?: ReactNode | null;
   continueBtn?: string | null;
   cancelBtn?: string | null;
 }) => {
@@ -52,7 +53,7 @@ export const AlertBox = ({
                   },
                 }}
               >
-                {<IconElement />}
+                {IconElement}
               </motion.div>
             )}
             <AlertDialogTitle>{title}</AlertDialogTitle>

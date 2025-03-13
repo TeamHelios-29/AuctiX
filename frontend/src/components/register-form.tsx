@@ -34,7 +34,7 @@ export function TabsDemo({
   const [username, setUsername] = useState<string | null>(null);
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const [alertOpen, setAlertOpen] = useState(false);
-  const [alertIcon, setAlertIcon] = useState<(() => JSX.Element) | null>(null);
+  const [AlertIcon, setAlertIcon] = useState<React.ReactNode>(null);
   const [msg, setMsg] = useState('');
   const [alertTitle, setAlertTitle] = useState('');
   const [validationErrors, setValidationErrors] = useState<IValidationError[]>(
@@ -217,19 +217,19 @@ export function TabsDemo({
     }
   };
 
-  const errorIcon = () => <Octagon className="w-6 h-6 text-red-500" />;
-  const successIcon = () => <Scale className="w-6 h-6 text-green-500" />;
+  const ErrorIcon = <Octagon className="w-6 h-6 text-red-500" />;
+  const SuccessIcon = <Scale className="w-6 h-6 text-green-500" />;
 
   const showErrorAlert = (msg: string) => {
     setAlertTitle('Error');
-    setAlertIcon(errorIcon);
+    setAlertIcon(ErrorIcon);
     setMsg(msg);
     setAlertOpen(true);
   };
 
   const showSuccessAlert = (msg: string) => {
     setAlertTitle('Success');
-    setAlertIcon(successIcon);
+    setAlertIcon(SuccessIcon);
     setMsg(msg);
     setAlertOpen(true);
   };
@@ -245,7 +245,7 @@ export function TabsDemo({
     <>
       <AlertBox
         onAlertOpenChange={setAlertOpen}
-        IconElement={alertIcon}
+        IconElement={AlertIcon}
         alertOpen={alertOpen}
         title={alertTitle}
         message={msg}
