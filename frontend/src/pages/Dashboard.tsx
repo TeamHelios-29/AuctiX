@@ -10,7 +10,6 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/login');
   };
 
   return (

@@ -8,6 +8,7 @@ interface AuthState {
 }
 
 const getStoredAuthUser = () => {
+  console.log('getStoredAuthUser called');
   let valiedAuthUser: IAuthUser | null = null;
   try {
     const storedAuthUser = localStorage.getItem('authUser');
@@ -21,7 +22,8 @@ const getStoredAuthUser = () => {
   return valiedAuthUser;
 };
 
-const user = getStoredAuthUser();
+export const user = getStoredAuthUser();
+
 const initialState: AuthState = {
   token: user?.token,
   username: user?.username,
@@ -46,8 +48,10 @@ const authSlice = createSlice({
       );
     },
     logout: (state) => {
-      state.token = null;
       localStorage.removeItem('authUser');
+      state.token = null;
+      state.role = null;
+      state.username = null;
     },
   },
 });

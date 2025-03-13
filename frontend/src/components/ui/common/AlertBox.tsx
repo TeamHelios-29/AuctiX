@@ -16,6 +16,8 @@ export const AlertBox = ({
   message,
   alertOpen,
   onAlertOpenChange,
+  continueAction,
+  cancelAction,
   IconElement,
   continueBtn = 'Continue',
   cancelBtn = 'Cancel',
@@ -24,9 +26,11 @@ export const AlertBox = ({
   message: string;
   alertOpen: boolean;
   onAlertOpenChange: (open: boolean) => void;
-  IconElement: JSX.Element;
-  continueBtn?: string;
-  cancelBtn?: string;
+  continueAction?: () => void;
+  cancelAction?: () => void;
+  IconElement?: (() => JSX.Element) | null;
+  continueBtn?: string | null;
+  cancelBtn?: string | null;
 }) => {
   return (
     <AlertDialog open={alertOpen} onOpenChange={onAlertOpenChange}>
@@ -48,16 +52,26 @@ export const AlertBox = ({
                   },
                 }}
               >
-                {IconElement}
+                {<IconElement />}
               </motion.div>
             )}
             <AlertDialogTitle>{title}</AlertDialogTitle>
           </div>
           <AlertDialogDescription>{message}</AlertDialogDescription>
-        </AlertDialogHeader>{' '}
+        </AlertDialogHeader>
         <AlertDialogFooter>
-          {cancelBtn && <AlertDialogCancel>{cancelBtn}</AlertDialogCancel>}
-          {continueBtn && <AlertDialogAction>{continueBtn}</AlertDialogAction>}
+          {cancelBtn && (
+            <AlertDialogCancel onClick={() => cancelAction && cancelAction()}>
+              {cancelBtn}
+            </AlertDialogCancel>
+          )}
+          {continueBtn && (
+            <AlertDialogAction
+              onClick={() => continueAction && continueAction()}
+            >
+              {continueBtn}
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
