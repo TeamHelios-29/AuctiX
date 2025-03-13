@@ -6,5 +6,8 @@
   "editor.formatOnSaveMode": "file",
   "files.autoSave": "onFocusChange",
   "java.compile.nullAnalysis.mode": "automatic",
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  }
 }

@@ -4,3 +4,11 @@ export interface IUser {
   role?: string;
   email?: string;
 }
+
+export interface ITableUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  actions?: React.ReactNode;
+}
