@@ -1,14 +1,8 @@
+import { ChatMessageProps } from '@/Interfaces/IChatMessageProps';
 import clsx from 'clsx';
 
-interface ChatMessageProps {
-  message: string;
-  displayName: string;
-  userRole: string;
-  timestamp: Date;
-  isSentByCurrentUser: boolean;
-}
-
 function ChatMessage({
+  id,
   message,
   displayName,
   userRole,
@@ -32,7 +26,7 @@ function ChatMessage({
     >
       <div
         className={clsx(
-          'p-4 rounded-lg  max-w-fit min-w-48 break-words',
+          'px-4 py-2 rounded-lg  w-fit max-w-[80%] min-w-48 break-words',
           isSentByCurrentUser
             ? 'bg-slate-900 text-white'
             : isSeller
@@ -57,9 +51,12 @@ function ChatMessage({
           hour: '2-digit',
           minute: '2-digit',
         })}
+
+        {id}
       </div>
     </div>
   );
 }
 
-export default ChatMessage;
+export { ChatMessage };
+export type { ChatMessageProps };
