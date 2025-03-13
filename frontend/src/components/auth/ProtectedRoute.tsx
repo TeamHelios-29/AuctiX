@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router-dom';
-import { ReactNode } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ReactNode, useEffect } from 'react';
 import { useAppSelector } from '@/services/hooks';
 
 const ProtectedRoute = ({
@@ -11,13 +11,34 @@ const ProtectedRoute = ({
   allowedUsers: string[];
   redirectPath?: string;
 }): ReactNode => {
-  const userRole = useAppSelector((state) => state.auth.role);
-  console.log(userRole);
-  return userRole && allowedUsers.includes(userRole) ? (
-    children
-  ) : (
-    <Navigate to={redirectPath} />
-  );
+  const navigate = useNavigate();
+  const user = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    console.log('ProtectedRoute called');
+    if (user?.role && !allowedUsers.includes(user.role)) {
+      console.log(
+        'user :',
+        user?.role,
+        'not allowed, redirecting to:',
+        redirectPath,
+      );
+      navigate(redirectPath);
+    } else if (!user?.token) {
+      console.log('user token is null, redirecting to login', user?.token);
+      navigate('/login');
+    } else {
+      console.log(
+        'userRole:',
+        user?.role,
+        'allowedUsers:',
+        allowedUsers,
+        'autherized',
+      );
+    }
+  }, [user?.role, allowedUsers, redirectPath, navigate]);
+
+  return user?.role && allowedUsers.includes(user.role) ? children : <></>;
 };
 
 export default ProtectedRoute;
