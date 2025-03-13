@@ -53,8 +53,7 @@ public class UserAuthenticationService {
                 .passwordHash(encoder.encode(password))
                 .build();
 
-        userRepository.save(user);
-        return user;
+        return userRepository.save(user);
     }
 
     public String verify(User user, String rawPasswordFromLogin) {
