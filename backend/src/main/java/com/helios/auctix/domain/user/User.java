@@ -42,7 +42,7 @@ public class User {
     private UserRole role;
 
     @OneToOne
-    @JoinColumn(name = "seller_id")
+    @JoinColumn(name = "id")
     private Seller seller;
 
     // helper method to make things clearer
