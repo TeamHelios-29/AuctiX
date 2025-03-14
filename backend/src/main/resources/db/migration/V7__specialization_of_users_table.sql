@@ -1,4 +1,4 @@
-CREATE TABLE seller (
+CREATE TABLE sellers (
     id UUID PRIMARY KEY,
     is_verified BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
@@ -12,7 +12,7 @@ CREATE TABLE seller_reviews (
     review_content VARCHAR(1024),
     rating NUMERIC CHECK (rating BETWEEN 0 AND 5) DEFAULT 0,
     review_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_seller_review FOREIGN KEY (seller_id) REFERENCES seller(id) ON DELETE CASCADE
+    CONSTRAINT fk_seller_review FOREIGN KEY (seller_id) REFERENCES sellers(id) ON DELETE CASCADE
 );
 
 CREATE TABLE seller_review_images (
@@ -29,31 +29,35 @@ CREATE TABLE seller_verification_docs (
     CONSTRAINT fk_verification_docs_uploads FOREIGN KEY (doc_ref) REFERENCES uploads(id) ON DELETE CASCADE
 );
 
-CREATE TABLE seller_verification_req (
+CREATE TABLE seller_verification_reqs (
     id SERIAL PRIMARY KEY,
     seller_id UUID NOT NULL,
     verification_status VARCHAR(50) NOT NULL,
     doc_id SERIAL,
     description VARCHAR(255),
-    CONSTRAINT fk_seller_verification FOREIGN KEY (seller_id) REFERENCES seller(id) ON DELETE CASCADE,
+    CONSTRAINT fk_seller_verification FOREIGN KEY (seller_id) REFERENCES sellers(id) ON DELETE CASCADE,
     CONSTRAINT fk_verification_docs FOREIGN KEY (doc_id) REFERENCES seller_verification_docs(id) ON DELETE CASCADE
 );
 
 
-CREATE TABLE bidder (
+CREATE TABLE bidders (
     id UUID PRIMARY KEY,
     is_active BOOLEAN DEFAULT TRUE
 );
 
-CREATE TABLE admin (
+CREATE TABLE admins (
     id UUID PRIMARY KEY,
     is_active BOOLEAN DEFAULT TRUE
 );
 
-ALTER TABLE Users
-    ADD CONSTRAINT fk_seller FOREIGN KEY (id) REFERENCES seller(id) ON DELETE CASCADE,
-    ADD CONSTRAINT fk_bidder FOREIGN KEY (id) REFERENCES bidder(id) ON DELETE CASCADE,
-    ADD CONSTRAINT fk_admin FOREIGN KEY (id) REFERENCES admin(id) ON DELETE CASCADE;
+ALTER TABLE sellers
+    ADD CONSTRAINT fk_seller FOREIGN KEY (id) REFERENCES Users(id) ON DELETE CASCADE;
+
+ALTER TABLE bidders
+    ADD CONSTRAINT fk_bidder FOREIGN KEY (id) REFERENCES Users(id) ON DELETE CASCADE;
+
+ALTER TABLE admins
+    ADD CONSTRAINT fk_admin FOREIGN KEY (id) REFERENCES Users(id) ON DELETE CASCADE;
 
 
 
