@@ -1,12 +1,10 @@
-package com.helios.auctix.controllers.user;
+package com.helios.auctix.controllers;
 
 import com.helios.auctix.config.ErrorConfig;
-import com.helios.auctix.domain.user.User;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.ResponseDTO;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.user.UserService;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
