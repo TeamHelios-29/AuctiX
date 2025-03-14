@@ -18,7 +18,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final SellerRepository sellerRepository;
-    private final UserRoleRepository roleRepository;
     private final BidderRepository bidderRepository;
     private final AdminRepository adminRepository;
     private final UserRoleRepository userRoleRepository;

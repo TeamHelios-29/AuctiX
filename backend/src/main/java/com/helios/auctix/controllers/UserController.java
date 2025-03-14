@@ -7,6 +7,7 @@ import com.helios.auctix.services.ResponseDTO;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.user.UserService;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,12 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserService userService;
     private final Logger log = Logger.getLogger(UserController.class.getName());
+
+    @Autowired
+    private FileUploadService uploader ;
+
+    @Autowired
+    private ErrorConfig errorConf ;
 
     public UserController(UserRepository userRepository, UserService userService) {
         this.userRepository = userRepository;
@@ -71,7 +78,6 @@ public class UserController {
     @PostMapping("/uploadVerificationDocs")
     public String uploadVerificationDocs(@RequestParam("file") MultipartFile file){
         ErrorConfig errorConf = new ErrorConfig();
-        FileUploadService uploader = new FileUploadService();
         ResponseDTO res = uploader.uploadFile(file,"userVerifications");
         if(res.isSuccess){
             return res.message;
@@ -115,6 +121,23 @@ public class UserController {
             return "Success: Admin Created";
         }else{
             return res;
+        }
+    }
+
+
+    @PostMapping("/uploadUserProfilePhoto")
+    public String uploadUserProfilePhoto(@RequestParam("file") MultipartFile file){
+        log.info("User profile photo upload request");
+        ResponseDTO res = uploader.uploadFile(file,"userProfilePhotos");
+        if(res.isSuccess){
+            return res.message;
+        }else{
+            if(errorConf.isShowDetailed()) {
+                return res.message;
+            }
+            else{
+                return "File upload failed";
+            }
         }
     }
 
