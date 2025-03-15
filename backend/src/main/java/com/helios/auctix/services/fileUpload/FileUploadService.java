@@ -2,15 +2,19 @@ package com.helios.auctix.services.fileUpload;
 
 import com.helios.auctix.domain.upload.FileTypeEnum;
 import com.helios.auctix.domain.upload.Upload;
+import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.repositories.BidderRepository;
 import com.helios.auctix.repositories.UploadRepository;
 import com.helios.auctix.repositories.UserRepository;
-import com.helios.auctix.services.ResponseDTO;
 import jdk.jfr.ContentType;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.flogger.Flogger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,7 +25,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.Formatter;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -32,10 +38,25 @@ public class FileUploadService {
     private final UploadRepository uploadRepository;
     private final UserRepository userRepository;
 
-    private Logger log = Logger.getLogger(FileUploadService.class.getName());
+    private static Logger log = Logger.getLogger(FileUploadService.class.getName());
 
-    public ResponseDTO uploadFile(MultipartFile file,String upload_dir) {
+
+    public FileUploadResponse uploadFile(MultipartFile file,String upload_dir) {
+        log.warning("unauthorized file upload request");
+        return new FileUploadResponse(false,"Unauthorized",null);
+    }
+
+    public FileUploadResponse uploadFile(MultipartFile file, String upload_dir, String ownerEmail) {
+        User user = userRepository.findByEmail(ownerEmail);
+        if(user == null) {
+            return new FileUploadResponse(false,"User not found",null);
+        }
+        return uploadFile(file, upload_dir, user.getId() );
+    }
+
+    public FileUploadResponse uploadFile(MultipartFile file,String upload_dir,UUID ownerUserId) {
         try {
+
             Path uploadPath = Paths.get(BASE_DIR+upload_dir);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
@@ -44,40 +65,38 @@ public class FileUploadService {
             FileTypeEnum filetype = getFileType(file.getContentType());
             log.info("File type: "+filetype);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] filebytes = file.getBytes();
-            byte[] digestmsg = digest.digest(filebytes);
-            String sha256 = byteArrayToHex(digestmsg);
+            byte[] fileBytes = file.getBytes();
+            byte[] digestMsg = digest.digest(fileBytes);
+            String sha256 = byteArrayToHex(digestMsg);
             log.info("File sha-256: "+sha256);
-            String fileName = UUID.nameUUIDFromBytes(digestmsg).toString();
+            String fileName = UUID.nameUUIDFromBytes(digestMsg).toString();
             Path filePath = uploadPath.resolve(fileName);
-            Files.write(filePath,filebytes );
+            Files.write(filePath,fileBytes );
 
             log.info("File writed to: "+filePath.toString());
             log.info("Trying to save file info to database");
             Upload uploadInfo = Upload.builder()
-                    .fileName(fileName)
+                    .fileName(file.getOriginalFilename())
                     .fileSize(file.getSize())
                     .fileType(filetype)
                     .hash256(sha256)
                     .url(filePath.toString())
+                    .ownerId(ownerUserId)
                     .build();
 
-            uploadRepository.save(uploadInfo);
-            log.info("File info saved to database");
-
-            return new ResponseDTO("File uploaded: " + file.getOriginalFilename() +"\n path: "+uploadPath.toString()+"\n name: "+fileName+"\n sha-256: "+sha256+"\n ext: "+file.getContentType(),true);
+            return new FileUploadResponse(true,"File uploaded successfully",uploadInfo) ;
         }
         catch (NoSuchAlgorithmException e) {
             log.warning(e.getMessage());
-            return new ResponseDTO("File upload failed: " + e.getMessage(),false);
+            return new FileUploadResponse(false,"File upload failed: " + e.getMessage(),null);
         }
         catch (IllegalArgumentException e) {
             log.warning(e.getMessage());
-            return new ResponseDTO("File upload failed: " + e.getMessage(),false);
+            return new FileUploadResponse(false, "File upload failed: " + e.getMessage(),null);
         }
         catch (IOException e) {
             log.warning(e.getMessage());
-            return new ResponseDTO("File upload failed: " + e.getMessage(),false);
+            return new FileUploadResponse(false,"File upload failed: " + e.getMessage(),null);
         }
     }
 
@@ -91,11 +110,18 @@ public class FileUploadService {
     }
 
     private static FileTypeEnum getFileType(String contentType) {
+        if(contentType == null) {
+            return FileTypeEnum.Unknown;
+        }
+        contentType = contentType.split("/").length>1?contentType.split("/")[1].toLowerCase():contentType.toLowerCase();
+        log.info("getting FileType for: "+contentType);
           for(FileTypeEnum type : FileTypeEnum.values()) {
-              if(contentType.contains(type.toString())) {
+              log.info("Checking for: "+type.toString());
+              if(contentType.equals(type.toString().toLowerCase())) {
                   return type;
               }
           }
+            log.warning("Unknown file type: "+contentType);
             return FileTypeEnum.Unknown;
     }
 

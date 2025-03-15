@@ -6,7 +6,6 @@ import com.helios.auctix.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -14,7 +13,7 @@ import java.util.logging.Logger;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserRegisterService {
 
     private final UserRepository userRepository;
     private final SellerRepository sellerRepository;
@@ -23,7 +22,7 @@ public class UserService {
     private final UserRoleRepository userRoleRepository;
     private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    Logger log = Logger.getLogger(UserService.class.getName());
+    Logger log = Logger.getLogger(UserRegisterService.class.getName());
 
     public boolean isUserExistsOnUsername(String username) {
         return userRepository.existsByUsername(username);
@@ -39,10 +38,18 @@ public class UserService {
 
 
     @Transactional
-    public String addUser(String username, String email, String rawPassword , String firstname, String lastname , UserRoleEnum role) {
+    public UserServiceResponse addUser(String username, String email, String rawPassword , String firstname, String lastname , UserRoleEnum role) {
         log.info("Adding seller " + username);
 
         UserRole userRoleId = userRoleRepository.findByName(role);
+        if(userRepository.existsByEmail(email)){
+            log.warning("User already exists from the given email");
+            return new UserServiceResponse(false, "User already exists foer the given email");
+        }
+        if(userRepository.existsByUsername(username)){
+            log.warning("User already exists from the given username");
+            return new UserServiceResponse(false, "User already exists for the given username");
+        }
 
         String hashedPassword = encoder.encode(rawPassword);
 
@@ -63,7 +70,7 @@ public class UserService {
 
             log.info("Creating seller object with id " + user.getId());
             Seller seller = Seller.builder()
-                    .id(user.getId())
+                    .user(user)
                     .isVerified(false)
                     .isActive(true)
                     .build();
@@ -76,7 +83,7 @@ public class UserService {
 
             log.info("Creating bidder object with id " + user.getId());
             Bidder bidder = Bidder.builder()
-                    .id(user.getId())
+                    .user(user)
                     .isActive(true)
                     .build();
 
@@ -88,7 +95,7 @@ public class UserService {
 
             log.info("Creating admin object with id " + user.getId());
             Admin admin = Admin.builder()
-                    .id(user.getId())
+                    .user(user)
                     .isActive(true)
                     .build();
             log.info("Saving admin object");
@@ -97,9 +104,9 @@ public class UserService {
         }
         else{
             log.warning("Invalid role");
-            return "Error: Invalid role";
+            return new UserServiceResponse(false, "Invalid role");
         }
-        return "Success: User Created";
+        return new UserServiceResponse(true, "User registered successfully");
     }
 
 }
