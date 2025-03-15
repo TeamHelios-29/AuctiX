@@ -1,11 +1,13 @@
 package com.helios.auctix.domain.user;
 
+import com.helios.auctix.domain.upload.Upload;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.util.UUID;
 
 @Data
@@ -36,6 +38,10 @@ public class User {
 
     @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
+
+    @OneToOne
+    @JoinColumn(name = "profile_photo_id", nullable = true , referencedColumnName = "")
+    private Upload upload;
 
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)

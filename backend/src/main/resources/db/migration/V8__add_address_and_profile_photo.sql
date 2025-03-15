@@ -8,12 +8,8 @@ CREATE TABLE user_addresses (
     CONSTRAINT fk_user_address FOREIGN KEY (id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE user_profile_photos
-(
-    id UUID PRIMARY KEY,
-    photo_ref SERIAL,
-    CONSTRAINT fk_user_profile_photo FOREIGN KEY (id) REFERENCES Users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_user_profile_photos_uploads FOREIGN KEY (photo_ref) REFERENCES uploads(id) ON DELETE CASCADE
-);
+ALTER TABLE Users
+    ADD COLUMN profile_photo_id INT NULL;
 
-
+ALTER TABLE Users
+    ADD CONSTRAINT fk_profile_photo FOREIGN KEY (profile_photo_id) REFERENCES uploads(id) ON DELETE SET NULL;

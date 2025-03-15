@@ -2,10 +2,7 @@ package com.helios.auctix.domain.upload;
 
 import com.helios.auctix.domain.user.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Timestamp;
@@ -21,6 +18,7 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "uploads" )
+@ToString(exclude = "owner")
 public class Upload {
 
     @Id
