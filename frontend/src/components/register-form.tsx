@@ -208,7 +208,10 @@ export function TabsDemo({
           // navigate('/dashboard');
         })
         .catch((error) => {
-          showErrorAlert('Server error: ' + error.message);
+          showErrorAlert(
+            'Error: ' +
+              (error.response?.data || error.message || 'Unknown error'),
+          );
         });
     } else {
       showErrorAlert(

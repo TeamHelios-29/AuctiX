@@ -50,7 +50,9 @@ export function LoginForm({
         );
       })
       .catch((error) => {
-        showErrorAlert('Server Error:' + error.message);
+        showErrorAlert(
+          'Error: ' + error?.response?.data || error.message || 'Unknown error',
+        );
         console.error(error);
       });
   };
