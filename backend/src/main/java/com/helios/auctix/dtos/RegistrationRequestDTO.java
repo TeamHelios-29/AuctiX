@@ -23,6 +23,13 @@ public class RegistrationRequestDTO {
     @NotNull(message = "Email is required")
     private String email;
 
+    @NotNull(message = "First name is required")
+    private String firstName;
+
+    @NotNull(message = "Last name is required")
+    private String lastName;
+
     @NotNull(message = "Role is required")
     private String role;
+
 }

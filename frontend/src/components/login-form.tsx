@@ -50,7 +50,9 @@ export function LoginForm({
         );
       })
       .catch((error) => {
-        showErrorAlert('Server Error:' + error.message);
+        showErrorAlert(
+          'Error: ' + error?.response?.data || error.message || 'Unknown error',
+        );
         console.error(error);
       });
   };
@@ -85,7 +87,7 @@ export function LoginForm({
     setAlertOpen(true);
   };
 
-  const ErrorIcon = () => <BanIcon className="w-6 h-6 text-red-500" />;
+  const ErrorIcon = <BanIcon className="w-6 h-6 text-red-500" />;
 
   return (
     <>
