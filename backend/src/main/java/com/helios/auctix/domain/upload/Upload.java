@@ -1,5 +1,6 @@
 package com.helios.auctix.domain.upload;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.helios.auctix.domain.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class Upload {
 
     @Id
+    @JsonIgnore
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -32,15 +34,18 @@ public class Upload {
     @Enumerated(EnumType.STRING)
     private FileTypeEnum fileType;
 
+    @JsonIgnore
     @Column(name="file_size", nullable = false)
     private Long fileSize; // in bytes
 
     @Column(name="url", nullable = false)
     private String url;
 
+    @JsonIgnore
     @Column(name="hash_256", nullable = false)
     private String hash256;
 
+    @JsonIgnore
     @Column(name="uploaded_at", nullable = false )
     private Timestamp uploadedAt;
 
@@ -48,9 +53,11 @@ public class Upload {
     private Boolean isPublic;
 
     @Column(name="owner_id")
+    @JsonIgnore
     private UUID ownerId;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "owner_id", insertable = false, updatable = false)
     private User owner;
 

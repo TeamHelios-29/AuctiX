@@ -43,7 +43,7 @@ public class FileUploadService {
 
     public FileUploadResponse uploadFile(MultipartFile file,String upload_dir) {
         log.warning("unauthorized file upload request");
-        return new FileUploadResponse(false,"Unauthorized",null);
+        return uploadFile(file, upload_dir, (UUID) null);
     }
 
     public FileUploadResponse uploadFile(MultipartFile file, String upload_dir, String ownerEmail) {
@@ -74,7 +74,6 @@ public class FileUploadService {
             Files.write(filePath,fileBytes );
 
             log.info("File writed to: "+filePath.toString());
-            log.info("Trying to save file info to database");
             Upload uploadInfo = Upload.builder()
                     .fileName(file.getOriginalFilename())
                     .fileSize(file.getSize())
