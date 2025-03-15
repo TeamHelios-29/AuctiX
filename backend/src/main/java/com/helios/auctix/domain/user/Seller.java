@@ -28,4 +28,10 @@ public class Seller {
     @Column(name="banner_id", nullable = true)
     private Integer bannerId;
 
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "id", nullable = false)
+    private User user;
+
+
 }

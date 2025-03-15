@@ -41,9 +41,6 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role;
 
-    @OneToOne
-    @JoinColumn(name = "id")
-    private Seller seller;
 
     // helper method to make things clearer
     public UserRoleEnum getRoleEnum() {
