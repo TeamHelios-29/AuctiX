@@ -39,16 +39,16 @@ public class UserRegisterService {
 
     @Transactional
     public UserServiceResponse addUser(String username, String email, String rawPassword , String firstname, String lastname , UserRoleEnum role) {
-        log.info("Adding seller " + username);
+        log.info("Creating account " + username);
 
         UserRole userRoleId = userRoleRepository.findByName(role);
         if(userRepository.existsByEmail(email)){
             log.warning("User already exists from the given email");
-            return new UserServiceResponse(false, "User already exists foer the given email");
+            return new UserServiceResponse(false, "User already exists for the given email",null);
         }
         if(userRepository.existsByUsername(username)){
             log.warning("User already exists from the given username");
-            return new UserServiceResponse(false, "User already exists for the given username");
+            return new UserServiceResponse(false, "User already exists for the given username",null);
         }
 
         String hashedPassword = encoder.encode(rawPassword);
@@ -104,9 +104,9 @@ public class UserRegisterService {
         }
         else{
             log.warning("Invalid role");
-            return new UserServiceResponse(false, "Invalid role");
+            return new UserServiceResponse(false, "Invalid role",null);
         }
-        return new UserServiceResponse(true, "User registered successfully");
+        return new UserServiceResponse(true, "User registered successfully",user);
     }
 
 }

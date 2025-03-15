@@ -6,6 +6,8 @@ import com.helios.auctix.dtos.LoginRequestDTO;
 import com.helios.auctix.dtos.RegistrationRequestDTO;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.UserAuthenticationService;
+import com.helios.auctix.services.user.UserRegisterService;
+import com.helios.auctix.services.user.UserServiceResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,13 +16,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 public class UserAuthController {
 
+    private final UserRegisterService userRegisterService;
     private UserAuthenticationService userAuthenticationService;
 
     private UserRepository userRepository; // TODO Replace with UserService when it is implemented
 
-    public UserAuthController(UserAuthenticationService userAuthenticationService, UserRepository userRepository) {
+    public UserAuthController(UserAuthenticationService userAuthenticationService, UserRepository userRepository, UserRegisterService userRegisterService) {
         this.userAuthenticationService = userAuthenticationService;
         this.userRepository = userRepository;
+        this.userRegisterService = userRegisterService;
     }
 
     @PostMapping("/register")
@@ -32,19 +36,21 @@ public class UserAuthController {
 
         // TODO use UserService check if user already exists
 
-        User user = userAuthenticationService.register(
-                registrationRequestDTO.getEmail(),
+        UserServiceResponse registrationResponse = userRegisterService.addUser(
                 registrationRequestDTO.getUsername(),
+                registrationRequestDTO.getEmail(),
                 registrationRequestDTO.getPassword(),
+                registrationRequestDTO.getFirstName(),
+                registrationRequestDTO.getLastName(),
                 UserRoleEnum.valueOf(registrationRequestDTO.getRole()));
 
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request");
+        if (!registrationResponse.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(registrationResponse.getMessage());
         }
 
         // send a jwt to log the user in when registration is successful
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                userAuthenticationService.verify(user, registrationRequestDTO.getPassword()));
+                userAuthenticationService.verify(registrationResponse.getUser(), registrationRequestDTO.getPassword()));
 
     }
 

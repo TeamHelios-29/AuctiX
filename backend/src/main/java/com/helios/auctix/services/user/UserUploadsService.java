@@ -32,7 +32,7 @@ public class UserUploadsService {
     @Transactional
     public UserServiceResponse UserProfilePhotoUpdate(User user,Upload upload) {
             if(user == null) {
-                return new UserServiceResponse(false, "User not found");
+                return new UserServiceResponse(false, "User not found",null);
             }
 
             uploadRepository.save(upload);
@@ -41,6 +41,6 @@ public class UserUploadsService {
             userRepository.save(user);
             log.info("UserProfilePhotoUpdate successfully");
 
-            return new UserServiceResponse(true, "Upload saved");
+            return new UserServiceResponse(true, "Upload saved",user);
     }
 }
