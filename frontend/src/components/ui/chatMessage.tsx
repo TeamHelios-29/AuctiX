@@ -51,8 +51,6 @@ function ChatMessage({
           hour: '2-digit',
           minute: '2-digit',
         })}
-
-        {id}
       </div>
     </div>
   );

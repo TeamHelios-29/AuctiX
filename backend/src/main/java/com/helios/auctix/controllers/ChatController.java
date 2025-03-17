@@ -8,29 +8,27 @@ import com.helios.auctix.mappers.Mapper;
 import com.helios.auctix.services.ChatService;
 import com.helios.auctix.services.user.UserService;
 import lombok.extern.java.Log;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import java.security.Principal;
-import java.time.LocalDateTime;
+import static java.lang.Thread.sleep;
 
 @Log
 @Controller
 public class ChatController {
 
-    private ChatService chatService;
+    private final ChatService chatService;
+    private final UserService userService;
+    private final Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    private UserService userService;
-
-    private Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper;
-
-    public ChatController(ChatService chatService, Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper, UserService userService ) {
+    public ChatController(SimpMessagingTemplate messagingTemplate, ChatService chatService, Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper, UserService userService) {
+        this.messagingTemplate = messagingTemplate;
         this.chatService = chatService;
         this.chatMessageDTOMapper = chatMessageDTOMapper;
         this.userService = userService;
@@ -38,45 +36,38 @@ public class ChatController {
 
     @MessageMapping("/chat.sendMessage/{auctionId}")
     @SendTo("/topic/auction/{auctionId}/chat")
-    public ChatMessageDTO sendMessage(@DestinationVariable String auctionId, @RequestBody ChatMessageDTO chatMessageDto, Principal principal) {
+    public void sendMessage(@DestinationVariable String auctionId,
+                                      ChatMessageDTO chatMessageDto,
+                                      SimpMessageHeaderAccessor headerAccessor) throws InterruptedException {
 
-        String userEmail = principal.getName();
+//        sleep(500);
+//        return chatMessageDto;
+        // redundant since the interceptor checks it already
+        if (headerAccessor.getUser() == null || headerAccessor.getUser() instanceof AnonymousAuthenticationToken) {
+            log.severe("Guest users cannot send messages");
+            throw new IllegalArgumentException("You must be logged in to send messages");
+        }
+
+        String userEmail = headerAccessor.getUser().getName();
+        log.info("Processing message from user: " + userEmail + " for auction: " + auctionId);
+
         User sender = userService.getUserFromEmail(userEmail);
-
         if (sender == null) {
             throw new IllegalArgumentException("Authenticated user not found.");
         }
 
         ChatRoom chatRoom = chatService.getChatRoom(auctionId);
-
         if (chatRoom == null) {
             log.severe("ChatRoom not found for the auction id " + auctionId);
             throw new IllegalArgumentException("Chatroom not found for this auction");
         }
 
-        ChatMessage chatMessage =  chatMessageDTOMapper.mapFrom(chatMessageDto);
+        ChatMessage chatMessage = chatMessageDTOMapper.mapFrom(chatMessageDto);
         chatMessage.setSender(sender);
         chatMessage.setChatRoom(chatRoom);
         ChatMessage savedChatMessage = chatService.saveChatMessage(chatMessage);
-
-        return chatMessageDTOMapper.mapTo(savedChatMessage);
-
-    }
-
-    @MessageMapping("/chat.join/{auctionId}")
-    @SendTo("/topic/auction/{auctionId}/chat")
-    public void addUser(@DestinationVariable String auctionId, @Payload ChatMessage chatMessage, Principal principal) {
-
-        String userEmail = principal.getName();
-        User sender = userService.getUserFromEmail(userEmail);
-
-        if (sender == null) {
-            throw new IllegalArgumentException("Authenticated user not found.");
-        }
-
-        // TODO refactor
-        // for now use the auction id as the chat room id
-        chatService.joinChatRoom(sender, auctionId);
-
+        log.info("Saved the chat messaage: " + chatMessage.toString());
+        ChatMessageDTO responseDto = chatMessageDTOMapper.mapTo(savedChatMessage);
+        messagingTemplate.convertAndSend("/topic/auction/" + auctionId + "/chat", responseDto);
     }
 }

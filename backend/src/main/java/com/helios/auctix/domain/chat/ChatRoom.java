@@ -13,8 +13,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-//@Entity
-//@Table(name = "chat_rooms")
+@Entity
+@Table(name = "chat_rooms")
 public class ChatRoom {
 
     @Id

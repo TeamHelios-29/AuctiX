@@ -20,12 +20,18 @@ public class ChatMessageMapperImpl implements Mapper<ChatMessage, ChatMessageDTO
 
     @Override
     public ChatMessageDTO mapTo(ChatMessage chatMessage) {
-        ChatMessageDTO chatMessageDTO = modelMapper.map(chatMessage, ChatMessageDTO.class);
-        chatMessageDTO.setSenderId(String.valueOf(chatMessage.getSender().getId()));
-        chatMessageDTO.setSenderName(chatMessage.getSender().getFirstName() + " " + chatMessage.getSender().getLastName());
-        chatMessageDTO.setSenderRole(chatMessage.getSender().getRoleEnum().name());
-        chatMessageDTO.setTimestamp(chatMessage.getTimestamp().toString());  // Convert LocalDateTime to String
-        return chatMessageDTO;
+//        ChatMessageDTO chatMessageDTO = modelMapper.map(chatMessage, ChatMessageDTO.class);
+        // Convert LocalDateTime to String
+
+        return ChatMessageDTO.builder()
+                .chatMessageId(String.valueOf(chatMessage.getId()))
+                .senderId(String.valueOf(chatMessage.getSender().getId()))
+                .senderName(chatMessage.getSender().getFirstName() + " " + chatMessage.getSender().getLastName())
+                .senderRole(chatMessage.getSender().getRoleEnum().name())
+                .content(chatMessage.getContent())
+                .timestamp(chatMessage.getTimestamp().toString())  // Convert LocalDateTime to String
+                .build();
+
     }
 
     /**
@@ -37,7 +43,11 @@ public class ChatMessageMapperImpl implements Mapper<ChatMessage, ChatMessageDTO
      */
     @Override
     public ChatMessage mapFrom(ChatMessageDTO chatMessageDTO) {
-        return modelMapper.map(chatMessageDTO, ChatMessage.class);
+//        return modelMapper.map(chatMessageDTO, ChatMessage.class);
+
+        return ChatMessage.builder()
+                .content(chatMessageDTO.getContent())
+                .build();
     }
 
 }

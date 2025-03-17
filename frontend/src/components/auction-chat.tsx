@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from './ui/label';
 import { ChatMessageDTO } from '@/Interfaces/IChatMessageDTO';
-// import { useAuth } from '@/context/AuthContext';/
+import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { useAppSelector } from '@/services/hooks';
 
 function AuctionChat() {
   const [stompClient, setStompClient] = useState<Client | null>(null);
@@ -14,8 +15,15 @@ function AuctionChat() {
   const [newMessage, setNewMessage] = useState('');
   const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [auctionId, setAuctionId] = useState('1');
-  const [tempUserId, setTempUserId] = useState('1');
+  const [auctionId, setAuctionId] = useState(
+    '5ded2b18-e4c6-4bed-8716-aa551123b469',
+  ); // TODO Change
+  const user: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);
+  const isAuthenticated = !!user && !!user.token;
+  const displayName = user?.username || 'Guest';
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subscriptionRef = useRef<any>(null); // Track subscription status
 
   const webSocketURL =
     import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:8080/ws';
@@ -35,51 +43,76 @@ function AuctionChat() {
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
+      // Conditionally set headers based on authentication status
+      connectHeaders: isAuthenticated
+        ? { Authorization: `Bearer ${user.token}` }
+        : {},
       onConnect: () => {
         console.log('Connected to WebSocket');
         setConnected(true);
 
-        client.subscribe(
-          `/topic/auction/${auctionId}/chat`,
-          (messageOutput) => {
-            try {
-              const receivedMessage: ChatMessageDTO = JSON.parse(
-                messageOutput.body,
-              );
-              console.log('Received message:', receivedMessage);
+        // Subscribe to the auction chat topic only if not already subscribed
+        if (!subscriptionRef.current) {
+          subscriptionRef.current = client.subscribe(
+            `/topic/auction/${auctionId}/chat`,
+            (messageOutput) => {
+              try {
+                const receivedMessage: ChatMessageDTO = JSON.parse(
+                  messageOutput.body,
+                );
+                console.log('Received message:', receivedMessage);
 
-              const newChatMessage: ChatMessageProps = {
-                id: Date.now().toString(), // just to make it unique
-                userId: tempUserId,
-                message: receivedMessage.content,
-                displayName: receivedMessage.senderName || 'Unknown',
-                userRole: 'Seller', // Default role
-                timestamp: receivedMessage.timestamp
-                  ? new Date(receivedMessage.timestamp)
-                  : new Date(),
-                isSentByCurrentUser: receivedMessage.senderName === tempUserId,
-              };
+                const newChatMessage: ChatMessageProps = {
+                  id: Date.now().toString(), // just to make it unique
+                  userId: receivedMessage.senderId || '',
+                  message: receivedMessage.content,
+                  displayName: receivedMessage.senderName || 'Unknown',
+                  userRole: receivedMessage.senderRole || 'User',
+                  timestamp: receivedMessage.timestamp
+                    ? new Date(receivedMessage.timestamp)
+                    : new Date(),
+                  isSentByCurrentUser:
+                    isAuthenticated &&
+                    receivedMessage.senderName === user.username,
+                };
 
-              setMessages((prevMessages) => [...prevMessages, newChatMessage]);
-            } catch (error) {
-              console.error('Error parsing message:', error);
-            }
-          },
-        );
+                setMessages((prevMessages) => [
+                  ...prevMessages,
+                  newChatMessage,
+                ]);
+              } catch (error) {
+                console.error('Error parsing message:', error);
+              }
+            },
+            isAuthenticated ? { Authorization: `Bearer ${user.token}` } : {},
+          );
+        }
 
-        // join the chat room for the auction id
-        client.publish({
-          destination: `/app/chat.join/${auctionId}`,
-          body: JSON.stringify({
-            senderName: tempUserId,
-            content: '',
-            auctionId: auctionId,
-          }),
-        });
+        // // Only join the chat if authenticated
+        // if (isAuthenticated) {
+        //   // join the chat room for the auction id (only once)
+        //   client.publish({
+        //     destination: `/app/chat.join/${auctionId}`,
+        //     body: JSON.stringify({
+        //       // senderId: user.id,
+        //       senderName: displayName,
+        //       content: '',
+        //       auctionId: auctionId,
+        //     }),
+        //     headers: {
+        //       Authorization: `Bearer ${user.token}`,
+        //     },
+        //   });
+        // }
       },
       onDisconnect: () => {
         console.log('Disconnected from WebSocket');
         setConnected(false);
+        // Cleanup subscription when disconnecting
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          subscriptionRef.current = null;
+        }
       },
       onStompError: (frame) => {
         console.error('STOMP Error:', frame.headers['message']);
@@ -99,33 +132,31 @@ function AuctionChat() {
         client.deactivate();
       }
     };
-  }, [auctionId, webSocketURL, tempUserId]);
+  }, [auctionId, webSocketURL, user, isAuthenticated, displayName]);
 
   const sendMessage = () => {
+    if (!isAuthenticated) {
+      console.error('Cannot send messages in guest mode');
+      return;
+    }
+
     if (stompClient && stompClient.active && newMessage.trim() !== '') {
       console.log('Sending message:', newMessage);
 
       const chatMessage: ChatMessageDTO = {
-        senderId: tempUserId,
+        senderId: displayName,
+        senderName: displayName,
         content: newMessage,
+        auctionId: auctionId,
       };
 
-      // const frontendMessage: ChatMessageProps = {
-      //   id: Date.now().toString(),
-      //   userId: 'currentUser',
-      //   message: newMessage,
-      //   displayName: 'You',
-      //   userRole: 'User',
-      //   timestamp: new Date(),
-      //   isSentByCurrentUser: true,
-      // };
-
-      // setMessages((prevMessages) => [...prevMessages, frontendMessage]);
-
-      // Then send to server
+      // Send to server
       stompClient.publish({
         destination: `/app/chat.sendMessage/${auctionId}`,
         body: JSON.stringify(chatMessage),
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
       });
 
       setNewMessage('');
@@ -138,18 +169,15 @@ function AuctionChat() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-2 border-b">
         <h2 className="font-medium">Auction Chat</h2>
-        <div
-          className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}
-          title={connected ? 'Connected' : 'Disconnected'}
-        ></div>
-      </div>
-      <div>
-        Set User ID for testing:
-        <input
-          type="text"
-          value={tempUserId}
-          onChange={(e) => setTempUserId(e.target.value)}
-        />
+        <div className="flex items-center gap-2">
+          <span className="text-sm">
+            {isAuthenticated ? displayName : 'Guest Mode (Read Only)'}
+          </span>
+          <div
+            className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}
+            title={connected ? 'Connected' : 'Disconnected'}
+          ></div>
+        </div>
       </div>
 
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
@@ -174,14 +202,16 @@ function AuctionChat() {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
+              placeholder={
+                isAuthenticated ? 'Type a message...' : 'Login to chat'
+              }
               id="message"
               autoComplete="off"
               required
               className="flex-1"
-              disabled={!connected}
+              disabled={!connected || !isAuthenticated}
             />
-            <Button type="submit" disabled={!connected}>
+            <Button type="submit" disabled={!connected || !isAuthenticated}>
               Send
             </Button>
           </div>

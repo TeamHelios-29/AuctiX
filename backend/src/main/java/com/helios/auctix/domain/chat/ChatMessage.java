@@ -13,8 +13,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-//@Entity
-//@Table(name = "chat_messages")
+@Entity
+@Table(name = "chat_messages")
 public class ChatMessage {
 
     @Id
@@ -37,4 +37,14 @@ public class ChatMessage {
         this.id = UUID.randomUUID();  // so it won't give an error when we try to save a msg without an id
     }
 
+    @Override
+    public String toString() {
+        return "ChatMessage{" +
+                "id=" + id +
+                ", chatRoom=" + chatRoom +
+                ", sender=" + sender +
+                ", content='" + content + '\'' +
+                ", timestamp=" + timestamp +
+                '}';
+    }
 }
