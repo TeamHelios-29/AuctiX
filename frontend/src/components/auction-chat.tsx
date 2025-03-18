@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { ChatMessage, ChatMessageProps } from './ui/chatMessage';
@@ -8,6 +8,8 @@ import { Label } from './ui/label';
 import { ChatMessageDTO } from '@/Interfaces/IChatMessageDTO';
 import { IAuthUser } from '@/Interfaces/IAuthUser';
 import { useAppSelector } from '@/services/hooks';
+import AxiosRequest from '@/services/AxiosInstence';
+import { AxiosInstance } from 'axios';
 
 function AuctionChat() {
   const [stompClient, setStompClient] = useState<Client | null>(null);
@@ -15,18 +17,47 @@ function AuctionChat() {
   const [newMessage, setNewMessage] = useState('');
   const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [auctionId, setAuctionId] = useState(
+  const [chatRoomId, setChatRoomId] = useState(
     '5ded2b18-e4c6-4bed-8716-aa551123b469',
   ); // TODO Change
   const user: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);
   const isAuthenticated = !!user && !!user.token;
   const displayName = user?.username || 'Guest';
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const subscriptionRef = useRef<any>(null); // Track subscription status
 
   const webSocketURL =
     import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:8080/ws';
+
+  const fetchMessages = useCallback(
+    async (page: number) => {
+      try {
+        const response = await axiosInstance.get(
+          `/public/chat/${chatRoomId}/messages`,
+          {
+            params: { page, size: 10 },
+          },
+        );
+
+        const newMessages = response.data;
+
+        console.log('Menna Awa messages' + response);
+
+        if (newMessages.length > 0) {
+          setMessages((prevMessages) => [...newMessages, ...prevMessages]); // prepend new messages
+        } else {
+          setHasMore(false); // No more messages to load
+        }
+      } catch (error) {
+        console.error('Error fetching messages', error);
+      }
+    },
+    [axiosInstance, chatRoomId],
+  );
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -54,7 +85,7 @@ function AuctionChat() {
         // Subscribe to the auction chat topic only if not already subscribed
         if (!subscriptionRef.current) {
           subscriptionRef.current = client.subscribe(
-            `/topic/auction/${auctionId}/chat`,
+            `/topic/auction/${chatRoomId}/chat`,
             (messageOutput) => {
               try {
                 const receivedMessage: ChatMessageDTO = JSON.parse(
@@ -90,23 +121,6 @@ function AuctionChat() {
             isAuthenticated ? { Authorization: `Bearer ${user.token}` } : {},
           );
         }
-
-        // // Only join the chat if authenticated
-        // if (isAuthenticated) {
-        //   // join the chat room for the auction id (only once)
-        //   client.publish({
-        //     destination: `/app/chat.join/${auctionId}`,
-        //     body: JSON.stringify({
-        //       // senderId: user.id,
-        //       senderName: displayName,
-        //       content: '',
-        //       auctionId: auctionId,
-        //     }),
-        //     headers: {
-        //       Authorization: `Bearer ${user.token}`,
-        //     },
-        //   });
-        // }
       },
       onDisconnect: () => {
         console.log('Disconnected from WebSocket');
@@ -135,7 +149,7 @@ function AuctionChat() {
         client.deactivate();
       }
     };
-  }, [auctionId, webSocketURL, user, isAuthenticated, displayName]);
+  }, [chatRoomId, webSocketURL, user, isAuthenticated, displayName]);
 
   const sendMessage = () => {
     if (!isAuthenticated) {
@@ -150,12 +164,12 @@ function AuctionChat() {
         senderId: displayName,
         senderName: displayName,
         content: newMessage,
-        auctionId: auctionId,
+        auctionId: chatRoomId,
       };
 
       // Send to server
       stompClient.publish({
-        destination: `/app/chat.sendMessage/${auctionId}`,
+        destination: `/app/chat.sendMessage/${chatRoomId}`,
         body: JSON.stringify(chatMessage),
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -167,6 +181,32 @@ function AuctionChat() {
       console.error('WebSocket is not connected');
     }
   };
+
+  // Handle scrolling to load more messages
+  useEffect(() => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as HTMLElement; // Cast the event target to HTMLElement
+      if (target) {
+        const isTop = target.scrollTop === 0;
+        if (isTop && hasMore) {
+          setPage((prevPage) => prevPage + 1); // Load more messages when scroll is at top
+        }
+      }
+    };
+
+    const chatContainer = messagesEndRef.current?.parentElement;
+    chatContainer?.addEventListener('scroll', handleScroll);
+
+    return () => {
+      chatContainer?.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMore]); // Re-run when hasMore changes
+
+  useEffect(() => {
+    if (page === 0) {
+      fetchMessages(page); // Load initial messages when component mounts
+    }
+  }, [fetchMessages, page]);
 
   return (
     <div className="flex flex-col h-full">
@@ -184,9 +224,11 @@ function AuctionChat() {
       </div>
 
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-        {messages.map((msg) => (
-          <ChatMessage key={msg.id} {...msg} />
-        ))}
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500">No messages yet</div>
+        ) : (
+          messages.map((msg) => <ChatMessage key={msg.id} {...msg} />)
+        )}
         <div ref={messagesEndRef} />
       </div>
 

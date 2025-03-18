@@ -20,7 +20,7 @@ public class ChatMessage {
     @Id
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id", referencedColumnName = "id", nullable = false)
     private ChatRoom chatRoom;
 
