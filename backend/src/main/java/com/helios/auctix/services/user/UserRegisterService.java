@@ -3,6 +3,7 @@ package com.helios.auctix.services.user;
 
 import com.helios.auctix.domain.user.*;
 import com.helios.auctix.repositories.*;
+import com.helios.auctix.services.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class UserRegisterService {
     private final BidderRepository bidderRepository;
     private final AdminRepository adminRepository;
     private final UserRoleRepository userRoleRepository;
+    private final JwtService jwtService;
     private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     Logger log = Logger.getLogger(UserRegisterService.class.getName());
@@ -108,6 +110,23 @@ public class UserRegisterService {
         }
         return new UserServiceResponse(true, "User registered successfully",user);
     }
+
+    // TODO refactor later to a seperate service
+    public User getUser(UUID userId) {
+        return userRepository.findById(String.valueOf(userId)).orElse(null);
+    }
+
+    public User getUserFromToken(String token) {
+        String email = jwtService.extractEmail(token);
+        return userRepository.findByEmail(email);
+    }
+
+    public User getUserFromEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+
+
 
 }
 

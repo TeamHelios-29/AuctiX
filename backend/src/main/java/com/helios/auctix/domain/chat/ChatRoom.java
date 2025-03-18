@@ -1,6 +1,7 @@
 package com.helios.auctix.domain.chat;
 
 
+import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -20,7 +21,9 @@ public class ChatRoom {
     @Id
     private UUID id;
 
-//    private Auction auction;  // TODO add this later
+    @OneToOne(optional = true)
+    @JoinColumn(name = "auction_id", unique = true)
+    private Auction auction;
 
     // TODO fix these joins etc
     @ManyToMany

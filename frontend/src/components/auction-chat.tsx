@@ -76,6 +76,9 @@ function AuctionChat() {
                     receivedMessage.senderName === user.username,
                 };
 
+                console.log('sender name', receivedMessage.senderName);
+                console.log('user name', user.username);
+
                 setMessages((prevMessages) => [
                   ...prevMessages,
                   newChatMessage,

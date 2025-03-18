@@ -6,7 +6,7 @@ import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.ChatMessageDTO;
 import com.helios.auctix.mappers.Mapper;
 import com.helios.auctix.services.ChatService;
-import com.helios.auctix.services.user.UserService;
+import com.helios.auctix.services.user.UserRegisterService;
 import lombok.extern.java.Log;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -23,15 +23,15 @@ import static java.lang.Thread.sleep;
 public class ChatController {
 
     private final ChatService chatService;
-    private final UserService userService;
+    private final UserRegisterService userRegisterService;
     private final Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatController(SimpMessagingTemplate messagingTemplate, ChatService chatService, Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper, UserService userService) {
+    public ChatController(SimpMessagingTemplate messagingTemplate, ChatService chatService, Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper, UserRegisterService userRegisterService) {
         this.messagingTemplate = messagingTemplate;
         this.chatService = chatService;
         this.chatMessageDTOMapper = chatMessageDTOMapper;
-        this.userService = userService;
+        this.userRegisterService = userRegisterService;
     }
 
     @MessageMapping("/chat.sendMessage/{auctionId}")
@@ -51,7 +51,7 @@ public class ChatController {
         String userEmail = headerAccessor.getUser().getName();
         log.info("Processing message from user: " + userEmail + " for auction: " + auctionId);
 
-        User sender = userService.getUserFromEmail(userEmail);
+        User sender = userRegisterService.getUserFromEmail(userEmail);
         if (sender == null) {
             throw new IllegalArgumentException("Authenticated user not found.");
         }
