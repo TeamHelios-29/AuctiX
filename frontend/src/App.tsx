@@ -25,12 +25,12 @@ const App: React.FC = () => {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute
-                allowedUsers={['SELLER', 'BIDDER']}
-                redirectPath="/403"
-              >
-                <Dashboard />
-              </ProtectedRoute>
+              // <ProtectedRoute
+              //   allowedUsers={['SELLER', 'BIDDER']}
+              //   redirectPath="/403"
+              // >
+              <Dashboard />
+              // </ProtectedRoute>
             }
           />
           <Route path="/403" element={<h2>403 Unautherized</h2>} />
