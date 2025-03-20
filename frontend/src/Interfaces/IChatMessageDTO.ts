@@ -1,5 +1,6 @@
 export interface ChatMessageDTO {
-  senderId: string;
+  id?: string;
+  senderId?: string;
   senderName?: string;
   senderRole?: string;
   content: string;

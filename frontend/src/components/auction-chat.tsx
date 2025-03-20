@@ -17,6 +17,7 @@ function AuctionChat() {
   const [newMessage, setNewMessage] = useState('');
   const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [chatRoomId, setChatRoomId] = useState(
     '5ded2b18-e4c6-4bed-8716-aa551123b469',
   ); // TODO Change
@@ -26,43 +27,84 @@ function AuctionChat() {
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const subscriptionRef = useRef<any>(null); // Track subscription status
+  const subscriptionRef = useRef<any>(null);
 
   const webSocketURL =
     import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:8080/ws';
 
   const fetchMessages = useCallback(
-    async (page: number) => {
+    async (pageNum: number) => {
+      if (isLoading) return;
+
+      setIsLoading(true);
       try {
         const response = await axiosInstance.get(
           `/public/chat/${chatRoomId}/messages`,
           {
-            params: { page, size: 10 },
+            params: { page: pageNum, size: 4 },
           },
         );
 
-        const newMessages = response.data;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newMessages: any[] = response.data;
+        const reversedNewMessages = [...newMessages].reverse(); // display order is reversed
 
-        console.log('Menna Awa messages' + response);
-
-        if (newMessages.length > 0) {
-          setMessages((prevMessages) => [...newMessages, ...prevMessages]); // prepend new messages
+        if (reversedNewMessages && reversedNewMessages.length > 0) {
+          const formattedMessages = reversedNewMessages.map(
+            (msg: ChatMessageDTO) => ({
+              id: msg.id || Date.now().toString() + Math.random(),
+              userId: msg.senderId || '',
+              message: msg.content || '',
+              displayName: msg.senderName || 'Unknown',
+              userRole: msg.senderRole || 'User',
+              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+              isSentByCurrentUser:
+                isAuthenticated && msg.senderName === user.username,
+            }),
+          );
+          setMessages((prevMessages) => [
+            ...formattedMessages,
+            ...prevMessages,
+          ]); // prepend new messages
         } else {
           setHasMore(false); // No more messages to load
         }
       } catch (error) {
         console.error('Error fetching messages', error);
+      } finally {
+        setIsLoading(false);
       }
     },
-    [axiosInstance, chatRoomId],
+    [axiosInstance, chatRoomId, isLoading, isAuthenticated, user?.username],
   );
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when new messages are added ( but not when loading old messages)
+  const shouldScrollToBottom = useRef(true);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (shouldScrollToBottom.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    shouldScrollToBottom.current = true;
   }, [messages]);
+
+  // preserve scroll position after loading old messages
+  useEffect(() => {
+    if (page > 0 && !isLoading && messages.length > 0) {
+      const container = scrollContainerRef.current;
+      if (container) {
+        // small timeout to ensure the DOM has updated
+        setTimeout(() => {
+          // Set scroll position to show the newly loaded messages
+          // but not completely at the top to allow loading more
+          container.scrollTop = 1;
+        }, 100);
+      }
+    }
+  }, [page, isLoading, messages.length]);
 
   // Connect to WebSocket
   useEffect(() => {
@@ -74,7 +116,6 @@ function AuctionChat() {
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      // Conditionally set headers based on authentication status
       connectHeaders: isAuthenticated
         ? { Authorization: `Bearer ${user.token}` }
         : {},
@@ -93,10 +134,15 @@ function AuctionChat() {
                 );
                 console.log('Received message:', receivedMessage);
 
+                if (!receivedMessage.content) {
+                  console.error('Received message with no content');
+                  return;
+                }
+
                 const newChatMessage: ChatMessageProps = {
-                  id: Date.now().toString(), // just to make it unique
+                  id: receivedMessage.id || Date.now().toString(),
                   userId: receivedMessage.senderId || '',
-                  message: receivedMessage.content,
+                  message: receivedMessage.content || '[Empty message]',
                   displayName: receivedMessage.senderName || 'Unknown',
                   userRole: receivedMessage.senderRole || 'User',
                   timestamp: receivedMessage.timestamp
@@ -106,9 +152,6 @@ function AuctionChat() {
                     isAuthenticated &&
                     receivedMessage.senderName === user.username,
                 };
-
-                console.log('sender name', receivedMessage.senderName);
-                console.log('user name', user.username);
 
                 setMessages((prevMessages) => [
                   ...prevMessages,
@@ -177,36 +220,46 @@ function AuctionChat() {
       });
 
       setNewMessage('');
+
+      // Since this is a new message, we'll want to scroll to bottom
+      shouldScrollToBottom.current = true;
     } else if (!stompClient || !stompClient.active) {
       console.error('WebSocket is not connected');
     }
   };
 
-  // Handle scrolling to load more messages
   useEffect(() => {
-    const handleScroll = (event: Event) => {
-      const target = event.target as HTMLElement; // Cast the event target to HTMLElement
-      if (target) {
-        const isTop = target.scrollTop === 0;
-        if (isTop && hasMore) {
-          setPage((prevPage) => prevPage + 1); // Load more messages when scroll is at top
-        }
+    const handleScroll = () => {
+      const container = scrollContainerRef.current;
+      if (!container || isLoading || !hasMore) return;
+
+      console.log('Scroll position:', container.scrollTop);
+
+      if (container.scrollTop === 0) {
+        console.log('Reached top, loading more messages');
+        shouldScrollToBottom.current = false;
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchMessages(nextPage);
       }
     };
 
-    const chatContainer = messagesEndRef.current?.parentElement;
-    chatContainer?.addEventListener('scroll', handleScroll);
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
 
-    return () => {
-      chatContainer?.removeEventListener('scroll', handleScroll);
-    };
-  }, [hasMore]); // Re-run when hasMore changes
-
-  useEffect(() => {
-    if (page === 0) {
-      fetchMessages(page); // Load initial messages when component mounts
+      return () => {
+        container.removeEventListener('scroll', handleScroll);
+      };
     }
-  }, [fetchMessages, page]);
+  }, [hasMore, fetchMessages, page, isLoading]);
+
+  // Load initial messages only once when component mounts
+  useEffect(() => {
+    fetchMessages(0);
+    // Only run this effect once when the component mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -214,7 +267,9 @@ function AuctionChat() {
         <h2 className="font-medium">Auction Chat</h2>
         <div className="flex items-center gap-2">
           <span className="text-sm">
-            {isAuthenticated ? displayName : 'Guest Mode (Read Only)'}
+            {isAuthenticated
+              ? 'Connected to chat'
+              : 'Connected in Guest Mode (Read Only)'}
           </span>
           <div
             className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}
@@ -223,11 +278,48 @@ function AuctionChat() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-        {messages.length === 0 ? (
+      <div
+        className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[500px]"
+        ref={scrollContainerRef}
+      >
+        {hasMore && (
+          <button
+            onClick={() => {
+              shouldScrollToBottom.current = false;
+              const nextPage = page + 1;
+              setPage(nextPage);
+              fetchMessages(nextPage);
+            }}
+            className="w-full py-2 mb-4 text-sm text-gray-500 bg-gray-100 hover:bg-gray-200 rounded"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading...' : 'Load Previous Messages'}
+          </button>
+        )}
+
+        {isLoading && page === 0 && (
+          <div className="text-center text-gray-500">Loading messages...</div>
+        )}
+        {isLoading && page > 0 && (
+          <div className="text-center text-gray-500">
+            Loading more messages...
+          </div>
+        )}
+        {messages.length === 0 && !isLoading ? (
           <div className="text-center text-gray-500">No messages yet</div>
         ) : (
-          messages.map((msg) => <ChatMessage key={msg.id} {...msg} />)
+          messages.map((msg) => (
+            <ChatMessage
+              key={msg.id}
+              id={msg.id}
+              userId={msg.userId}
+              message={msg.message || '[Empty message]'}
+              displayName={msg.displayName || 'Unknown'}
+              userRole={msg.userRole || 'User'}
+              timestamp={msg.timestamp || new Date()}
+              isSentByCurrentUser={msg.isSentByCurrentUser}
+            />
+          ))
         )}
         <div ref={messagesEndRef} />
       </div>
