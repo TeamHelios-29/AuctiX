@@ -9,7 +9,7 @@ function ChatMessage({
   timestamp,
   isSentByCurrentUser,
 }: ChatMessageProps) {
-  const isSeller = userRole === 'Seller';
+  const isSeller = userRole === 'SELLER';
 
   const senderLabel = isSentByCurrentUser
     ? isSeller
