@@ -1,8 +1,8 @@
-import { logout } from '@/components/auth/authSlice';
 import { IAuthUser } from '@/Interfaces/IAuthUser';
-import { useAppDispatch, useAppSelector } from '@/services/hooks';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logout } from '@/store/slices/authSlice';
 
 const Dashboard: React.FC = () => {
   const user: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);

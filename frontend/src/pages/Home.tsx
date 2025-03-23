@@ -1,13 +1,13 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/atoms/button';
+import { Card, CardContent } from '@/components/atoms/card';
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from '@/components/ui/Accordion';
-import { Textarea } from '@/components/ui/textarea';
-import { Navbar } from '@/components/navbar';
+} from '@/components/molecules/Accordion';
+import { Textarea } from '@/components/atoms/textarea';
+import { Navbar } from '@/components/molecules/navbar';
 import { ReactNode } from 'react';
 
 export default function Home(): ReactNode {
