@@ -1,0 +1,50 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <title>Welcome Email</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        padding: 20px;
+      }
+      .email-container {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px #ccc;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .header {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding-bottom: 10px;
+      }
+      .logo-text {
+        font-size: 32px;
+        font-family: "Product Sans", sans-serif;
+        font-weight: normal;
+        line-height: normal;
+      }
+      .text-black {
+        color: black;
+      }
+      .text-gold {
+        color: #ecb02d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="header">
+        <span class="logo-text text-black">Aucti</span>
+        <span class="logo-text text-gold">X</span>
+      </div>
+
+      <h2>Welcome, <span th:text="${username}">User</span>!</h2>
+      <p>This is a test email.</p>
+    </div>
+  </body>
+</html>
