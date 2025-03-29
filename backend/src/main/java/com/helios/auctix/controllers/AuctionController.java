@@ -8,6 +8,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,7 +24,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/auctions")
 public class AuctionController {
-
+    private static final Logger logger = LoggerFactory.getLogger(AuctionController.class);
     private final AuctionService auctionService;
 
     @Autowired
@@ -28,6 +32,11 @@ public class AuctionController {
         this.auctionService = auctionService;
     }
 
+
+    @PostMapping("/")
+    public String hello() {
+        return "hello";
+    }
     // Create a new auction with multipart/form-data
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<Auction> createAuction(
@@ -41,35 +50,57 @@ public class AuctionController {
             @RequestParam("images") List<MultipartFile> images) {
 
         // Create an Auction object using the domain model
-        Auction auction = Auction.builder()
-                .title(title)
-                .description(description)
-                .startingPrice(startingPrice)
-                .startTime(LocalDateTime.parse(startTime))
-                .endTime(LocalDateTime.parse(endTime))
-                .isPublic(isPublic)
-                .category(category)
-                .build();
+        try {
+            // Parse dates with timezone support
+            Instant startInstant = Instant.parse(startTime);
+            Instant endInstant = Instant.parse(endTime);
 
-        // Handle image uploads and set image paths in the Auction object
-        List<String> imagePaths = images.stream()
-                .map(image -> saveImage(image)) // Save each image and return its path
-                .collect(Collectors.toList());
-        auction.setImagePaths(imagePaths);
+            Auction auction = Auction.builder()
+                    .title(title)
+                    .description(description)
+                    .startingPrice(startingPrice)
+                    .startTime(startInstant)
+                    .endTime(endInstant)
+                    .isPublic(isPublic)
+                    .category(category)
+                    .build();
 
-        // Save the auction using the service layer
-        Auction createdAuction = auctionService.createAuction(auction);
-        return ResponseEntity.ok(createdAuction);
+            List<String> imagePaths = images.stream()
+                    .map(this::saveImage)
+                    .collect(Collectors.toList());
+            auction.setImagePaths(imagePaths);
+
+            Auction createdAuction = auctionService.createAuction(auction);
+            return ResponseEntity.ok(createdAuction);
+        } catch (DateTimeParseException e) {
+            logger.error("Invalid date format", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.error("Error creating auction", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // Helper method to save an image and return its path
     private String saveImage(MultipartFile image) {
         try {
-            String fileName = image.getOriginalFilename();
-            Path path = Paths.get("uploads/" + fileName);
+            // Create uploads directory if it doesn't exist
+            Path uploadPath = Paths.get("uploads");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // Sanitize filename (replace spaces and special characters)
+            String originalFilename = image.getOriginalFilename();
+            String sanitizedFilename = originalFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+
+            // Save the file
+            Path path = uploadPath.resolve(sanitizedFilename);
             Files.write(path, image.getBytes());
+
             return path.toString();
         } catch (IOException e) {
+            logger.error("Failed to save image: {}", image.getOriginalFilename(), e);
             throw new RuntimeException("Failed to save image: " + e.getMessage());
         }
     }
