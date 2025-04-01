@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import LoginPage from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -13,8 +13,17 @@ import WalletPage from './pages/Wallet';
 import SellerProfile from './pages/SellerProfile';
 import AuctionChat from './components/auction-chat';
 import User from './pages/User';
+import {
+  listenForForegroundMessages,
+  registerSWAndRequestNotificationPermission,
+} from './firebase/firebase';
 
 const App: React.FC = () => {
+  useEffect(() => {
+    registerSWAndRequestNotificationPermission();
+    listenForForegroundMessages(); // todo check if we are going to use ws instead for foreground msgs
+  }, []);
+
   return (
     <Provider store={store}>
       <Router>
