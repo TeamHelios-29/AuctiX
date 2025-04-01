@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Command } from 'lucide-react';
+import { CollapsibleNavItem } from './CollapsibleNavItem';
 
 import { NavUser } from '@/components/sidebar/nav-user';
 import {
@@ -18,7 +19,6 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 
-// This is sample data.
 const data = {
   user: {
     name: 'shadcn',
@@ -28,33 +28,46 @@ const data = {
 
   navMain: [
     {
-      title: 'Dashborad',
-      url: '#',
+      title: 'Dashboard',
       items: [
         {
-          title: 'Main Dashboard',
-          url: '/dashboard',
+          title: 'Overview',
+          url: '/',
           isActive: true,
         },
         {
-          title: 'Ongoing Auctions',
-          url: '#',
+          title: 'Auctions',
+          items: [
+            {
+              title: 'Ongoing',
+              url: '/auctions/ongoing',
+            },
+            {
+              title: 'Upcoming',
+              url: '/auctions/upcoming',
+            },
+            {
+              title: 'Closed',
+              url: '/auctions/closed',
+            },
+          ],
         },
         {
-          title: 'Closed Auctions',
-          url: '#',
-        },
-        {
-          title: 'Cancelled Auctions',
-          url: '#',
-        },
-        {
-          title: 'Delivery',
-          url: '#',
+          title: 'Management',
+          items: [
+            {
+              title: 'Delivery',
+              url: '/delivery',
+            },
+            {
+              title: 'Reports',
+              url: '/Reports',
+            },
+          ],
         },
         {
           title: 'Settings',
-          url: '#',
+          url: '/settings',
         },
       ],
     },
@@ -63,7 +76,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar {...props}>
       <SidebarHeader className="pl-4">
         <a href="#">
           <span className="text-black text-4xl font-normal font-productsans leading-normal">
@@ -75,18 +88,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </a>
       </SidebarHeader>
       <SidebarContent>
-        {/* We create a SidebarGroup for each parent. */}
-        {data.navMain.map((item) => (
-          <SidebarGroup key={item.title}>
-            <SidebarGroupLabel>{item.title}</SidebarGroupLabel>
+        {data.navMain.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {item.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
-                      <a href={item.url}>{item.title}</a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                {group.items.map((item) => (
+                  <CollapsibleNavItem key={item.title} item={item} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
