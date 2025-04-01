@@ -24,7 +24,7 @@ to skip the formatting use the `git commit` with `-n` or `--no-verify` flag also
 cd backend
 ```
 
-2. Setup the environment variables
+2. Setup the environment variables and Firebase credentials json
 
 Copy the .env.example and rename the copy to .env
 ```shell
@@ -34,6 +34,16 @@ cp .env.example .env
 Edit the .env by the placeholder values with your actual configurations for your database, mail server, and other environment settings 
 
 Note: for mail server you can use any SMTP server or a service like mailtrap for testing
+
+Configure Firebase:
+  - Go to the Firebase Console.
+  - Select your Firebase project.
+  - Navigate to Project settings > Service accounts.
+  - Under Firebase Admin SDK, click Generate new private key. This will download a JSON file containing your service account credentials.
+  - Place the downloaded JSON file in the `src/main/resources/firebase` directory of your project.
+  - Add Firebase credentials path to backend .env:
+    `FIREBASE_CREDENTIALS_PATH=src/main/resources/firebase/auctix-firebase-adminsdk.json`
+
 
 3. Start the docker container for the database
 ```shell

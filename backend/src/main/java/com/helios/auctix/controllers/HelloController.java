@@ -8,6 +8,7 @@ import com.helios.auctix.mappers.Mapper;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.ChatService;
 import com.helios.auctix.services.CustomUserDetailsService;
+import com.helios.auctix.services.FirebaseCloudMessageService;
 import com.helios.auctix.services.JwtService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,6 +27,7 @@ public class HelloController {
     private CustomUserDetailsService customUserDetailsService;
     private ChatService chatService;
     private Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper;
+    private final FirebaseCloudMessageService firebaseCloudMessageService;
 
 
     public HelloController(
@@ -33,13 +35,15 @@ public class HelloController {
             UserRepository userRepository,
             CustomUserDetailsService customUserDetailsService,
             ChatService chatService,
-            Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper
+            Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper,
+            FirebaseCloudMessageService firebaseCloudMessageService
     ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.customUserDetailsService = customUserDetailsService;
         this.chatService = chatService;
         this.chatMessageDTOMapper = chatMessageDTOMapper;
+        this.firebaseCloudMessageService = firebaseCloudMessageService;
     }
 
     @GetMapping("/hello")
@@ -101,6 +105,31 @@ public class HelloController {
                 .toList();
 
         return ResponseEntity.ok(response);
+    }
+
+
+
+    @GetMapping("/fcm")
+    public String sendFCMTest(
+            @RequestParam(required = false) String fcmtoken,
+            @RequestParam(required = false) String message) {
+
+      if (fcmtoken == null) {
+          fcmtoken = "ebkcxp0ULeOTNTsWVnlJu_:APA91bEKd7dVrWJNkrTqRxx3q3ZsG4YlxaYRJzgUl_RI2QyRDugUIKyBZohUNs6pJqtAbf84udk19_f-3qK8yYkfYBreBNIrXMtL39AJt2CILuyEH5kXrAI";
+      }
+
+      if (message == null) {
+          message = "hello from springboot";
+      }
+
+      this.firebaseCloudMessageService.sendNotification(
+              fcmtoken,
+              message,
+              message
+      );
+
+      return "i think we sent it?";
+
     }
 
 
