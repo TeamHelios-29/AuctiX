@@ -1,22 +1,13 @@
 package com.helios.auctix.dtos;
 
+import com.helios.auctix.domain.user.User;
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ComplaintDTO {
-    private String reportedUser;
+    private String reportedUserUsername;
+    private String reportingUserUsername;
     private String reason;
-
-    public String getReportedUser() {
-        return reportedUser;
-    }
-
-    public void setReportedUser(String reportedUser) {
-        this.reportedUser = reportedUser;
-    }
-
-    public String getReason() {
-        return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
-    }
 }

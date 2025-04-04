@@ -2,6 +2,7 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.complaint.Complaint;
 import com.helios.auctix.domain.complaint.ComplaintStatus;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.ComplaintDTO;
 import com.helios.auctix.repositories.ComplaintRepository;
 import com.helios.auctix.repositories.UserRepository;
@@ -10,8 +11,9 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -25,19 +27,17 @@ public class ComplaintService {
         this.userRepository = userRepository;
     }
 
-    public Complaint createComplaint(@Valid ComplaintDTO complaintDto, String reportedBy) {
-        // Validate users exist
-//        userRepository.findByUsername(reportedBy)
-//                .orElseThrow(() -> new ResourceNotFoundException("Reporting user not found"));
-//        userRepository.findByUsername(complaintDto.getReportedUser())
-//                .orElseThrow(() -> new ResourceNotFoundException("Reported user not found"));
+    public Complaint createComplaint(@Valid ComplaintDTO complaintDto) {
+        User reportedUser = userRepository.findByUsername(complaintDto.getReportedUserUsername())
+                .orElseThrow(() -> new RuntimeException("Reported user not found"));
+        User reportingUser = userRepository.findByUsername(complaintDto.getReportingUserUsername())
+                .orElseThrow(() -> new RuntimeException("Reporting user not found"));
 
         Complaint complaint = new Complaint();
-        complaint.setReportId(generateReportId());
-        complaint.setReportedUser(complaintDto.getReportedUser());
-        complaint.setReportedBy(reportedBy);
+        complaint.setReportedUser(reportedUser);
+        complaint.setReportedBy(reportingUser);
         complaint.setReason(complaintDto.getReason());
-        complaint.setDateReported(LocalDate.now());
+        complaint.setDateReported(LocalDateTime.now());
         complaint.setStatus(ComplaintStatus.PENDING);
 
         return complaintRepository.save(complaint);
@@ -47,23 +47,20 @@ public class ComplaintService {
         return complaintRepository.findAll();
     }
 
-    public Complaint getComplaintById(Long id) {
+    public Complaint getComplaintById(UUID id) {
         return complaintRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Complaint not found with id: " + id));
-
     }
 
     public List<Complaint> getComplaintsByUser(String username) {
-        return complaintRepository.findByReportedByOrderByDateReportedDesc(username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return complaintRepository.findByReportedByOrderByDateReportedDesc(user);
     }
 
-    public Complaint updateComplaintStatus(Long id, ComplaintStatus newStatus) {
+    public Complaint updateComplaintStatus(UUID id, ComplaintStatus newStatus) {
         Complaint complaint = getComplaintById(id);
         complaint.setStatus(newStatus);
         return complaintRepository.save(complaint);
-    }
-
-    private String generateReportId() {
-        return "CPT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }
