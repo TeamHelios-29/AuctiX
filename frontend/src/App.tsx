@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import CreateBidPage from './pages/create-auction';
 import WalletPage from './pages/Wallet';
 import SellerProfile from './pages/SellerProfile';
+import AuctionChat from './components/auction-chat';
 import User from './pages/User';
 
 const App: React.FC = () => {
@@ -37,6 +38,7 @@ const App: React.FC = () => {
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/seller" element={<SellerProfile />} />
           <Route path="/user" element={<User />} />
+          <Route path="/test-chat" element={<AuctionChat />} />
           <Route path="*" element={<h2>404 Not Found</h2>} />
         </Routes>
       </Router>

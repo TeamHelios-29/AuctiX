@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
 import java.util.function.Function;
@@ -25,8 +26,11 @@ public class JwtService {
 
     public JwtService() {
         try {
-            SecretKey key = Jwts.SIG.HS256.key().build();
-            base64EncodedSecretKey = Base64.getEncoder().encodeToString(key.getEncoded());
+//            SecretKey key = Jwts.SIG.HS256.key().build();
+//            base64EncodedSecretKey = Base64.getEncoder().encodeToString(key.getEncoded());
+
+            String SECRET_KEY = "SecretKeyForTestingOnly123_NOT_FOR_PROD!";
+            base64EncodedSecretKey = Base64.getEncoder().encodeToString(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             log.error("Error while generating secret key" + e.getMessage());
             throw new RuntimeException();
