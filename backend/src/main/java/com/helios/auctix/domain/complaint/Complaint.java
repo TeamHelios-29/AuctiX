@@ -19,26 +19,32 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Complaint {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(columnDefinition = "UUID DEFAULT gen_random_uuid()")
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "reported_user_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "reported_user_id", nullable = false)
     private User reportedUser;
 
     @ManyToOne
-    @JoinColumn(name = "reported_by_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "reported_by_id", nullable = false)
     private User reportedBy;
 
     @NotBlank
-    @Column(length = 1000)
+    @Column(length = 1000, nullable = false)
     private String reason;
 
     @NotNull
+    @Column(name = "date_reported", nullable = false)
     private LocalDateTime dateReported;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ComplaintStatus status;
 
 }

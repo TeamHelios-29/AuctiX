@@ -4,5 +4,5 @@ public enum ComplaintStatus {
     PENDING,
     UNDER_REVIEW,
     RESOLVED,
-    DISMISSED
+    REJECTED
 }
