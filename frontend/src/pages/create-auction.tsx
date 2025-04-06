@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import AuctionForm from '@/components/create-auction-form';
+import AuctionForm from '@/components/organisms/create-auction-form';
 import { useNavigate } from 'react-router-dom';
 
 const CreateAuction: React.FC = () => {

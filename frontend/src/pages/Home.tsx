@@ -7,7 +7,7 @@ import {
   AccordionContent,
 } from '@/components/ui/Accordion';
 import { Textarea } from '@/components/ui/textarea';
-import { Navbar } from '@/components/navbar';
+import { Navbar } from '@/components/molecules/navbar';
 import { ReactNode } from 'react';
 
 export default function Home(): ReactNode {

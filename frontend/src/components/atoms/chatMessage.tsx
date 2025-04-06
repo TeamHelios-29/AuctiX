@@ -1,4 +1,4 @@
-import { ChatMessageProps } from '@/Interfaces/IChatMessageProps';
+import { ChatMessageProps } from '@/types/IChatMessageProps';
 import clsx from 'clsx';
 
 function ChatMessage({

@@ -1,6 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ReactNode, useEffect } from 'react';
-import { useAppSelector } from '@/services/hooks';
+import { useAppSelector } from '@/hooks/hooks';
 
 const ProtectedRoute = ({
   children,
