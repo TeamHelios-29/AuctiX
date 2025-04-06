@@ -8,7 +8,7 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from '@/components/molecules/command';
+} from '@/components/ui/command';
 
 export function Navbar({}: React.ComponentPropsWithoutRef<'Navbar'>) {
   return (

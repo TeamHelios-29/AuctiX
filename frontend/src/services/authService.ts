@@ -1,4 +1,4 @@
-import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { IAuthUser } from '@/types/IAuthUser';
 
 export const getStoredAuthUser = () => {
   console.log('getStoredAuthUser called');

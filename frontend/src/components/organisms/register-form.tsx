@@ -1,13 +1,8 @@
-import { Button } from '@/components/atoms/button';
-import { Card, CardContent, CardFooter } from '@/components/atoms/card';
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/atoms/tabs';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AxiosInstance } from 'axios';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { delay, motion } from 'motion/react';
@@ -15,8 +10,8 @@ import { Octagon, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/hooks';
 import { jwtDecode } from 'jwt-decode';
-import { IJwtData } from '@/Interfaces/IJwtData';
-import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { IJwtData } from '@/types/IJwtData';
+import { IAuthUser } from '@/types/IAuthUser';
 import { login } from '@/store/slices/authSlice';
 import { AlertBox } from './AlertBox';
 import AxiosReqest from '@/services/axiosInspector';

@@ -7,10 +7,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/molecules/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
 import { DataTable } from '@/components/molecules/DataTable';
-import { Button } from '@/components/atoms/button';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@radix-ui/react-checkbox';
 
 interface ITableUser {

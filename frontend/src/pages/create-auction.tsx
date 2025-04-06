@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card } from '@/components/atoms/card';
-import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import AuctionForm from '@/components/organisms/create-auction-form';
 import { useNavigate } from 'react-router-dom';
 

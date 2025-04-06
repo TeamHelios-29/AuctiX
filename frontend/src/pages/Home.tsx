@@ -1,12 +1,12 @@
-import { Button } from '@/components/atoms/button';
-import { Card, CardContent } from '@/components/atoms/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from '@/components/molecules/Accordion';
-import { Textarea } from '@/components/atoms/textarea';
+} from '@/components/ui/Accordion';
+import { Textarea } from '@/components/ui/textarea';
 import { Navbar } from '@/components/molecules/navbar';
 import { ReactNode } from 'react';
 

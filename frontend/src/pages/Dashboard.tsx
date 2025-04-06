@@ -1,4 +1,4 @@
-import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { IAuthUser } from '@/types/IAuthUser';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';

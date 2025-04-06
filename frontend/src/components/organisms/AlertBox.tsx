@@ -7,7 +7,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/molecules/alert-dialog';
+} from '@/components/ui/alert-dialog';
 
 import { motion } from 'motion/react';
 import React, { ReactNode } from 'react';

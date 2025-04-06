@@ -1,4 +1,4 @@
-import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { IAuthUser } from '@/types/IAuthUser';
 import { getStoredAuthUser } from '@/services/authService';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 

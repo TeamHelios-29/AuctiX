@@ -1,4 +1,4 @@
-import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { IAuthUser } from '@/types/IAuthUser';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
