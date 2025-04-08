@@ -5,7 +5,7 @@ ALTER TABLE users DROP CONSTRAINT IF EXISTS fk_profile_photo;
 ALTER TABLE uploads DROP CONSTRAINT IF EXISTS uploads_pkey;
 
 ALTER TABLE uploads DROP COLUMN id;
-ALTER TABLE uploads ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE uploads ADD COLUMN id UUID  DEFAULT gen_random_uuid() PRIMARY KEY;
 
 ALTER TABLE seller_verification_docs DROP COLUMN IF EXISTS doc_ref;
 ALTER TABLE seller_verification_docs ADD COLUMN doc_ref UUID;

@@ -1,10 +1,12 @@
 package com.helios.auctix.services.fileUpload;
 
+import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.helios.auctix.config.AzureStorageConfig;
 import com.helios.auctix.domain.upload.FileTypeEnum;
 import com.helios.auctix.domain.upload.Upload;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRole;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.repositories.BidderRepository;
 import com.helios.auctix.repositories.UploadRepository;
@@ -27,8 +29,10 @@ import com.azure.storage.common.StorageSharedKeyCredential;
 import org.springframework.web.util.InvalidUrlException;
 
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -61,7 +65,7 @@ public class FileUploadService {
     public FileUploadResponse uploadFile(MultipartFile file, String upload_dir, String ownerEmail , boolean isPublic) {
         User user = userRepository.findByEmail(ownerEmail);
         if(user == null) {
-            return new FileUploadResponse(false,"User not found",null);
+            return new FileUploadResponse(false,"User not found");
         }
         return uploadFile(file, upload_dir, user.getId() , isPublic );
     }
@@ -121,7 +125,7 @@ public class FileUploadService {
                     .fileSize(filesize)
                     .fileType(filetype)
                     .hash256(sha256)
-                    .url(blobClient.getBlobUrl())
+                    .url(blobPath)
                     .ownerId(ownerUserId)
                     .isPublic(isPublic)
                     .build();
@@ -132,30 +136,94 @@ public class FileUploadService {
         }
         catch (NoSuchAlgorithmException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage(),null);
+            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
         }
         catch(URISyntaxException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage(),null);
+            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
         }
         catch (IllegalArgumentException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false, "File upload failed: " + e.getMessage(),null);
+            return new FileUploadResponse(false, "File upload failed: " + e.getMessage());
         }
         catch (IOException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage(),null);
+            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
         }
     }
 
-    private FileUploadResponse getFile(UUID fileId){
-//        Optional<Upload> upload = uploadRepository.findById(fileId);
-//        if(upload.isPresent()) {
-//            return new FileUploadResponse(true,"File found",upload.get());
-//        }
-//        else {
-//        }
-            return new FileUploadResponse(false,"File not found",null);
+    public FileUploadResponse getFile(UUID fileId, String requestedUserEmail) {
+        User user = userRepository.findByEmail(requestedUserEmail);
+        if(user == null) {
+            return new FileUploadResponse(false,"User not found");
+        }
+        return getFile(fileId, user.getId());
+    }
+
+    public FileUploadResponse getFile(UUID fileId) {
+        return getFile(fileId, (UUID) null);
+    }
+
+    private FileUploadResponse getFile(UUID fileId, UUID requestedUserId ){
+            if(azureStorageConfig.getAccountName() == null || azureStorageConfig.getAccountKey() == null || azureStorageConfig.getContainerName() == null) {
+                throw new IllegalArgumentException("Blob account configurations not found");
+            }
+
+            Upload uploadedFileInfo = uploadRepository.findById(fileId).orElse(null);
+            if(uploadedFileInfo == null) {
+                return new FileUploadResponse(false,"File not found");
+            }
+
+            log.info("checking file ownership");
+            if(uploadedFileInfo.getIsPublic()==false){
+                User requestedUser = userRepository.findById(requestedUserId.toString()).orElse(null);
+                if(requestedUser == null) {
+                    return new FileUploadResponse(false,"Unautherized");
+                }
+                if(requestedUser.getId()!=uploadedFileInfo.getOwnerId() || !requestedUser.getRole().equals(UserRoleEnum.ADMIN)) {
+                    return new FileUploadResponse(false,"Only file owner and admins can access the private files");
+                }
+
+                log.info("File ownership verified");
+            }
+
+            log.info("Trying to get file from Azure Blob Storage");
+            try {
+                URI StorageContainer = new URI(
+                        azureStorageConfig.getSslEnabled() ? "https:" : "http:" +
+                                "//" +
+                                azureStorageConfig.getHost() +
+                                ":" +
+                                azureStorageConfig.getPort() +
+                                "/devstoreaccount1/" +
+                                azureStorageConfig.getContainerName());
+
+                BlobContainerClient containerClient = new BlobContainerClientBuilder()
+                        .endpoint(StorageContainer.toString())
+                        .credential(new StorageSharedKeyCredential(azureStorageConfig.getAccountName(), azureStorageConfig.getAccountKey()))
+                        .buildClient();
+
+                BlobClient blobClient = containerClient.getBlobClient(uploadedFileInfo.getUrl());
+                if(!blobClient.exists()) {
+                    log.warning("File not found in blob storage: " + blobClient.getBlobUrl());
+                    return new FileUploadResponse(false,"File not found");
+                }
+                log.info("File found in Azure Blob Storage: " + blobClient.getBlobUrl());
+
+                BinaryData binaryData =  blobClient.downloadContent();
+
+                return new FileUploadResponse(true,"File found", binaryData);
+
+            }
+            catch(URISyntaxException e){
+                log.warning(e.getMessage());
+                return new FileUploadResponse(false,"Storage container url invalied: " );
+            }
+            catch (Exception e) {
+                log.warning(e.getMessage());
+                return new FileUploadResponse(false, "File upload failed: ");
+            }
+
     }
 
     private static String byteArrayToHex(byte[] bytes) {

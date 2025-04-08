@@ -24,7 +24,6 @@ public class Upload {
 
     @Id
     @JsonIgnore
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID id;
 
     @Column(name="file_name", nullable = false)
@@ -64,6 +63,7 @@ public class Upload {
     @PrePersist
     protected void onCreate() {
         log.info("onCreate called for Upload ,old uploadAt" + this.uploadedAt);
+        this.id = UUID.randomUUID();
         if(this.uploadedAt == null) {
             this.uploadedAt = Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC));
         }
