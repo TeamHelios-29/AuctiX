@@ -55,42 +55,51 @@ public class FileUploadService {
 
     public FileUploadResponse uploadFile(MultipartFile file,String upload_dir){
         log.warning("unauthorized file upload request");
-        return uploadFile(file, upload_dir, (UUID) null);
+        return uploadFile(file, upload_dir, (UUID) null , true);
     }
 
-    public FileUploadResponse uploadFile(MultipartFile file, String upload_dir, String ownerEmail) {
+    public FileUploadResponse uploadFile(MultipartFile file, String upload_dir, String ownerEmail , boolean isPublic) {
         User user = userRepository.findByEmail(ownerEmail);
         if(user == null) {
             return new FileUploadResponse(false,"User not found",null);
         }
-        return uploadFile(file, upload_dir, user.getId() );
+        return uploadFile(file, upload_dir, user.getId() , isPublic );
     }
 
-    public FileUploadResponse uploadFile(MultipartFile file,String upload_dir,UUID ownerUserId) {
+    public FileUploadResponse uploadFile(MultipartFile file,String upload_dir,UUID ownerUserId, boolean isPublic) {
         try {
 
             if(azureStorageConfig.getAccountName() == null || azureStorageConfig.getAccountKey() == null || azureStorageConfig.getContainerName() == null) {
                 throw new IllegalArgumentException("Blob account configurations not found");
             }
-            Path uploadPath = Paths.get(azureStorageConfig.getContainerName() +upload_dir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-            log.info("File upload request: "+file.getOriginalFilename());
+
+            String originalFilename = file.getOriginalFilename();
+            log.info("File upload request: "+originalFilename);
+
             FileTypeEnum filetype = getFileType(file.getContentType());
             log.info("File type: "+filetype);
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] fileBytes = file.getBytes();
             byte[] digestMsg = digest.digest(fileBytes);
             String sha256 = byteArrayToHex(digestMsg);
             log.info("File sha-256: "+sha256);
+
             String fileName = UUID.nameUUIDFromBytes(digestMsg).toString();
-            Path filePath = uploadPath.resolve(fileName);
-            Files.write(filePath,fileBytes );
+
+            Long filesize = file.getSize();
+//            TODO: Rate limit mechanism
 
             log.info("File Uploading to Azure Blob Storage");
+            URI StorageContainer = new URI(
+                    azureStorageConfig.getSslEnabled()?"https:":"http:" +
+                    "//" +
+                    azureStorageConfig.getHost() +
+                    ":" +
+                    azureStorageConfig.getPort() +
+                    "/devstoreaccount1/" +
+                    azureStorageConfig.getContainerName());
 
-            URI StorageContainer = new URI( azureStorageConfig.getSslEnabled()?"https:":"http:" + "//" + azureStorageConfig.getHost() + ":" + azureStorageConfig.getPort() + "/devstoreaccount1/"+ azureStorageConfig.getContainerName());
             BlobContainerClient containerClient = new BlobContainerClientBuilder()
                     .endpoint(StorageContainer.toString())
                     .credential(new StorageSharedKeyCredential(azureStorageConfig.getAccountName(), azureStorageConfig.getAccountKey() ))
@@ -102,19 +111,22 @@ public class FileUploadService {
             BlobClient blobClient = containerClient.getBlobClient(blobPath);
 
             try (InputStream inputStream = file.getInputStream()) {
-                blobClient.upload(inputStream, file.getSize(), true);
-                log.info("File uploaded to Azure Blob Storage: " + blobPath);
+                blobClient.upload(inputStream, filesize, true);
+                log.info("File uploaded to Azure Blob Storage: " + blobClient.getBlobUrl());
             }
 
-            log.info("File writed to: "+filePath.toString());
+            log.info("File Uploaded to : "+ StorageContainer.toString());
             Upload uploadInfo = Upload.builder()
-                    .fileName(file.getOriginalFilename())
-                    .fileSize(file.getSize())
+                    .fileName(originalFilename)
+                    .fileSize(filesize)
                     .fileType(filetype)
                     .hash256(sha256)
-                    .url(filePath.toString())
+                    .url(blobClient.getBlobUrl())
                     .ownerId(ownerUserId)
+                    .isPublic(isPublic)
                     .build();
+
+            uploadRepository.save(uploadInfo);
 
             return new FileUploadResponse(true,"File uploaded successfully",uploadInfo) ;
         }
@@ -134,6 +146,16 @@ public class FileUploadService {
             log.warning(e.getMessage());
             return new FileUploadResponse(false,"File upload failed: " + e.getMessage(),null);
         }
+    }
+
+    private FileUploadResponse getFile(UUID fileId){
+//        Optional<Upload> upload = uploadRepository.findById(fileId);
+//        if(upload.isPresent()) {
+//            return new FileUploadResponse(true,"File found",upload.get());
+//        }
+//        else {
+//        }
+            return new FileUploadResponse(false,"File not found",null);
     }
 
     private static String byteArrayToHex(byte[] bytes) {

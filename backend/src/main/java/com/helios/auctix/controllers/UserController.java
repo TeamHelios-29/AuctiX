@@ -222,7 +222,7 @@ public class UserController {
 
             // Upload file
             log.info("Trying to upload file");
-            FileUploadResponse uploadRes = uploader.uploadFile(file, "userProfilePhotos", userEmail);
+            FileUploadResponse uploadRes = uploader.uploadFile(file, "userProfilePhotos", userEmail , true );
 
             if (uploadRes.isSuccess()) {
                 // save file upload data

@@ -25,7 +25,7 @@ public class Upload {
     @Id
     @JsonIgnore
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(name="file_name", nullable = false)
     private String fileName;
