@@ -3,16 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChangeEvent, useEffect, useState, JSX } from 'react';
-import AxiosRequest from '@/services/AxiosInstence';
+import AxiosRequest from '@/services/axiosInspector';
 import { AxiosInstance } from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '@/services/hooks';
-import { login } from './auth/authSlice';
-import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
+import { IAuthUser } from '@/types/IAuthUser';
 import { jwtDecode } from 'jwt-decode';
-import { IJwtData } from '@/Interfaces/IJwtData';
+import { IJwtData } from '@/types/IJwtData';
 import { BanIcon, Octagon, OctagonAlert } from 'lucide-react';
-import { AlertBox } from './ui/common/AlertBox';
+import { AlertBox } from './AlertBox';
+import { login } from '@/store/slices/authSlice';
 
 export function LoginForm({
   className,

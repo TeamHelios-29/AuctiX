@@ -1,15 +1,16 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { ChatMessage, ChatMessageProps } from './ui/chatMessage';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from './ui/label';
-import { ChatMessageDTO } from '@/Interfaces/IChatMessageDTO';
-import { IAuthUser } from '@/Interfaces/IAuthUser';
-import { useAppSelector } from '@/services/hooks';
-import AxiosRequest from '@/services/AxiosInstence';
+import { ChatMessageDTO } from '@/types/IChatMessageDTO';
+import { IAuthUser } from '@/types/IAuthUser';
+import { useAppSelector } from '@/hooks/hooks';
+import AxiosRequest from '@/services/axiosInspector';
 import { AxiosInstance } from 'axios';
+import { ChatMessageProps } from '@/types/IChatMessageProps';
+import { ChatMessage } from '../atoms/chatMessage';
+import { Label } from '@radix-ui/react-dropdown-menu';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
 
 function AuctionChat() {
   const [stompClient, setStompClient] = useState<Client | null>(null);

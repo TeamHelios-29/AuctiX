@@ -1,8 +1,8 @@
-import AuctionCard from '../components/ui/auctionCard';
-import SellerHeader from '../components/sellerHeader';
-import Footer from '../components/footer';
+import SellerHeader from '@/components/organisms/sellerHeader';
+import AuctionCard from '../components/molecules/auctionCard';
+import Footer from '../components/organisms/footer';
 
-export default function sellerProfile() {
+export default function SellerProfile() {
   const auctions = [
     {
       imageUrl: 'example.jpg',

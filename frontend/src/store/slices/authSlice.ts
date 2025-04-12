@@ -1,4 +1,5 @@
-import { IAuthUser } from '@/Interfaces/IAuthUser';
+import { IAuthUser } from '@/types/IAuthUser';
+import { getStoredAuthUser } from '@/services/authService';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface AuthState {
@@ -6,21 +7,6 @@ interface AuthState {
   username?: string | null;
   role?: string | null;
 }
-
-const getStoredAuthUser = () => {
-  console.log('getStoredAuthUser called');
-  let valiedAuthUser: IAuthUser | null = null;
-  try {
-    const storedAuthUser = localStorage.getItem('authUser');
-    if (storedAuthUser != 'undefined' && storedAuthUser != null) {
-      valiedAuthUser = JSON.parse(storedAuthUser) as IAuthUser;
-    }
-  } catch (e) {
-    console.error('AuthData corrupted');
-    localStorage.removeItem('authUser');
-  }
-  return valiedAuthUser;
-};
 
 export const user = getStoredAuthUser();
 
