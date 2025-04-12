@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { Command } from 'lucide-react';
-import { CollapsibleNavItem } from './CollapsibleNavItem';
+import { CollapsibleNavItem } from '../molecules/collapsible-navitem';
 
-import { NavUser } from '@/components/sidebar/nav-user';
+import { NavUser } from '@/components/molecules/nav-user';
 import {
   Sidebar,
   SidebarContent,
