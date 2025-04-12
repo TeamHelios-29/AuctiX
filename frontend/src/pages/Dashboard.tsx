@@ -2,7 +2,7 @@ import { IAuthUser } from '@/types/IAuthUser';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AppSidebar } from '@/components/sidebar/app-sidebar';
+import { AppSidebar } from '@/components/organisms/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { logout } from '@/store/slices/authSlice';
 
