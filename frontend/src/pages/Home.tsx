@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/Accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { Navbar } from '@/components/molecules/navbar';
+import { AppFooter } from '@/components/organisms/app-footer';
 import { ReactNode } from 'react';
 
 export default function Home(): ReactNode {
@@ -187,6 +188,7 @@ export default function Home(): ReactNode {
             <Button className="mt-4 px-10">Submit</Button>
           </div>
         </div>
+        <AppFooter />
       </div>
     </div>
   );
