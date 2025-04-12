@@ -1,6 +1,6 @@
 import SellerHeader from '@/components/organisms/sellerHeader';
 import AuctionCard from '../components/molecules/auctionCard';
-import Footer from '../components/organisms/footer';
+import { AppFooter } from '../components/organisms/app-footer';
 
 export default function SellerProfile() {
   const auctions = [
@@ -69,7 +69,7 @@ export default function SellerProfile() {
       </div>
 
       {/* Footer */}
-      <Footer />
+      <AppFooter />
     </div>
   );
 }
