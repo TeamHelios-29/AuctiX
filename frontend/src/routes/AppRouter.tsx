@@ -8,6 +8,7 @@ import LoginPage from '@/pages/Login';
 import Home from '@/pages/Home';
 import CreateAuction from '@/pages/create-auction';
 import SellerProfile from '@/pages/SellerProfile';
+import AuctionChat from '@/components/organisms/auction-chat';
 
 export default function AppRouter() {
   return (
@@ -31,6 +32,7 @@ export default function AppRouter() {
         <Route path="/403" element={<h2>403 Unautherized</h2>} />
         <Route path="/wallet" element={<WalletPage />} />
         <Route path="/seller" element={<SellerProfile />} />
+        <Route path="/test-chat" element={<AuctionChat />} />
         <Route path="/user" element={<User />} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>
