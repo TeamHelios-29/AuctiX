@@ -114,8 +114,10 @@ public class HelloController {
             @RequestParam(required = false) String fcmtoken,
             @RequestParam(required = false) String message) {
 
+
       if (fcmtoken == null) {
-          fcmtoken = "ebkcxp0ULeOTNTsWVnlJu_:APA91bEKd7dVrWJNkrTqRxx3q3ZsG4YlxaYRJzgUl_RI2QyRDugUIKyBZohUNs6pJqtAbf84udk19_f-3qK8yYkfYBreBNIrXMtL39AJt2CILuyEH5kXrAI";
+//          fcmtoken = "ebkcxp0ULeOTNTsWVnlJu_:APA91bEKd7dVrWJNkrTqRxx3q3ZsG4YlxaYRJzgUl_RI2QyRDugUIKyBZohUNs6pJqtAbf84udk19_f-3qK8yYkfYBreBNIrXMtL39AJt2CILuyEH5kXrAI";
+//          fcmtoken = "ey7FuLyqlGjSMJnDsIARqB:APA91bHj_twQyoyoDCd1aVsxCB2x8OygsEV7LXVUZGU9puXpUcnzdDH0vn5Ru8fu_eLN81FTQeyV_UAdJHSAHeGYFS7jcrezDfqcYOuAQXH9yFElCH74z_c";
       }
 
       if (message == null) {

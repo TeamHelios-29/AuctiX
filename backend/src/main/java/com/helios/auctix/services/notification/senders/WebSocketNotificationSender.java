@@ -2,35 +2,37 @@ package com.helios.auctix.services.notification.senders;
 
 import com.helios.auctix.domain.notification.Notification;
 import com.helios.auctix.domain.notification.NotificationType;
-import com.helios.auctix.services.EmailService;
+import com.helios.auctix.repositories.NotificationRepository;
 import com.helios.auctix.services.notification.NotificationPersistenceHelper;
 import com.helios.auctix.services.notification.NotificationSender;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import java.time.LocalDateTime;
 
 @Component
-public class EmailNotificationSender implements NotificationSender {
+public class WebSocketNotificationSender implements NotificationSender {
 
-    private final EmailService emailService;
+    private final SimpMessagingTemplate messagingTemplate;
     private final NotificationPersistenceHelper notificationPersistenceHelper;
 
-    public EmailNotificationSender(EmailService emailService, NotificationPersistenceHelper notificationPersistenceHelper) {
-        this.emailService = emailService;
+    public WebSocketNotificationSender(SimpMessagingTemplate messagingTemplate, NotificationPersistenceHelper notificationPersistenceHelper) {
+        this.messagingTemplate = messagingTemplate;
         this.notificationPersistenceHelper = notificationPersistenceHelper;
     }
 
     @Override
     public NotificationType getNotificationType() {
-        return NotificationType.EMAIL;
+        return NotificationType.WEBSOCKET;
     }
 
     @Override
     public void sendNotification(Notification notification) {
-        System.out.println("Got the notification to send to email" + notification.toString());
+        System.out.println("Sending WebSocket notification: " + notification);
 
-//        emailService.sendEmail(
-//                notification.getUser().getEmail(),
-//                notification.getTitle(),
-//                notification.getContent()
+//        messagingTemplate.convertAndSendToUser(
+//                notification.getUser().getUsername(),
+//                "/queue/notifications",
+//                notification
 //        );
 
         notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
