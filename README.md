@@ -40,9 +40,9 @@ Configure Firebase:
   - Select your Firebase project.
   - Navigate to Project settings > Service accounts.
   - Under Firebase Admin SDK, click Generate new private key. This will download a JSON file containing your service account credentials.
-  - Place the downloaded JSON file in the `src/main/resources/firebase` directory of your project.
-  - Add Firebase credentials path to backend .env:
-    `FIREBASE_CREDENTIALS_PATH=src/main/resources/firebase/auctix-firebase-adminsdk.json`
+  - Add Firebase credentials to the backend .env, the environment variables corresponding to each key in the JSON file are in the format 
+  `FIREBASE_{KEY_NAME}`. For example, if your JSON file has a key called `project_id`, you would set it in the .env as `FIREBASE_PROJECT_ID`.
+   refer to env.example for the env variable formats
 
 
 3. Start the docker container for the database
