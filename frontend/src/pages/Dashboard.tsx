@@ -15,29 +15,26 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <div className="dashboard">
-        <h1>{user.role}'s Dashboard</h1>
-        <div className="dashboard-content">
-          <p>Hello {user.username} Welcome to the dashboard</p>
+    <div className="dashboard">
+      <h1>{user.role}'s Dashboard</h1>
+      <div className="dashboard-content">
+        <p>Hello {user.username} Welcome to the dashboard</p>
 
-          <input
-            type="button"
-            onClick={handleLogout}
-            style={{
-              backgroundColor: 'green',
-              cursor: 'pointer',
-              borderRadius: '5px',
-              color: 'white',
-              padding: '5px',
-              border: 'none',
-            }}
-            value="Logout"
-          />
-        </div>
+        <input
+          type="button"
+          onClick={handleLogout}
+          style={{
+            backgroundColor: 'green',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            color: 'white',
+            padding: '5px',
+            border: 'none',
+          }}
+          value="Logout"
+        />
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 
