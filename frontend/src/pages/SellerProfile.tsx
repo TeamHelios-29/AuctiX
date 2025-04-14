@@ -1,6 +1,5 @@
 import SellerHeader from '@/components/organisms/sellerHeader';
 import AuctionCard from '../components/molecules/auctionCard';
-import { AppFooter } from '../components/organisms/app-footer';
 
 export default function SellerProfile() {
   const auctions = [
@@ -44,32 +43,31 @@ export default function SellerProfile() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="container mx-auto p-6 flex-grow">
-        {/* Seller Header */}
-        <SellerHeader />
-        <div className="text-4xl font-bold mt-6">Auctions by seller</div>
-        {/* Filters */}
-        <div className="mt-4 flex gap-2 ">
-          {['All', 'Ongoing', 'Upcoming', 'Ended'].map((filter) => (
-            <button
-              key={filter}
-              className="px-4 py-2 text-sm border rounded-md hover:bg-white bg-gray-200"
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-        {/* Auction Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
-          {auctions.map((auction, index) => (
-            <AuctionCard key={index} {...auction} />
-          ))}
+    <div>
+      <div className="min-h-screen flex flex-col ">
+        <div className="container mx-auto p-6 flex-grow">
+          {/* Seller Header */}
+          <SellerHeader />
+          <div className="text-4xl font-bold mt-6">Auctions by seller</div>
+          {/* Filters */}
+          <div className="mt-4 flex gap-2 ">
+            {['All', 'Ongoing', 'Upcoming', 'Ended'].map((filter) => (
+              <button
+                key={filter}
+                className="px-4 py-2 text-sm border rounded-md hover:bg-white bg-gray-200"
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+          {/* Auction Cards Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+            {auctions.map((auction, index) => (
+              <AuctionCard key={index} {...auction} />
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <AppFooter />
     </div>
   );
 }
