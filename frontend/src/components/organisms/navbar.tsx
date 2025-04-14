@@ -85,7 +85,7 @@ export function Navbar() {
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Type a command or search..."
+              placeholder="Search auctions"
               className="w-full pl-10"
             />
           </div>
