@@ -1,4 +1,4 @@
-import UserDataTable from '@/components/userMangement/admin/userList';
+import UserDataTable from '@/components/organisms/userDataTable';
 
 export default function User() {
   return (

@@ -8,7 +8,8 @@ import { Provider } from 'react-redux';
 import { store } from './services/store';
 import Dashboard from './pages/Dashboard';
 // import { AuthProvider } from './context/AuthContext';
-import CreateBidPage from './pages/create-auction';
+import CreateAuctionPage from './pages/create-auction';
+import AuctionManagement from './pages/manage-auction';
 import WalletPage from './pages/Wallet';
 import SellerProfile from './pages/SellerProfile';
 import User from './pages/User';
@@ -21,7 +22,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/create-bid" element={<CreateBidPage />} />{' '}
+          <Route path="/create-auction" element={<CreateAuctionPage />} />{' '}
           <Route
             path="/dashboard"
             element={
@@ -32,6 +33,18 @@ const App: React.FC = () => {
                 <Dashboard />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/manage-auction"
+            element={<AuctionManagement />}
+            // element={
+            //   <ProtectedRoute
+            //     allowedUsers={['SELLER']} // Only allow sellers to access this page
+            //     redirectPath="/403"
+            //   >
+            //     <AuctionManagement />
+            //   </ProtectedRoute>
+            // }
           />
           <Route path="/403" element={<h2>403 Unautherized</h2>} />
           <Route path="/wallet" element={<WalletPage />} />

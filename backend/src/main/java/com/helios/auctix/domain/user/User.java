@@ -1,11 +1,14 @@
 package com.helios.auctix.domain.user;
 
+import com.fasterxml.jackson.annotation.*;
+import com.helios.auctix.domain.upload.Upload;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.util.UUID;
 
 @Data
@@ -16,6 +19,7 @@ import java.util.UUID;
 @Table(name = "Users" )
 public class User {
     @Id
+    @JsonIgnore
     private UUID id;
 
     @PrePersist
@@ -29,16 +33,28 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @JsonIgnore
     private String passwordHash;
 
+    @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;
+
+    @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
+    @OneToOne
+    @JsonProperty("profile_photo")
+    @JoinColumn(name = "profile_photo_id", nullable = true , referencedColumnName = "id")
+    private Upload upload;
+
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role;
 
+
     // helper method to make things clearer
+    @JsonProperty("role")
     public UserRoleEnum getRoleEnum() {
         return role.getName();
     }

@@ -1,0 +1,101 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:fragment="head(title)">
+    <meta charset="UTF-8" />
+    <title th:replace="${title}">Default Title</title>
+    <style th:fragment="email-styles">
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        padding: 20px;
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      p {
+        line-height: 1.5;
+        text-align: justify;
+      }
+
+      .email-container {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px #ccc;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .header {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding-bottom: 10px;
+      }
+      .logo-text {
+        font-size: 32px;
+        font-family: "Product Sans", sans-serif;
+        font-weight: normal;
+        line-height: normal;
+      }
+      .text-black {
+        color: black;
+      }
+      .text-gold {
+        color: #ecb02d;
+      }
+    </style>
+  </head>
+  <body>
+    <div th:fragment="header" class="header">
+      <span class="logo-text text-black">Aucti</span>
+      <span class="logo-text text-gold">X</span>
+    </div>
+
+    <div th:fragment="layout(content)" class="email-container">
+      <div th:replace="~{::header}"></div>
+
+      <div id="content" th:replace="${content}">
+        <h2>Heading</h2>
+        <p>Default content</p>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut porta nibh
+          vitae turpis malesuada pulvinar. Vivamus est justo, volutpat finibus
+          pellentesque sit amet, eleifend sit amet neque. Donec id tristique
+          nisl. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
+          posuere cubilia curae; Donec suscipit semper nulla, id tincidunt magna
+          scelerisque ut. Nam venenatis dui ac dolor varius, vitae convallis
+          elit blandit. Proin at ipsum non turpis tempus gravida. Pellentesque
+          purus lacus, faucibus quis nisl at, tristique feugiat turpis.
+          Pellentesque habitant morbi tristique senectus et netus et malesuada
+          fames ac turpis egestas. Praesent pretium ut mi quis accumsan. Proin
+          nec metus eu velit pharetra venenatis in eu felis. Ut auctor venenatis
+          metus id lacinia.
+        </p>
+
+        <p>
+          Maecenas sed magna lectus. Etiam facilisis dignissim felis ut
+          facilisis. Morbi lacinia tristique risus, eget accumsan ipsum sodales
+          eu. Sed in odio varius, consequat lacus nec, varius elit. Nam ac
+          sapien eget quam finibus aliquam. Morbi volutpat est posuere lorem
+          cursus, quis luctus nisl faucibus. Nullam eu interdum dolor. Integer
+          ultricies tempus tellus, at congue justo aliquam consequat. Nulla at
+          consectetur magna. Nullam lacinia velit lobortis malesuada
+          scelerisque. Nam sollicitudin erat vel dui dapibus, quis fermentum
+          ligula fermentum. Donec pharetra sodales libero, a laoreet velit
+          blandit id. Cras sagittis, velit in finibus hendrerit, massa ante
+          convallis libero, a suscipit ipsum arcu a mi.
+        </p>
+
+        <p>
+          Morbi commodo at arcu id facilisis. Nullam ipsum orci, porttitor ac
+          venenatis eu, varius a tortor. Proin imperdiet placerat libero, sit
+          amet accumsan ex vulputate bibendum. Suspendisse semper ipsum ut
+          pellentesque eleifend. Sed sagittis dapibus lacinia. In bibendum vitae
+          nulla in aliquet. Donec vel congue urna. Fusce vel varius ex.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

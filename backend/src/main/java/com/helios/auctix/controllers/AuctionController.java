@@ -2,13 +2,19 @@ package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.services.AuctionService;
+import com.helios.auctix.services.fileUpload.FileUploadResponse;
+import com.helios.auctix.services.fileUpload.FileUploadService;
+import com.helios.auctix.services.user.UserServiceResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.io.IOException;
-import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -18,27 +24,27 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/auctions")
 public class AuctionController {
-    private static final Logger logger = LoggerFactory.getLogger(AuctionController.class);
     private final AuctionService auctionService;
+    private final Logger log = Logger.getLogger(UserController.class.getName());
 
     @Autowired
     public AuctionController(AuctionService auctionService) {
         this.auctionService = auctionService;
     }
 
+    @Autowired
+    private FileUploadService uploader;
 
-    @PostMapping("/")
-    public String hello() {
-        return "hello";
-    }
+
     // Create a new auction with multipart/form-data
-    @PostMapping(consumes = "multipart/form-data")
+    @PostMapping("/create")
     public ResponseEntity<Auction> createAuction(
             @RequestParam("title") String title,
             @RequestParam("description") String description,
@@ -73,10 +79,10 @@ public class AuctionController {
             Auction createdAuction = auctionService.createAuction(auction);
             return ResponseEntity.ok(createdAuction);
         } catch (DateTimeParseException e) {
-            logger.error("Invalid date format", e);
+            log.warning("Invalid date format");
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            logger.error("Error creating auction", e);
+            log.warning("Error creating auction");
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -84,23 +90,42 @@ public class AuctionController {
     // Helper method to save an image and return its path
     private String saveImage(MultipartFile image) {
         try {
-            // Create uploads directory if it doesn't exist
-            Path uploadPath = Paths.get("uploads");
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
+            // Authenticate user
+//            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//            String userEmail = null;
+//            if (authentication == null || authentication.getAuthorities() == null || !authentication.isAuthenticated()) {
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
+//            }
+//            userEmail = authentication.getName();
+//            if (userEmail == null) {
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
+//            }
+//            log.info("File upload by user " + userEmail);
+
+
+            // Upload file
+            log.info("Trying to upload file");
+            FileUploadResponse uploadRes = uploader.uploadFile(image, "auctionPhotos" );
+
+            if (uploadRes.isSuccess()) {
+                // save file upload data
+                log.info("Trying to save file upload data");
+//                UserServiceResponse res = userUploadsService.UserProfilePhotoUpdate(userEmail, uploadRes.getUpload());
+                log.info("File upload data saved");
+
+//                if (res.isSuccess()) {
+//                    return ResponseEntity.ok().body("Uploaded successfully");
+//                } else {
+//                    log.warning(res.getMessage());
+//                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data saving failed");
+//                }
+                return uploadRes.getUpload().getId().toString();
+
+            } else {
+                log.warning(uploadRes.getMessage());
+                throw new RuntimeException("Unsuccessful") ;
             }
-
-            // Sanitize filename (replace spaces and special characters)
-            String originalFilename = image.getOriginalFilename();
-            String sanitizedFilename = originalFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
-
-            // Save the file
-            Path path = uploadPath.resolve(sanitizedFilename);
-            Files.write(path, image.getBytes());
-
-            return path.toString();
-        } catch (IOException e) {
-            logger.error("Failed to save image: {}", image.getOriginalFilename(), e);
+        } catch (Exception e) {
             throw new RuntimeException("Failed to save image: " + e.getMessage());
         }
     }

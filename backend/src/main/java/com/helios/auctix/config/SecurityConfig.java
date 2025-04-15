@@ -41,12 +41,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/**").permitAll()  // Replace all other requestMatchers
-//                        .requestMatchers("/api/public/**").permitAll() // public endpoints
-//                        .requestMatchers("/api/auth/**").permitAll()
-//                        .requestMatchers("/api/auctions/**").permitAll()
-//                        .requestMatchers("/api/roletest/seller").hasRole("SELLER")
-//                        .requestMatchers("/api/roletest/bidder").hasRole("BIDDER")
+
+                        .requestMatchers("/api/public/**").permitAll() // public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll() // Permit all WebSocket endpoints
+                        .requestMatchers("/topic/**").permitAll() // Permit all STOMP broker destinations
+                        .requestMatchers("/app/**").permitAll() // Permit all STOMP application destinations
+                        .requestMatchers("/api/roletest/seller").hasRole("SELLER")
+                        .requestMatchers("/api/roletest/bidder").hasRole("BIDDER")
+                        .requestMatchers("/api/user/**").permitAll()
+                        .requestMatchers("/api/auctions/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
