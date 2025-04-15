@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { LoginForm } from '../components/login-form';
-import AxiosInstance from '@/services/AxiosInstence';
+import { LoginForm } from '@/components/organisms/login-form';
 
 export default function LoginPage() {
   return (

@@ -25,10 +25,8 @@
     /* tailwind */
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "store/slices/authSlice.ts", "store/store.ts"]
 }

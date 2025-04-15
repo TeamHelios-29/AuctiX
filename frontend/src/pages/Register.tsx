@@ -1,5 +1,5 @@
+import { TabsDemo } from '@/components/organisms/register-form';
 import { useState } from 'react';
-import { TabsDemo } from '../components/register-form';
 
 export default function Register() {
   const [selectedTab, setSelectedTab] = useState('Buyers');
