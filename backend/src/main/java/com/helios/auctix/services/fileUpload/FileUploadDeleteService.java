@@ -28,7 +28,7 @@ public class FileUploadDeleteService {
      * Scheduled task to delete all files marked as isDeleted = true.
      * This method runs periodically based on the cron expression.
      */
-    @Scheduled(cron = "0 08 20 * * ?")
+    @Scheduled(cron = "10 32 21 * * ?")
     public void deleteMarkedFiles() {
         log.info("Starting scheduled task to delete marked files");
 

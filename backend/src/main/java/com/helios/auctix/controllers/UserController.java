@@ -219,6 +219,22 @@ public class UserController {
         return ResponseEntity.ok(userPage);
     }
 
+    @GetMapping("/getCurrentUser")
+    public ResponseEntity<?> getCurrentUser() {
+        User currentUser = null;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        }
+        catch (AuthenticationException e){
+            return ResponseEntity.status(403).body("User not authenticated");
+        }
+        catch (Exception e){
+            return ResponseEntity.status(500).body("Internal server error");
+        }
+
+        return ResponseEntity.ok(currentUser);
+    }
 
     @PostMapping("/uploadUserProfilePhoto")
     public ResponseEntity<String> uploadUserProfilePhoto(@RequestParam("file") MultipartFile file) {
