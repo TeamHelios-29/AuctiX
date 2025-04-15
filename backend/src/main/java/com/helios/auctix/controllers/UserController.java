@@ -1,5 +1,6 @@
 package com.helios.auctix.controllers;
 
+import com.azure.core.util.BinaryData;
 import com.helios.auctix.config.ErrorConfig;
 import com.helios.auctix.config.JwtAuthenticationFilter;
 import com.helios.auctix.domain.user.User;
@@ -11,15 +12,15 @@ import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.user.UserRegisterService;
 import com.helios.auctix.services.user.UserServiceResponse;
 import com.helios.auctix.services.user.UserUploadsService;
+import org.eclipse.angus.mail.iap.ByteArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +28,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.*;
 import java.security.Principal;
 import java.util.*;
 import java.util.logging.Logger;
@@ -50,6 +52,8 @@ public class UserController {
     private ErrorConfig errorConf;
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Autowired
+    private FileUploadService fileUploadService;
 
     public UserController(UserRepository userRepository, UserRegisterService userRegisterService) {
         this.userRepository = userRepository;
@@ -222,7 +226,7 @@ public class UserController {
 
             // Upload file
             log.info("Trying to upload file");
-            FileUploadResponse uploadRes = uploader.uploadFile(file, "userProfilePhotos", userEmail);
+            FileUploadResponse uploadRes = uploader.uploadFile(file, "userProfilePhotos", userEmail , true );
 
             if (uploadRes.isSuccess()) {
                 // save file upload data
@@ -248,4 +252,55 @@ public class UserController {
         }
 
     }
+
+
+    @GetMapping("/getUserProfilePhoto")
+    public ResponseEntity<?> getUserProfilePhoto(@RequestParam("file_uuid") UUID file_uuid) {
+        log.info("file id requested: "+ file_uuid);
+        try {
+            // Authenticate user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userEmail = null;
+            if (authentication == null || authentication.getAuthorities() == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
+            }
+            userEmail = authentication.getName();
+
+            FileUploadResponse res;
+            if (userEmail == null || userEmail.equalsIgnoreCase("anonymousUser")) {
+                res = fileUploadService.getFile(file_uuid);
+                if (!res.isSuccess()) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+                }
+            }
+            else {
+
+                log.info("getting File by user " + userEmail);
+
+                // Get file upload data
+                res = fileUploadService.getFile(file_uuid, userEmail);
+
+                if (!res.isSuccess()) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+                }
+            }
+
+            BinaryData binaryFile = res.getBinaryData();
+
+            String fileName = "file.png";
+            String contentType = "image/png";
+
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .body(binaryFile.toBytes());
+
+        } catch (Exception e) {
+            log.warning(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data retrieval failed");
+        }
+    }
+
+
 }
