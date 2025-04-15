@@ -24,7 +24,7 @@ export function Navbar() {
         {/* Logo */}
         <div className="flex items-center">
           <Link to="/" className="text-2xl font-normal font-productsans">
-            Aucti<span className="text-orange-500">X</span>
+            Aucti<span className="text-[#eaac26]">X</span>
           </Link>
         </div>
 
