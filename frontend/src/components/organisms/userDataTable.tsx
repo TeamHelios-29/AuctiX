@@ -1,5 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,35 +12,98 @@ import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
 import { DataTable } from '@/components/molecules/DataTable';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@radix-ui/react-checkbox';
+import { AxiosInstance } from 'axios';
+import AxiosReqest from '@/services/axiosInspector';
 
-interface ITableUser {
+interface IProfilePhoto {
+  category: string;
   id: string;
+  fileName: string;
+  fileType: string;
+  isPublic: boolean;
+}
+interface ITableUser {
+  id: number;
   username: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: string;
+  profile_photo: IProfilePhoto;
 }
 
 export default function UserDataTable() {
-  const userData: ITableUser[] = [
-    {
-      id: '1',
-      username: 'John Doe',
-      email: 'test1@test.com',
-      role: 'ADMIN',
-    },
-    {
-      id: '2',
-      username: 'Jane Doe',
-      email: 'test2@test.com',
-      role: 'USER',
-    },
-    {
-      id: '3',
-      username: 'James Doe',
-      email: 'test3@test.com',
-      role: 'SELLER',
-    },
-  ];
+  const axiosInstance: AxiosInstance = AxiosReqest().axiosInstance;
+  const [users, setUsers] = useState<ITableUser[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<null | string>(null);
+  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [limit, setLimit] = useState<number>(10);
+  const [offset, setOffset] = useState<number>(0);
+  const [search, setSearch] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    axiosInstance
+      .get('/user/getUsers', {
+        params: {
+          sortBy: sortBy,
+          order: order,
+          limit: limit,
+          offset: offset,
+          search: search,
+        },
+      })
+      .then((usersData) => {
+        setUsers(usersData?.data?.content);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [sortBy, order, limit, offset, search]);
+
+  useEffect(() => {
+    console.log('Users:', users);
+  }, [users]);
+
+  const ProfilePhoto = (id: string | null) => {
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+      if (id) {
+        axiosInstance
+          .get(`/user/getUserProfilePhoto?file_uuid=${id}`, {
+            responseType: 'blob',
+          })
+          .then((response) => {
+            const url = URL.createObjectURL(response.data);
+            setImageUrl(url);
+          })
+          .catch((error) => {
+            console.error('Error fetching profile image:', error);
+            setImageUrl(null);
+          });
+      }
+
+      return () => {
+        if (imageUrl) {
+          URL.revokeObjectURL(imageUrl);
+        }
+      };
+    }, [id, axiosInstance]);
+
+    return (
+      <div className="flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full overflow-hidden border border-gray-200">
+          <img
+            src={imageUrl || '/defaultProfilePhoto.jpg'}
+            alt="Profile"
+            className="h-full w-full object-cover"
+          />
+        </div>
+      </div>
+    );
+  };
 
   const userColumns: ColumnDef<ITableUser>[] = [
     {
@@ -66,12 +129,20 @@ export default function UserDataTable() {
       enableHiding: false,
     },
     {
+      accessorKey: 'profile_photo',
+      cell: ({ row }) =>
+        ProfilePhoto((row.getValue('profile_photo') as IProfilePhoto)?.id),
+    },
+    {
       accessorKey: 'username',
       header: ({ column }) => {
         return (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={() => {
+              setSortBy(column.id);
+              setOrder((prevOrder) => (prevOrder === 'asc' ? 'desc' : 'asc'));
+            }}
           >
             Username
             <ArrowUpDown />
@@ -131,7 +202,7 @@ export default function UserDataTable() {
   return (
     <>
       <h1 className="text-center text-5xl mt-5">User Data Table</h1>
-      <DataTable columns={userColumns} data={userData} />
+      <DataTable columns={userColumns} data={users} />
     </>
   );
 }

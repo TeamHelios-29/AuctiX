@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
 
-const AxiosReqest = () => {
+const AxiosRequest = () => {
   const navigate = useNavigate();
   // Axios instance with default configurations
   const axiosInstance = axios.create({
@@ -44,4 +44,4 @@ const AxiosReqest = () => {
   return { axiosInstance };
 };
 
-export default AxiosReqest;
+export default AxiosRequest;
