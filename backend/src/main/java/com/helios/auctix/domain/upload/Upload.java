@@ -23,7 +23,6 @@ import java.util.UUID;
 public class Upload {
 
     @Id
-    @JsonIgnore
     private UUID id;
 
     @Column(name="file_name", nullable = false)

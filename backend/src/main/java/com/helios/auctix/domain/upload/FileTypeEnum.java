@@ -8,6 +8,8 @@ public enum FileTypeEnum {
     BMP("image/bmp"),
     SVG("image/svg+xml"),
     ICO("image/x-icon"),
+    WEBP("image/webp"),
+    ICON("image/vnd.microsoft.icon"),
     PDF("application/pdf"),
     DOC("application/msword"),
     DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
