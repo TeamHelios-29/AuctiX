@@ -7,8 +7,10 @@ import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRole;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.repositories.UserRepository;
+import com.helios.auctix.services.CustomUserDetailsService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
+import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.services.user.UserRegisterService;
 import com.helios.auctix.services.user.UserServiceResponse;
 import com.helios.auctix.services.user.UserUploadsService;
@@ -22,9 +24,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,6 +58,10 @@ public class UserController {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     @Autowired
     private FileUploadService fileUploadService;
+
+    @Autowired
+    private UserDetailsService userDetailsService ;
+
 
     public UserController(UserRepository userRepository, UserRegisterService userRegisterService) {
         this.userRepository = userRepository;
@@ -98,7 +106,7 @@ public class UserController {
     @PostMapping("/uploadVerificationDocs")
     public String uploadVerificationDocs(@RequestParam("file") MultipartFile file) {
         ErrorConfig errorConf = new ErrorConfig();
-        FileUploadResponse res = uploader.uploadFile(file, "userVerifications");
+        FileUploadResponse res = uploader.uploadFile(file , "profile_picture");
         if (res.isSuccess()) {
             return res.getMessage();
         } else {
@@ -235,7 +243,7 @@ public class UserController {
                 log.info("File upload data saved");
 
                 if (res.isSuccess()) {
-                    return ResponseEntity.ok().body("Profile photo uploaded successfully");
+                    return ResponseEntity.ok().body("Profile photo uploaded successfully "+ res.getUser().getUpload().getId());
                 } else {
                     log.warning(res.getMessage());
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data saving failed");
@@ -257,6 +265,55 @@ public class UserController {
     @GetMapping("/getUserProfilePhoto")
     public ResponseEntity<?> getUserProfilePhoto(@RequestParam("file_uuid") UUID file_uuid) {
         log.info("file id requested: "+ file_uuid);
+
+        // Authenticate user
+        User currentUser = null;
+        try{
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        }
+        catch(UsernameNotFoundException e){
+            log.warning(e.getMessage());
+        }
+        catch(AuthenticationException e){
+            log.warning(e.getMessage());
+        }
+        catch (Exception e) {
+            log.warning(e.getMessage());
+        }
+
+        FileUploadResponse res;
+        try {
+
+            log.info("getting File by user " + currentUser.getEmail());
+
+            // Get file upload data
+            res = fileUploadService.getFile(file_uuid, currentUser.getEmail());
+
+            if (!res.isSuccess()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+            }
+
+
+            BinaryData binaryFile = res.getBinaryData();
+
+            String fileName = res.getUpload().getFileName();
+            String contentType = res.getUpload().getFileType().getContentType();
+
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .body(binaryFile.toBytes());
+
+        } catch (Exception e) {
+            log.warning(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data retrieval failed");
+        }
+    }
+
+    @PostMapping("/deleteUserProfilePhoto")
+    public ResponseEntity<String> deleteUserProfilePhoto(@RequestParam("username") String username) {
         try {
             // Authenticate user
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -265,36 +322,18 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
             }
             userEmail = authentication.getName();
-
-            FileUploadResponse res;
-            if (userEmail == null || userEmail.equalsIgnoreCase("anonymousUser")) {
-                res = fileUploadService.getFile(file_uuid);
-                if (!res.isSuccess()) {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
-                }
+            if (userEmail == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
             }
-            else {
+            log.info("File upload by user " + userEmail);
 
-                log.info("getting File by user " + userEmail);
-
-                // Get file upload data
-                res = fileUploadService.getFile(file_uuid, userEmail);
-
-                if (!res.isSuccess()) {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
-                }
+            // Delete file
+            UserServiceResponse res = userUploadsService.UserProfilePhotoDelete(userEmail);
+            if (res.isSuccess()) {
+                return ResponseEntity.ok().body("Profile photo deleted successfully");
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
             }
-
-            BinaryData binaryFile = res.getBinaryData();
-
-            String fileName = "file.png";
-            String contentType = "image/png";
-
-
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                    .body(binaryFile.toBytes());
 
         } catch (Exception e) {
             log.warning(e.getMessage());
