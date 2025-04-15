@@ -30,7 +30,23 @@
 		<java.version>21</java.version>
 		<sonar.organization>teamhelios-29</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<spring-azure.version>1.2.33</spring-azure.version>		<!--		upgrade all azure dependencies to using azure-sdk-bom find the latest version from https://central.sonatype.com/artifact/com.azure/azure-sdk-bom/versions-->
 	</properties>
+
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.azure</groupId>
+				<artifactId>azure-sdk-bom</artifactId>
+				<version>${spring-azure.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -121,7 +137,17 @@
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>
 			<version>3.2.1</version>
+		</dependenc
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-blob</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+		</dependency>
+
 
 		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-thymeleaf -->
 		<dependency>
@@ -130,6 +156,7 @@
 			<version>3.4.3</version>
 		</dependency>
 	</dependencies>
+
 
 	<build>
 		<plugins>
