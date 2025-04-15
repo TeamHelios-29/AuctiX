@@ -323,7 +323,7 @@ public class FileUploadService {
         if(deleteRequestedUser.getId()== null && !deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN)) {
             return new FileUploadResponse(false,"Only admins can delete the files without ownership");
         }
-        if(deleteRequestedUser.getId()!=fileToDelete.getOwnerId() || !deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN)) {
+        if(!(deleteRequestedUser.getId().equals(fileToDelete.getOwnerId()) || deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN))) {
             return new FileUploadResponse(false,"Only file owner or admins can delete this file");
         }
         log.info("marking the file as deleted");
@@ -334,11 +334,11 @@ public class FileUploadService {
 
     }
 
-    /**
+        /**
          * Scheduled task to delete all files marked as isDeleted = true.
          * This method runs periodically based on the cron expression.
          */
-        @Scheduled(cron = "0 29 13 * * ?")
+        @Scheduled(cron = "0 08 20 * * ?")
         public void deleteMarkedFiles() {
             log.info("Starting scheduled task to delete marked files");
 
