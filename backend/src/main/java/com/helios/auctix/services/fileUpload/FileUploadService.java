@@ -46,6 +46,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Logger;
 
+import static com.helios.auctix.services.fileUpload.FileUploadUtilService.byteArrayToHex;
+import static com.helios.auctix.services.fileUpload.FileUploadUtilService.getFileType;
+
 @Service
 @RequiredArgsConstructor
 public class FileUploadService {
@@ -113,14 +116,7 @@ public class FileUploadService {
 //            TODO: Rate limit mechanism
 
             log.info("File Uploading to Azure Blob Storage");
-            URI StorageContainer = new URI(
-                    azureStorageConfig.getSslEnabled()?"https:":"http:" +
-                    "//" +
-                    azureStorageConfig.getHost() +
-                    ":" +
-                    azureStorageConfig.getPort() +
-                    "/devstoreaccount1/" +
-                    azureStorageConfig.getContainerName());
+            URI StorageContainer = azureStorageConfig.getStorageContainerURI();
 
             BlobContainerClient containerClient = new BlobContainerClientBuilder()
                     .endpoint(StorageContainer.toString())
@@ -232,14 +228,7 @@ public class FileUploadService {
 
             log.info("Trying to get file from Azure Blob Storage");
             try {
-                URI StorageContainer = new URI(
-                        azureStorageConfig.getSslEnabled() ? "https:" : "http:" +
-                                "//" +
-                                azureStorageConfig.getHost() +
-                                ":" +
-                                azureStorageConfig.getPort() +
-                                "/devstoreaccount1/" +
-                                azureStorageConfig.getContainerName());
+                URI StorageContainer = azureStorageConfig.getStorageContainerURI();
 
                 BlobContainerClient containerClient = new BlobContainerClientBuilder()
                         .endpoint(StorageContainer.toString())
@@ -334,77 +323,5 @@ public class FileUploadService {
 
     }
 
-        /**
-         * Scheduled task to delete all files marked as isDeleted = true.
-         * This method runs periodically based on the cron expression.
-         */
-        @Scheduled(cron = "0 08 20 * * ?")
-        public void deleteMarkedFiles() {
-            log.info("Starting scheduled task to delete marked files");
-
-            // Fetch all files marked as isDeleted = true
-            List<Upload> deletedFiles = uploadRepository.findByIsDeleted(true, Limit.of(100));
-
-            for (Upload file : deletedFiles) {
-                try {
-                    log.info("Deleting file: " + file.getFileId());
-                    // Delete the file from Azure Blob Storage
-                    URI StorageContainer = new URI(
-                            azureStorageConfig.getSslEnabled() ? "https:" : "http:" +
-                                    "//" +
-                                    azureStorageConfig.getHost() +
-                                    ":" +
-                                    azureStorageConfig.getPort() +
-                                    "/devstoreaccount1/" +
-                                    azureStorageConfig.getContainerName());
-
-                    BlobContainerClient containerClient = new BlobContainerClientBuilder()
-                            .endpoint(StorageContainer.toString())
-                            .credential(new StorageSharedKeyCredential(azureStorageConfig.getAccountName(), azureStorageConfig.getAccountKey()))
-                            .buildClient();
-
-                    BlobClient blobClient = containerClient.getBlobClient(file.getFileId());
-
-                    if (blobClient.exists()) {
-                        blobClient.delete();
-                        log.info("File deleted from Azure Blob Storage: " + file.getFileId());
-                    }
-
-                    // Remove the file record from the database
-                    uploadRepository.delete(file);
-                    log.info("File record deleted from database: " + file.getId());
-                } catch (Exception e) {
-                    log.warning("Failed to delete file: " + file.getFileId() + ". Error: " + e.getMessage());
-                }
-            }
-
-            log.info("Scheduled task to delete marked files completed");
-        }
-
-
-    private static String byteArrayToHex(byte[] bytes) {
-        try (Formatter formatter = new Formatter()) {
-            for (byte b : bytes) {
-                formatter.format("%02x", b);
-            }
-            return formatter.toString();
-        }
-    }
-
-    private static FileTypeEnum getFileType(String contentType) {
-        if(contentType == null) {
-            return FileTypeEnum.Unknown;
-        }
-        contentType = contentType.split("/").length>1?contentType.split("/")[1].toLowerCase():contentType.toLowerCase();
-        log.info("getting FileType for: "+contentType);
-          for(FileTypeEnum type : FileTypeEnum.values()) {
-              log.info("Checking for: "+type.toString());
-              if(contentType.equals(type.toString().toLowerCase())) {
-                  return type;
-              }
-          }
-            log.warning("Unknown file type: "+contentType);
-            return FileTypeEnum.Unknown;
-    }
 
 }

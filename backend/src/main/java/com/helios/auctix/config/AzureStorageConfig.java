@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @Configuration
 @Getter
 @Setter
@@ -18,4 +21,18 @@ public class AzureStorageConfig {
     private String host;
     private Boolean sslEnabled;
     private Integer port;
+
+    public URI getStorageContainerURI() throws URISyntaxException {
+        URI StorageContainer = new URI(
+                        this.getSslEnabled() ? "https:" : "http:" +
+                        "//" +
+                        this.getHost() +
+                        ":" +
+                        this.getPort() +
+                        "/devstoreaccount1/" +
+                        this.getContainerName());
+
+        return StorageContainer;
+    }
+
 }

@@ -10,6 +10,7 @@ import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.CustomUserDetailsService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
+import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.services.user.UserRegisterService;
 import com.helios.auctix.services.user.UserServiceResponse;
@@ -110,7 +111,7 @@ public class UserController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             currentUser = userDetailsService.getAuthenticatedUser(authentication);
-            FileUploadResponse res = uploader.uploadFile(file, "profile_picture", currentUser.getId(), false);
+            FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENTS.toString() , currentUser.getId(), false);
             if (res.isSuccess()) {
                 return res.getMessage();
             } else {
@@ -232,7 +233,7 @@ public class UserController {
 
             // Upload file
             log.info("Trying to upload file");
-            FileUploadResponse uploadRes = uploader.uploadFile(file, "userProfilePhotos", currentUser.getEmail() , true );
+            FileUploadResponse uploadRes = uploader.uploadFile(file, FileUploadUseCaseEnum.PROFILE_PHOTO.toString() , currentUser.getEmail() , true );
 
             if (uploadRes.isSuccess()) {
                 // save file upload data

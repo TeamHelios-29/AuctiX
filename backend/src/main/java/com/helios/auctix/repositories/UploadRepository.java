@@ -11,4 +11,8 @@ public interface UploadRepository extends JpaRepository<Upload, UUID> {
 
     List<Upload> findByIsDeleted(boolean b, Limit limit);
     Upload findByFileId(String fileId);
+
+    boolean findAllByFileId(String fileId);
+
+    Integer countByFileId(String fileId);
 }
