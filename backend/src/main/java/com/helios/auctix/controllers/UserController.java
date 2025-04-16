@@ -4,7 +4,6 @@ import com.azure.core.util.BinaryData;
 import com.helios.auctix.config.ErrorConfig;
 import com.helios.auctix.config.JwtAuthenticationFilter;
 import com.helios.auctix.domain.user.User;
-import com.helios.auctix.domain.user.UserRole;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
@@ -24,15 +23,14 @@ import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.security.Principal;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/user")

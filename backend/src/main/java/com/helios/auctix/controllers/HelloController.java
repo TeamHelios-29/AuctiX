@@ -1,14 +1,18 @@
 package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.chat.ChatMessage;
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.ChatMessageDTO;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.mappers.Mapper;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.ChatService;
 import com.helios.auctix.services.CustomUserDetailsService;
+import com.helios.auctix.services.FirebaseCloudMessageService;
 import com.helios.auctix.services.JwtService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +30,8 @@ public class HelloController {
     private CustomUserDetailsService customUserDetailsService;
     private ChatService chatService;
     private Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper;
+    private final FirebaseCloudMessageService firebaseCloudMessageService;
+    private final NotificationEventPublisher notificationEventPublisher;
 
 
     public HelloController(
@@ -33,13 +39,17 @@ public class HelloController {
             UserRepository userRepository,
             CustomUserDetailsService customUserDetailsService,
             ChatService chatService,
-            Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper
+            Mapper<ChatMessage, ChatMessageDTO> chatMessageDTOMapper,
+            FirebaseCloudMessageService firebaseCloudMessageService,
+            NotificationEventPublisher notificationEventPublisher
     ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.customUserDetailsService = customUserDetailsService;
         this.chatService = chatService;
         this.chatMessageDTOMapper = chatMessageDTOMapper;
+        this.firebaseCloudMessageService = firebaseCloudMessageService;
+        this.notificationEventPublisher = notificationEventPublisher;
     }
 
     @GetMapping("/hello")
@@ -102,6 +112,33 @@ public class HelloController {
 
         return ResponseEntity.ok(response);
     }
+
+
+
+    @GetMapping("/fcm")
+    public String sendFCMTest(
+            @Valid @RequestParam(required = false) String email,
+            @RequestParam(required = false) String message) {
+
+
+      if (message == null) {
+          message = "hello from springboot";
+      }
+
+      User user = userRepository.findByEmail(email);
+
+      notificationEventPublisher.publishNotificationEvent(
+				"Hi from AuctiX",
+                message,
+				NotificationCategory.DEFAULT,
+				user
+        );
+
+
+        return "i think we sent it?";
+
+    }
+
 
 
 }

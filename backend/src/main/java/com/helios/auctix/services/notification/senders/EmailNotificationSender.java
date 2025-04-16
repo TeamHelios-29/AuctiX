@@ -1,15 +1,15 @@
 package com.helios.auctix.services.notification.senders;
 
 import com.helios.auctix.domain.notification.Notification;
-import com.helios.auctix.repositories.NotificationRepository;
+import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.services.EmailService;
+import com.helios.auctix.services.notification.NotificationPersistenceHelper;
 import com.helios.auctix.services.notification.NotificationSender;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 @Slf4j
@@ -17,11 +17,16 @@ import java.util.Map;
 public class EmailNotificationSender implements NotificationSender {
 
     private final EmailService emailService;
-    private final NotificationRepository notificationRepository;
+    private final NotificationPersistenceHelper notificationPersistenceHelper;
 
-    public EmailNotificationSender(EmailService emailService, NotificationRepository notificationRepository) {
+    public EmailNotificationSender(EmailService emailService, NotificationPersistenceHelper notificationPersistenceHelper) {
         this.emailService = emailService;
-        this.notificationRepository = notificationRepository;
+        this.notificationPersistenceHelper = notificationPersistenceHelper;
+    }
+
+    @Override
+    public NotificationType getNotificationType() {
+        return NotificationType.EMAIL;
     }
 
     @Override
@@ -40,8 +45,7 @@ public class EmailNotificationSender implements NotificationSender {
                     );
 
 
-        notification.setSentAt(LocalDateTime.now());
-        notificationRepository.save(notification);
+        notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
 
         } catch (MessagingException e) {
                 log.error("MessagingException: Failed to send email to {}: {}", notification.getUser().getEmail(), e.getMessage());
