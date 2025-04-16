@@ -21,6 +21,8 @@ export default function AppRouter() {
         <Route element={<DefaultLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/seller" element={<SellerProfile />} />
+          <Route path="/auction-details" element={<AuctionDetailsPage />} />
+          <Route path="/create-auction" element={<CreateAuction />} />
         </Route>
         {/* Routes using DashboardLayout */}
         <Route element={<DashboardLayout />}>
@@ -40,8 +42,7 @@ export default function AppRouter() {
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/create-auction" element={<CreateAuction />} />
-        <Route path="/auction-details" element={<AuctionDetailsPage />} />
+
         <Route path="/403" element={<h2>403 Unautherized</h2>} />
         <Route path="/test-chat" element={<AuctionChat />} />
         <Route path="/user" element={<User />} />
