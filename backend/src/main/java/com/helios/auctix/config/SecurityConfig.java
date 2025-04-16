@@ -48,7 +48,8 @@ public class SecurityConfig {
                         .requestMatchers("/app/**").permitAll() // Permit all STOMP application destinations
                         .requestMatchers("/api/roletest/seller").hasRole("SELLER")
                         .requestMatchers("/api/roletest/bidder").hasRole("BIDDER")
-                        .requestMatchers("/api/user/**").permitAll()
+                        .requestMatchers("/api/roletest/**").authenticated()
+                        .requestMatchers("/api/notification/settings").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
