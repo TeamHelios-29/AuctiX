@@ -5,7 +5,7 @@ import com.helios.auctix.repositories.AuctionRepository; // Updated repository
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,8 +32,8 @@ public class AuctionService {
         }
 
         // Set timestamps
-        auction.setCreatedAt(LocalDateTime.now());
-        auction.setUpdatedAt(LocalDateTime.now());
+        auction.setCreatedAt(Instant.now());
+        auction.setUpdatedAt(Instant.now());
 
         return auctionRepository.save(auction);
 
