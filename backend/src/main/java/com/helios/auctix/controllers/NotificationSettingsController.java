@@ -56,11 +56,9 @@ public class NotificationSettingsController {
 
             return ResponseEntity.ok("FCM token saved successfully");
 
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Error registering FCM for user " + userEmail, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Something went wrong");
+            log.log(Level.SEVERE, "Error occurred while registering FCM token", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing the request request");
         }
     }
 

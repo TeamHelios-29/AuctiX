@@ -76,7 +76,7 @@ public class FirebaseCloudMessageService {
             } else {
                 // Token is being reused by another user - (could happen if another user logs to the same device and token is not invalidated)
                 log.warning("FCM token is already in use by a different user. Ignoring registration.");
-
+                throw new IllegalStateException("FCM token is already in use by a different user: " + existingToken.getUser().getEmail() + " new request by: " + user.getEmail());
             }
 
         } else {
