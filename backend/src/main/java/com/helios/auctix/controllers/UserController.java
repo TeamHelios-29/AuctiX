@@ -4,29 +4,23 @@ import com.helios.auctix.config.ErrorConfig;
 import com.helios.auctix.config.JwtAuthenticationFilter;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
-import com.helios.auctix.dtos.FCMTokenRegisterRequestDTO;
 import com.helios.auctix.repositories.UserRepository;
-import com.helios.auctix.services.FirebaseCloudMessageService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.user.UserRegisterService;
 import com.helios.auctix.services.user.UserServiceResponse;
 import com.helios.auctix.services.user.UserUploadsService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,7 +34,6 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final UserRegisterService userRegisterService;
-    private final FirebaseCloudMessageService firebaseCloudMessageService;
     private final Logger log = Logger.getLogger(UserController.class.getName());
 
     @Autowired
@@ -54,10 +47,9 @@ public class UserController {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public UserController(UserRepository userRepository, UserRegisterService userRegisterService, FirebaseCloudMessageService firebaseCloudMessageService) {
+    public UserController(UserRepository userRepository, UserRegisterService userRegisterService) {
         this.userRepository = userRepository;
         this.userRegisterService = userRegisterService;
-        this.firebaseCloudMessageService = firebaseCloudMessageService;
     }
 
     @GetMapping("/hello")
@@ -251,41 +243,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
         }
 
-    }
-
-    @PostMapping("/set-device-fcm-token")
-    public ResponseEntity<String> setUserDeviceFCMToken(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody FCMTokenRegisterRequestDTO fcmRegisterRequestDTO,
-            @RequestHeader(value = HttpHeaders.USER_AGENT) String userAgent
-    ) {
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-        }
-
-        String userEmail = userDetails.getUsername();
-
-        try {
-            User user = userRegisterService.getUserFromEmail(userEmail);
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            }
-
-
-            firebaseCloudMessageService.registerToken(
-                    user,
-                    fcmRegisterRequestDTO.getFcmToken(),
-                    userAgent
-            );
-
-            return ResponseEntity.ok("FCM token saved successfully");
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Error registering FCM for user " + userEmail, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Something went wrong");
-        }
     }
 
 }

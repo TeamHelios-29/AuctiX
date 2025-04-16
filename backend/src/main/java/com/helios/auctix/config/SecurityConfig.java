@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/roletest/seller").hasRole("SELLER")
                         .requestMatchers("/api/roletest/bidder").hasRole("BIDDER")
                         .requestMatchers("/api/roletest/**").authenticated()
-                        .requestMatchers("/api/user/**").permitAll()
+                        .requestMatchers("/api/notification/settings").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
