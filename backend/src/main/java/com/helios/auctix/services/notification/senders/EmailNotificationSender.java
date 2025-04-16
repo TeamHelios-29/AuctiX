@@ -5,8 +5,14 @@ import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.services.EmailService;
 import com.helios.auctix.services.notification.NotificationPersistenceHelper;
 import com.helios.auctix.services.notification.NotificationSender;
+import jakarta.mail.MessagingException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
+@Slf4j
 @Component
 public class EmailNotificationSender implements NotificationSender {
 
@@ -27,13 +33,26 @@ public class EmailNotificationSender implements NotificationSender {
     public void sendNotification(Notification notification) {
         System.out.println("Got the notification to send to email" + notification.toString());
 
-//        emailService.sendEmail(
-//                notification.getUser().getEmail(),
-//                notification.getTitle(),
-//                notification.getContent()
-//        );
+
+        Map<String, Object> variables = Map.of("username", notification.getUser().getUsername());
+
+        try {
+            emailService.sendHtmlEmail(
+                    notification.getUser().getEmail(),
+                    notification.getTitle(),
+                    "email/test-email",
+                    variables
+                    );
+
 
         notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
 
+        } catch (MessagingException e) {
+                log.error("MessagingException: Failed to send email to {}: {}", notification.getUser().getEmail(), e.getMessage());
+        } catch (MailException e) {
+                log.error("MailException: Mail sending failed for {}: {}", notification.getUser().getEmail(), e.getMessage());
+        } catch (Exception e) {
+                log.error("Unexpected exception while sending email for {}: {}", notification.getUser().getEmail(), e.getMessage());
+        }
     }
 }
