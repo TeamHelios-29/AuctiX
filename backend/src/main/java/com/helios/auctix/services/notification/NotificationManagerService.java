@@ -44,11 +44,13 @@ public class NotificationManagerService {
         // Set default preferences like this for now
         defaultPreferences.put(NotificationCategory.DEFAULT, Set.of(
                 NotificationType.EMAIL,
-                NotificationType.WEBSOCKET
+//                NotificationType.WEBSOCKET,
+                NotificationType.PUSH
         ));
 
         defaultPreferences.put(NotificationCategory.PROMO, Set.of(
-                NotificationType.WEBSOCKET
+                NotificationType.EMAIL,
+                NotificationType.PUSH
         ));
 
         return defaultPreferences;
