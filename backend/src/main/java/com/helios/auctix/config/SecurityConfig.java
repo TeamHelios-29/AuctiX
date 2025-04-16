@@ -51,7 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/roletest/bidder").hasRole("BIDDER")
                         .requestMatchers("/api/user/**").permitAll()
                         .requestMatchers("/api/auctions/**").permitAll()
-
+                        .requestMatchers("/api/roletest/**").authenticated()
+                        .requestMatchers("/api/notification/settings").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serial;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -53,9 +54,13 @@ public class User {
     private UserRole role;
 
 
-    // helper method to make things clearer
+    // helper method to make it cleaner to get the role enum
     @JsonProperty("role")
     public UserRoleEnum getRoleEnum() {
         return role.getName();
     }
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserFCMToken> fcmTokens;
+
 }
