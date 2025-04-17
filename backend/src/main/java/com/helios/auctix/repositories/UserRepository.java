@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface UserRepository extends CrudRepository<User,String> {
+public interface UserRepository extends CrudRepository<User,UUID> {
     Optional<User> findByUsername(String username);
     boolean existsById(UUID Id);
     boolean existsByUsername(String username);

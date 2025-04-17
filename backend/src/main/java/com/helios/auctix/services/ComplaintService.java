@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -28,9 +27,9 @@ public class ComplaintService {
     }
 
     public Complaint createComplaint(@Valid ComplaintDTO complaintDto) {
-        User reportedUser = userRepository.findByUsername(complaintDto.getReportedUserUsername())
+        User reportedUser = userRepository.findById(complaintDto.getReportedUserId())
                 .orElseThrow(() -> new RuntimeException("Reported user not found"));
-        User reportingUser = userRepository.findByUsername(complaintDto.getReportingUserUsername())
+        User reportingUser = userRepository.findById(complaintDto.getReportingUserId())
                 .orElseThrow(() -> new RuntimeException("Reporting user not found"));
 
         Complaint complaint = new Complaint();

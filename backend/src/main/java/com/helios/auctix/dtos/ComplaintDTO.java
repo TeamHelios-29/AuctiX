@@ -1,13 +1,14 @@
 package com.helios.auctix.dtos;
 
-import com.helios.auctix.domain.user.User;
 import lombok.*;
+
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ComplaintDTO {
-    private String reportedUserUsername;
-    private String reportingUserUsername;
+    private UUID reportedUserId;
+    private UUID reportingUserId;
     private String reason;
 }
