@@ -2,17 +2,19 @@ package com.helios.auctix.events.notification;
 
 import com.helios.auctix.domain.notification.Notification;
 import com.helios.auctix.domain.notification.NotificationCategory;
-import com.helios.auctix.domain.notification.NotificationType;
-import com.helios.auctix.services.notification.senders.EmailNotificationSender;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.helios.auctix.services.notification.NotificationManagerService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class NotificationListener implements ApplicationListener<NotificationEvent> {
 
-    @Autowired
-    private EmailNotificationSender emailNotificationSender;
+
+    private final NotificationManagerService notificationManagerService;
+
+    NotificationListener(NotificationManagerService notificationManagerService) {
+        this.notificationManagerService = notificationManagerService;
+    }
 
     @Override
     public void onApplicationEvent(NotificationEvent event) {
@@ -30,12 +32,8 @@ public class NotificationListener implements ApplicationListener<NotificationEve
                         .content(event.getMessage())
                 ;
 
-        switch (notificationCategory) {
-            case DEFAULT -> {
-                System.out.println(notificationCategory + " category sending to all notification senders");
-                notificationBuilder.notificationType(NotificationType.EMAIL);
-                emailNotificationSender.sendNotification(notificationBuilder.build());
-            }
-        }
+
+
+        notificationManagerService.handleNotification(notificationBuilder.build());
     }
 }

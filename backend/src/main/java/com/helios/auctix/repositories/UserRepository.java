@@ -18,4 +18,10 @@ public interface UserRepository extends CrudRepository<User,UUID> {
     User findByEmail(String email);
     Page<User> findAll(Pageable pageable);
     Page<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String search, String search1, Pageable pageable);
+
+    User findByUsername(String username);
+
+    long countByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String search,String search1);
+
+    Page<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String username, String email, String firstName, String lastName, Pageable pageable);
 }

@@ -56,7 +56,7 @@ public class UserAuthenticationService {
         return userRepository.save(user);
     }
 
-    public String verify(User user, String rawPasswordFromLogin) {
+    public String verify(User user, String rawPasswordFromLogin) throws BadCredentialsException {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
 

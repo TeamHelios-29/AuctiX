@@ -23,9 +23,7 @@ import java.util.UUID;
 public class Upload {
 
     @Id
-    @JsonIgnore
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(name="file_name", nullable = false)
     private String fileName;
@@ -38,8 +36,8 @@ public class Upload {
     @Column(name="file_size", nullable = false)
     private Long fileSize; // in bytes
 
-    @Column(name="url", nullable = false)
-    private String url;
+    @Column(name="file_id", nullable = false)
+    private String fileId;
 
     @JsonIgnore
     @Column(name="hash_256", nullable = false)
@@ -51,6 +49,12 @@ public class Upload {
 
     @Column(name="is_public", nullable = false)
     private Boolean isPublic;
+
+    @Column(name="is_deleted", nullable = false)
+    private Boolean isDeleted;
+
+    @Column(name="category", nullable = false)
+    private String category;
 
     @Column(name="owner_id")
     @JsonIgnore
@@ -64,6 +68,8 @@ public class Upload {
     @PrePersist
     protected void onCreate() {
         log.info("onCreate called for Upload ,old uploadAt" + this.uploadedAt);
+        this.id = UUID.randomUUID();
+        this.isDeleted = false;
         if(this.uploadedAt == null) {
             this.uploadedAt = Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC));
         }

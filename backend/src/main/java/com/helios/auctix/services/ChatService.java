@@ -6,8 +6,13 @@ import com.helios.auctix.domain.user.User;
 import com.helios.auctix.repositories.chat.ChatMessageRepository;
 import com.helios.auctix.repositories.chat.ChatRoomRepository;
 import lombok.extern.java.Log;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,5 +57,15 @@ public class ChatService {
 
         // temporary use the acution id as the chatroom id
         return this.chatRoomRepository.findById(UUID.fromString(auctionId)).orElse(null);
+    }
+
+//    public List<ChatMessage> getChatMessages(String chatRoomId, int page, int size) {
+//        Pageable pageable = PageRequest.of(page, size);
+//        return chatMessageRepository.findByChatRoomIdOrderByTimestampAsc(chatRoomId, pageable);
+//    }
+
+    public List<ChatMessage> getMessagesBeforeTimestamp(String chatRoomId, LocalDateTime beforeTimestamp, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("timestamp")));
+        return chatMessageRepository.findByChatRoomIdAndTimestampBeforeOrderByTimestampDesc(UUID.fromString(chatRoomId), beforeTimestamp, pageable);
     }
 }
