@@ -7,37 +7,34 @@ import {
   AccordionContent,
 } from '@/components/ui/Accordion';
 import { Textarea } from '@/components/ui/textarea';
-import { Navbar } from '@/components/molecules/navbar';
 import { ReactNode } from 'react';
 
 export default function Home(): ReactNode {
   return (
     <div>
       <div>
-        <Navbar />
-
-        <div className="bg-[linear-gradient(to_right_bottom,rgba(251,204,64,0.9),rgba(253,235,173,0.9)),url('/heroimage.jpg')] bg-cover flex flex-col items-center justify-center mt-[86px] h-[530px]">
+        <div className="bg-[linear-gradient(to_right_bottom,rgba(251,204,64,0.9),rgba(253,235,173,0.9)),url('/heroimage.jpg')] bg-cover flex flex-col items-center justify-center  h-[450px] sm:h-[530px]">
           <div className="flex-col text-center items-center gap-1.5 ">
             <div className="self-stretch text-center">
-              <span className="text-slate-950 text-6xl font-medium font-['Geist'] leading-[60px]">
+              <span className="text-slate-950 text-3xl sm:text-6xl font-medium font-['Geist'] sm:leading-[60px]">
                 Discover, Bid, and Win
                 <br />
                 with Confidence on
                 <br />
               </span>
-              <span className="text-slate-950 text-8xl font-normal font-['Geist'] leading-[96px]">
+              <span className="text-slate-950 text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
                 Aucti
               </span>
-              <span className="text-[#eaac26] text-8xl font-normal font-['Geist'] leading-[96px]">
+              <span className="text-[#eaac26] text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
                 X
               </span>
-              <span className="text-slate-950 text-8xl font-normal font-['Geist'] leading-[96px]">
+              <span className="text-slate-950 text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
                 !
               </span>
             </div>
           </div>
-          <div className="flex-col text-center items-center mt-10">
-            <Button className="mx-3 w-48">
+          <div className="flex-col grid sm:grid-cols-2 gap-3 sm:gap-6 text-center items-center mt-6 sm:mt-10">
+            <Button className=" w-48">
               Sign Up Now!{' '}
               <svg
                 width="17"
@@ -54,7 +51,7 @@ export default function Home(): ReactNode {
                 />
               </svg>
             </Button>
-            <Button variant="secondary" className="mx-3 w-48">
+            <Button variant="secondary" className=" w-48">
               Explore Auctions{' '}
               <svg
                 width="16"
@@ -74,23 +71,23 @@ export default function Home(): ReactNode {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto text-center py-20 pt-36">
+        <div className="max-w-4xl mx-auto text-center px-5 py-20 pt-36">
           <div className="self-stretch text-center">
-            <span className="text-slate-950 text-7xl font-bold font-['Geist'] leading-[9px]">
+            <span className="text-slate-950 text-5xl sm:text-7xl font-bold font-['Geist'] leading-[9px]">
               Why Choose
               <br />
             </span>
-            <span className="text-slate-950 text-7xl font-normal font-['Geist'] leading-[96px]">
+            <span className="text-slate-950 text-6xl sm:text-7xl font-normal font-['Geist'] leading-[72px] sm:leading-[96px]">
               Aucti
             </span>
-            <span className="text-[#ecb02d] text-7xl font-normal font-['Geist'] leading-[96px]">
+            <span className="text-[#ecb02d] text-6xl sm:text-7xl font-normal font-['Geist'] leading-[72px] sm:leading-[96px]">
               X
             </span>
-            <span className="text-slate-950 text-7xl font-bold font-['Geist'] leading-[96px]">
+            <span className="text-slate-950 text-6xl sm:text-7xl font-bold font-['Geist'] leading-[72px] sm:leading-[96px]">
               ?
             </span>
           </div>
-          <div className="self-stretch text-center text-slate-500 text-2xl font-normal font-['Geist'] leading-normal">
+          <div className="self-stretch text-center text-slate-500 text-xl sm:text-2xl font-normal pt-8 font-['Geist'] leading-normal">
             Explore the features that make us the most trusted auction platform.
           </div>
 
@@ -141,7 +138,7 @@ export default function Home(): ReactNode {
             Frequently Asked Questions
           </h2>
 
-          <Accordion type="single" collapsible className="mt-6 space-y-2">
+          <Accordion type="single" collapsible className="mt-6 px-8 space-y-2">
             <AccordionItem value="item-1">
               <AccordionTrigger>
                 Are there any fees for sellers or buyers?

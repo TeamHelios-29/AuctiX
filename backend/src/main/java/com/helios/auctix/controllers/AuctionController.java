@@ -2,34 +2,49 @@ package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.services.AuctionService;
+import com.helios.auctix.services.fileUpload.FileUploadResponse;
+import com.helios.auctix.services.fileUpload.FileUploadService;
+import com.helios.auctix.services.user.UserServiceResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.io.IOException;
 
+import org.slf4j.LoggerFactory;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/auctions")
 public class AuctionController {
-
     private final AuctionService auctionService;
+    private final Logger log = Logger.getLogger(UserController.class.getName());
 
     @Autowired
     public AuctionController(AuctionService auctionService) {
         this.auctionService = auctionService;
     }
 
+    @Autowired
+    private FileUploadService uploader;
+
+
     // Create a new auction with multipart/form-data
-    @PostMapping(consumes = "multipart/form-data")
+    @PostMapping("/create")
     public ResponseEntity<Auction> createAuction(
             @RequestParam("title") String title,
             @RequestParam("description") String description,
@@ -41,35 +56,76 @@ public class AuctionController {
             @RequestParam("images") List<MultipartFile> images) {
 
         // Create an Auction object using the domain model
-        Auction auction = Auction.builder()
-                .title(title)
-                .description(description)
-                .startingPrice(startingPrice)
-                .startTime(LocalDateTime.parse(startTime))
-                .endTime(LocalDateTime.parse(endTime))
-                .isPublic(isPublic)
-                .category(category)
-                .build();
+        try {
+            // Parse dates with timezone support
+            Instant startInstant = Instant.parse(startTime);
+            Instant endInstant = Instant.parse(endTime);
 
-        // Handle image uploads and set image paths in the Auction object
-        List<String> imagePaths = images.stream()
-                .map(image -> saveImage(image)) // Save each image and return its path
-                .collect(Collectors.toList());
-        auction.setImagePaths(imagePaths);
+            Auction auction = Auction.builder()
+                    .title(title)
+                    .description(description)
+                    .startingPrice(startingPrice)
+                    .startTime(startInstant)
+                    .endTime(endInstant)
+                    .isPublic(isPublic)
+                    .category(category)
+                    .build();
 
-        // Save the auction using the service layer
-        Auction createdAuction = auctionService.createAuction(auction);
-        return ResponseEntity.ok(createdAuction);
+            List<String> imagePaths = images.stream()
+                    .map(this::saveImage)
+                    .collect(Collectors.toList());
+            auction.setImagePaths(imagePaths);
+
+            Auction createdAuction = auctionService.createAuction(auction);
+            return ResponseEntity.ok(createdAuction);
+        } catch (DateTimeParseException e) {
+            log.warning("Invalid date format");
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.warning("Error creating auction");
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // Helper method to save an image and return its path
     private String saveImage(MultipartFile image) {
         try {
-            String fileName = image.getOriginalFilename();
-            Path path = Paths.get("uploads/" + fileName);
-            Files.write(path, image.getBytes());
-            return path.toString();
-        } catch (IOException e) {
+            // Authenticate user
+//            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//            String userEmail = null;
+//            if (authentication == null || authentication.getAuthorities() == null || !authentication.isAuthenticated()) {
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
+//            }
+//            userEmail = authentication.getName();
+//            if (userEmail == null) {
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
+//            }
+//            log.info("File upload by user " + userEmail);
+
+
+            // Upload file
+            log.info("Trying to upload file");
+            FileUploadResponse uploadRes = uploader.uploadFile(image, "auctionPhotos" );
+
+            if (uploadRes.isSuccess()) {
+                // save file upload data
+                log.info("Trying to save file upload data");
+//                UserServiceResponse res = userUploadsService.UserProfilePhotoUpdate(userEmail, uploadRes.getUpload());
+                log.info("File upload data saved");
+
+//                if (res.isSuccess()) {
+//                    return ResponseEntity.ok().body("Uploaded successfully");
+//                } else {
+//                    log.warning(res.getMessage());
+//                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data saving failed");
+//                }
+                return uploadRes.getUpload().getId().toString();
+
+            } else {
+                log.warning(uploadRes.getMessage());
+                throw new RuntimeException("Unsuccessful") ;
+            }
+        } catch (Exception e) {
             throw new RuntimeException("Failed to save image: " + e.getMessage());
         }
     }
