@@ -88,7 +88,7 @@ public class UserDetailsService {
 
         Page<User> userPage;
         if (search != null && !search.trim().isEmpty()) {
-            userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pageable);
+            userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(search, search, search, search , pageable);
         } else {
             userPage = userRepository.findAll(pageable);
         }

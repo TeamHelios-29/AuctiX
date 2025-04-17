@@ -21,4 +21,6 @@ public interface UserRepository extends CrudRepository<User,String> {
     User findByUsername(String username);
 
     long countByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String search,String search1);
+
+    Page<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String username, String email, String firstName, String lastName, Pageable pageable);
 }
