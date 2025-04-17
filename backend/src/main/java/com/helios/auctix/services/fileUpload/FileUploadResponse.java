@@ -26,6 +26,13 @@ public class FileUploadResponse {
         this.binaryData = binaryData;
     }
 
+    public FileUploadResponse(boolean success, String message, BinaryData binaryData, Upload fileInfo) {
+        this.success = success;
+        this.message = message;
+        this.binaryData = binaryData;
+        this.upload = fileInfo;
+    }
+
     public FileUploadResponse(boolean success, String message) {
         this.success = success;
         this.message = message;

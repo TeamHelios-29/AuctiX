@@ -13,10 +13,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.repositories.AuctionRepository; // Add this
 import com.helios.auctix.services.AuctionService; // Add this
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 import java.time.LocalDateTime;
 
 @SpringBootApplication
 @Log
+@EnableScheduling
 public class AuctiXApplication implements CommandLineRunner {
 
 	private final UserRepository userRepository;
