@@ -11,10 +11,7 @@ import com.helios.auctix.services.CustomUserDetailsService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
-import com.helios.auctix.services.user.UserDetailsService;
-import com.helios.auctix.services.user.UserRegisterService;
-import com.helios.auctix.services.user.UserServiceResponse;
-import com.helios.auctix.services.user.UserUploadsService;
+import com.helios.auctix.services.user.*;
 import org.eclipse.angus.mail.iap.ByteArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -190,33 +187,13 @@ public class UserController {
             @RequestParam(value = "order", required = false, defaultValue = "asc") String order,
             @RequestParam(value = "search", required = false) String search) {
 
-        if (limit < 0 || offset < 0) {
-            return ResponseEntity.badRequest().body("Error: limit and offset must be positive");
+        try{
+            Page userPage = userDetailsService.getAllUsers(limit,offset,order,sortBy,search);
+            return ResponseEntity.ok(userPage);
         }
-        if(limit > 100) {
-            return ResponseEntity.badRequest().body("Error: limit must be less than or equal to 100");
+        catch (IllegalArgumentException e){
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        List<String> validSortFields = Arrays.asList("id", "username", "email", "role");
-        if (!validSortFields.contains(sortBy)) {
-            return ResponseEntity.badRequest().body("Error: Invalid sortBy value. Valid values: id, username, email, role");
-        }
-
-        if (!order.equalsIgnoreCase("asc") && !order.equalsIgnoreCase("desc")) {
-            return ResponseEntity.badRequest().body("Error: Invalid order value. Valid values: asc, desc");
-        }
-
-        Sort.Direction direction = order.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(offset, limit, Sort.by(direction, sortBy));
-
-        Page<User> userPage;
-        if (search != null && !search.trim().isEmpty()) {
-            userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pageable);
-        } else {
-            userPage = userRepository.findAll(pageable);
-        }
-
-        return ResponseEntity.ok(userPage);
     }
 
     @GetMapping("/getCurrentUser")
