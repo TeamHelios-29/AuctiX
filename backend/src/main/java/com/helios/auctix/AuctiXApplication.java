@@ -1,5 +1,7 @@
 package com.helios.auctix;
 
+import com.helios.auctix.domain.notification.NotificationCategory;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.repositories.NotificationRepository;
 import com.helios.auctix.repositories.UserRepository;
@@ -11,10 +13,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.repositories.AuctionRepository; // Add this
 import com.helios.auctix.services.AuctionService; // Add this
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 import java.time.LocalDateTime;
 
 @SpringBootApplication
 @Log
+@EnableScheduling
 public class AuctiXApplication implements CommandLineRunner {
 
 	private final UserRepository userRepository;
@@ -42,40 +47,38 @@ public class AuctiXApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		System.out.println("AuctiX backend started successfully!");
-	}
+
 		// Existing code for user and notification modules
 		// Uncomment and use as needed
-        /*
-        System.out.println("Starting application...");
-        userRepository.findAll().forEach(user -> {
-            System.out.println("User info: " + user.toString());
-        });
 
-        System.out.println("Test if notifications can be fetched");
-        notificationRepository.findAll().forEach(notification -> {
-            System.out.println("Notification: " + notification.toString());
-        });
+//        System.out.println("Starting application...");
+//        userRepository.findAll().forEach(user -> {
+//            System.out.println("User info: " + user.toString());
+//        });
+//
+//        System.out.println("Test if notifications can be fetched");
+//        notificationRepository.findAll().forEach(notification -> {
+//            System.out.println("Notification: " + notification.toString());
+//        });
+//
+//        User user = User.builder()
+//                .id("01")
+//                .username("Jake")
+//                .email("jake@example.com")
+//                .passwordHash("sdljfdsf")
+//                .build();
+//
+//        userRepository.save(user);
 
-        User user = User.builder()
-                .id("01")
-                .username("Jake")
-                .email("jake@example.com")
-                .passwordHash("sdljfdsf")
-                .build();
+//		User user = userRepository.findByEmail("testb1@test.com");
+//
+//		notificationEventPublisher.publishNotificationEvent(
+//				"Hi from AuctiX",
+//				"Hello this is test email",
+//				NotificationCategory.DEFAULT,
+//				user
+//        );
 
-        userRepository.save(user);
-
-        notificationEventPublisher.publishNotificationEvent(
-                "Hi from AuctiX",
-                "Hello this is test email",
-                NotificationCategory.DEFAULT,
-                user
-        );
-
-        User u = userRepository.findByEmail("tom2@test.com");
-        log.info("User found: " + u.toString());
-        System.out.println("User found: " + u.toString());
-        */
 
 		// Add initialization logic for Bidding module
 
@@ -119,4 +122,5 @@ public class AuctiXApplication implements CommandLineRunner {
 //				System.out.println("Auction: " + auction.toString());
 //			});
 //		}
+	}
 }

@@ -10,6 +10,7 @@ import com.helios.auctix.services.user.UserRegisterService;
 import com.helios.auctix.services.user.UserServiceResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
 @RequestMapping("/api/auth")
@@ -57,28 +58,36 @@ public class UserAuthController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequestDTO loginRequestDTO) {
 
-        if (loginRequestDTO == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication Request is invalid");
+        try {
+            if (loginRequestDTO == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication Request is invalid");
+            }
+
+            User user = userRepository.findByEmail(loginRequestDTO.getEmail());
+
+            System.out.println("Menna user: " + user);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email or password is incorrect");
+            }
+
+            String jwt = userAuthenticationService.verify(user, loginRequestDTO.getPassword());
+
+            System.out.println("Menna jwt: " + jwt);
+
+            if (jwt == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email or password is incorrect");
+            }
+
+            System.out.println("mesnn dekama jwt: " + jwt + " user: " + user);
+
+            return ResponseEntity.ok(jwt);
         }
-
-        User user = userRepository.findByEmail(loginRequestDTO.getEmail());
-
-        System.out.println("Menna user: "+user);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email or password is incorrect 1");
+        catch (BadCredentialsException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("password is incorrect");
         }
-
-        String jwt = userAuthenticationService.verify(user, loginRequestDTO.getPassword());
-
-        System.out.println("Menna jwt: "+jwt);
-
-        if (jwt == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email or password is incorrect 2");
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error");
         }
-
-        System.out.println("mesnn dekama jwt: "+jwt + " user: "+user);
-
-        return ResponseEntity.ok(jwt);
 
 
     }

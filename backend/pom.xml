@@ -30,7 +30,23 @@
 		<java.version>21</java.version>
 		<sonar.organization>teamhelios-29</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<spring-azure.version>1.2.33</spring-azure.version>		<!--		upgrade all azure dependencies to using azure-sdk-bom find the latest version from https://central.sonatype.com/artifact/com.azure/azure-sdk-bom/versions-->
 	</properties>
+
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.azure</groupId>
+				<artifactId>azure-sdk-bom</artifactId>
+				<version>${spring-azure.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -80,6 +96,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
@@ -122,10 +144,39 @@
 			<artifactId>modelmapper</artifactId>
 			<version>3.2.1</version>
 		</dependency>
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-blob</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/junit/junit -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version>
+			<scope>test</scope>
+		</dependency>
+
+    <dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>9.4.0</version>
+		</dependency>
 
 
-
+		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-thymeleaf -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+			<version>3.4.3</version>
+		</dependency>
 	</dependencies>
+
 
 	<build>
 		<plugins>
