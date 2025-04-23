@@ -38,7 +38,7 @@ public class NotificationManagerService {
     }
 
 
-    private  Map<NotificationCategory, Set<NotificationType>> setDefaultPreferences() {
+    private Map<NotificationCategory, Set<NotificationType>> setDefaultPreferences() {
         Map<NotificationCategory, Set<NotificationType>> defaultPreferences = new HashMap<>();
 
         // Set default preferences like this for now

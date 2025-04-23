@@ -14,9 +14,9 @@ import java.util.List;
 public class PushNotificationSender implements NotificationSender {
 
     /*
-    * Push notifications using Firebase Cloud Messaging
-    *
-    */
+     * Push notifications using Firebase Cloud Messaging
+     *
+     */
 
     private final FirebaseCloudMessageService firebaseCloudMessageService;
     private final NotificationPersistenceHelper notificationPersistenceHelper;
@@ -39,7 +39,7 @@ public class PushNotificationSender implements NotificationSender {
 
         // Send to all 'active' tokens, if the client is unregistered or token has been expired it will throw an exception
         // that will be handled by the FirebaseCloudMessageService and it will be removing the token from the database
-        for (UserFCMToken userFCMToken: fcmTokensForUser) {
+        for (UserFCMToken userFCMToken : fcmTokensForUser) {
             firebaseCloudMessageService.sendNotification(
                     userFCMToken.getFcmToken(),
                     notification.getTitle(),
