@@ -41,6 +41,8 @@ export function TabsDemo({
     [],
   );
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const isLoginSuccessRef = useRef(isLoginSuccess);
 
   const ValidateErrorElement = ({
@@ -109,9 +111,58 @@ export function TabsDemo({
     }
   };
 
-  const validations = () => {
+  const validations = (isRegBtnClicked = false) => {
     let isValid = true;
     let errorList: IValidationError[] = [];
+    if (isRegBtnClicked) {
+      if (!username) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'username',
+          msg: 'Username is required',
+        });
+      }
+
+      if (!email) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'email',
+          msg: 'Email is required',
+        });
+      }
+
+      if (!password) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'password',
+          msg: 'Password is required',
+        });
+      }
+
+      if (!repeatPassword) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'repeat-password',
+          msg: 'Repeat password is required',
+        });
+      }
+
+      if (!firstName) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'fname',
+          msg: 'First name is required',
+        });
+      }
+
+      if (!lastName) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'lname',
+          msg: 'Last name is required',
+        });
+      }
+    }
 
     if (username && username.length < 3) {
       errorList.push({
@@ -179,7 +230,8 @@ export function TabsDemo({
   const dispatch = useAppDispatch();
   const handleRegister = (userType: string) => {
     console.log('Registering', userType);
-    if (validations()) {
+    if (validations(true)) {
+      setIsLoading(true);
       axiosInstance
         .post('/auth/register', {
           email: email,
@@ -212,6 +264,9 @@ export function TabsDemo({
             'Error: ' +
               (error.response?.data || error.message || 'Unknown error'),
           );
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     } else {
       showErrorAlert(
@@ -329,6 +384,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Enter your password"
                 />
@@ -341,6 +397,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Repeat Password</Label>
                 <Input
                   id="repeat_password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Repeat your password"
                 />
@@ -353,10 +410,21 @@ export function TabsDemo({
             <CardFooter className="px-0 flex flex-col">
               <Button
                 className="w-full"
-                onClick={() => handleRegister('BIDDER')}
+                onClick={() => {
+                  handleRegister('BIDDER');
+                }}
+                disabled={isLoading}
               >
-                Sign up
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Signing up...</span>
+                  </div>
+                ) : (
+                  'Sign up'
+                )}
               </Button>
+
               <Button
                 variant="secondary"
                 className="w-full mt-2 flex items-center justify-center"
@@ -427,6 +495,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Enter your password"
                 />
@@ -439,6 +508,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Repeat Password</Label>
                 <Input
                   id="repeat_password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Repeat your password"
                 />
@@ -451,9 +521,19 @@ export function TabsDemo({
             <CardFooter className="px-0 flex flex-col">
               <Button
                 className="w-full"
-                onClick={() => handleRegister('SELLER')}
+                onClick={() => {
+                  handleRegister('SELLER');
+                }}
+                disabled={isLoading}
               >
-                Sign up
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Signing up...</span>
+                  </div>
+                ) : (
+                  'Sign up'
+                )}
               </Button>
               <Button
                 variant="secondary"
