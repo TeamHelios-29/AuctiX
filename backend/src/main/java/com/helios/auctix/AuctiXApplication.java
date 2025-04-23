@@ -46,7 +46,7 @@ public class AuctiXApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		System.out.println("AuctiX backend started successfully!");
+		log.info("AuctiX backend started successfully!");
 
 		// Existing code for user and notification modules
 		// Uncomment and use as needed
