@@ -121,7 +121,7 @@ export function Navbar() {
                   Log in
                 </Button>
               </Link>
-              <Link to="/signup">
+              <Link to="/register">
                 <Button className="hidden md:inline-flex">Sign up</Button>
               </Link>
             </>
@@ -206,7 +206,7 @@ export function Navbar() {
                           Log in
                         </Button>
                       </Link>
-                      <Link to="/signup" className="w-full">
+                      <Link to="/register" className="w-full">
                         <Button
                           onClick={() => setIsLoggedIn(true)}
                           className="w-full"
