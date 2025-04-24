@@ -22,30 +22,12 @@ public class UserDetailsService {
     @Autowired
     UserRepository userRepository;
 
-    public User getUserByEmail(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found with email: " + email);
-        }
-        return user;
-    }
-
-    public User getUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found with username: " + username);
-        }
-        return user;
-    }
-
-    public User getUserById(String id) throws UsernameNotFoundException {
-        User user = userRepository.findById(id).orElse(null);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found with id: " + id);
-        }
-        return user;
-    }
-
+    /**
+     * Retrieves a user by {@link Authentication}.
+     *
+     * @return the User object associated with current user
+     * @throws UsernameNotFoundException if no user is found
+     */
     public User getAuthenticatedUser(Authentication authentication) throws AuthenticationException,UsernameNotFoundException {
         String userEmail = null;
         if (authentication == null || authentication.getAuthorities() == null || !authentication.isAuthenticated()) {
@@ -65,6 +47,21 @@ public class UserDetailsService {
     }
 
 
+    /**
+     * Retrieves a paginated list of users with optional sorting and search functionality.
+     *
+     * @param limit  the maximum number of users to retrieve per page. Must be a positive integer and less than or equal to 100.
+     * @param offset the page number to retrieve. Must be a non-negative integer.
+     * @param order  the sorting order, either "asc" for ascending or "desc" for descending.
+     * @param sortBy the field to sort by. Valid values are "id", "username", "email", "firstName", and "lastName".
+     * @param search an optional search string to filter users by username, email, first name, or last name. If null or empty, no filtering is applied.
+     * @return a paginated {@link Page} of {@link User} objects matching the criteria.
+     * @throws InvalidParameterException if any of the parameters are invalid:
+     *                                   - limit or offset is negative.
+     *                                   - limit exceeds 100.
+     *                                   - sortBy is not one of the valid fields.
+     *                                   - order is not "asc" or "desc".
+     */
     public Page getAllUsers(int limit, int offset, String order, String sortBy, String search) {
 
         if (limit < 0 || offset < 0) {
