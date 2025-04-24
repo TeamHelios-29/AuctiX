@@ -31,7 +31,7 @@ public class UserUploadsService {
      * @return A UserServiceResponse indicating success or failure of the operation.
      */
     public UserServiceResponse UserProfilePhotoUpdate(UUID userId,Upload upload) {
-        User user = userRepository.findById(userId.toString()).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
         return UserProfilePhotoUpdate(user,upload);
     }
 
