@@ -70,11 +70,11 @@ public class UserController {
         return "hello world!";
     }
 
-    @GetMapping("/user-exists")
+    @GetMapping("/isUserExists")
     public String isUserExcist(@RequestParam(required = false) String username, @RequestParam(required = false) UUID id, @RequestParam(required = false) String email) {
-        boolean hasUname = !username.isBlank();
+        boolean hasUname = !(username==null || username.isBlank());
         boolean hasId = id != null;
-        boolean hasEmail = !email.isBlank();
+        boolean hasEmail = !(email==null || email.isBlank());
         byte providedParamsCount = 0;
         if (hasUname) {
             providedParamsCount++;

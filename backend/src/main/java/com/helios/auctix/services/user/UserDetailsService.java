@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UserDetailsService {
@@ -92,6 +93,18 @@ public class UserDetailsService {
 
         return userPage;
 
+    }
+
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+
+    public User getUserById(UUID id) {
+        return userRepository.findById(id).orElse(null);
     }
 
 }
