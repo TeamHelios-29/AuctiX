@@ -76,7 +76,7 @@ public class UserUploadsService {
      * @return A UserServiceResponse indicating success or failure of the operation.
      */
     public UserServiceResponse UserProfilePhotoDelete(UUID userId) {
-        User user = userRepository.findById(userId.toString()).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
         return UserProfilePhotoDelete(user);
     }
 
