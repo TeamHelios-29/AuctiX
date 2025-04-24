@@ -37,6 +37,7 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
+          <Route path="/user" element={<User />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Route>
         {/* Other Routes */}
@@ -45,7 +46,6 @@ export default function AppRouter() {
 
         <Route path="/403" element={<h2>403 Unautherized</h2>} />
         <Route path="/test-chat" element={<AuctionChat />} />
-        <Route path="/user" element={<User />} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>
     </BrowserRouter>
