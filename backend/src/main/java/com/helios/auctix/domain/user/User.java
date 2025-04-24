@@ -53,6 +53,17 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role;
 
+    @OneToOne
+    @JoinColumn(name = "id")
+    private Seller seller;
+
+    @OneToOne
+    @JoinColumn(name = "id")
+    private Admin admin;
+
+    @OneToOne
+    @JoinColumn(name = "id")
+    private Bidder bidder;
 
     // helper method to make it cleaner to get the role enum
     @JsonProperty("role")

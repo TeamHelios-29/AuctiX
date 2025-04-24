@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { IUser } from '@/types/IUser';
 import axios from 'axios';
 import { IAuthUser } from '@/types/IAuthUser';
+import { logout } from './authSlice';
 
 interface UserState extends IUser {
   loading: boolean;
@@ -22,7 +23,7 @@ const initialState: UserState = {
 
 export const fetchCurrentUser = createAsyncThunk(
   'user/fetchCurrentUser',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue, getState, dispatch }) => {
     try {
       const baseURL = import.meta.env.VITE_API_URL;
       const authUser = (getState() as any).auth as IAuthUser;
@@ -35,8 +36,12 @@ export const fetchCurrentUser = createAsyncThunk(
       console.log('Current user data fetched:', response.data);
       return response.data;
     } catch (error: any) {
+      if (error.response?.status === 401) {
+        console.error('Unauthorized! Redirecting to login...');
+        dispatch(logout());
+      }
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to fetch user',
+        error.response?.data?.message || 'Failed to fetch user data',
       );
     }
   },
