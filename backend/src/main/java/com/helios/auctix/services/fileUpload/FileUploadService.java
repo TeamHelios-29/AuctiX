@@ -150,19 +150,19 @@ public class FileUploadService {
         }
         catch (NoSuchAlgorithmException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: ");
         }
         catch(URISyntaxException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: " );
         }
         catch (IllegalArgumentException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false, "File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false, "File upload failed: " );
         }
         catch (IOException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: " );
         }
     }
 
