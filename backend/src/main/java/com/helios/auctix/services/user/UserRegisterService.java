@@ -113,7 +113,7 @@ public class UserRegisterService {
 
     // TODO refactor later to a seperate service
     public User getUser(UUID userId) {
-        return userRepository.findById(String.valueOf(userId)).orElse(null);
+        return userRepository.findById(userId).orElse(null);
     }
 
     public User getUserFromToken(String token) {
