@@ -32,7 +32,7 @@ const data = {
       items: [
         {
           title: 'Overview',
-          url: '/',
+          url: '/dashboard',
           isActive: true,
         },
         {
