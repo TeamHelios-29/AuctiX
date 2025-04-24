@@ -12,7 +12,7 @@ import CreateAuction from '@/pages/create-auction';
 import SellerProfile from '@/pages/SellerProfile';
 import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/auction-details';
-import Report from '@/pages/report';
+import Report from '@/pages/Report';
 
 export default function AppRouter() {
   return (
