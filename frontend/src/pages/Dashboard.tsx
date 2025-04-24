@@ -28,7 +28,9 @@ const Dashboard: React.FC = () => {
     <div className="dashboard">
       <Avatar className="h-8 w-8 rounded-lg">
         <AvatarImage
-          src={userData.profile_photo}
+          src={
+            userData != null ? userData.profile_photo || undefined : undefined
+          }
           alt={`${userData.username}'s profile photo`}
         />
         <AvatarFallback className="rounded-lg">CN</AvatarFallback>
