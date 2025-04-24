@@ -150,19 +150,19 @@ public class FileUploadService {
         }
         catch (NoSuchAlgorithmException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: ");
         }
         catch(URISyntaxException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: " );
         }
         catch (IllegalArgumentException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false, "File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false, "File upload failed: " );
         }
         catch (IOException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: " );
         }
     }
 
@@ -215,7 +215,7 @@ public class FileUploadService {
 
             log.info("checking file ownership");
             if(uploadedFileInfo.getIsPublic()==false){
-                User requestedUser = userRepository.findById(requestedUserId.toString()).orElse(null);
+                User requestedUser = userRepository.findById(requestedUserId).orElse(null);
                 if(requestedUser == null) {
                     return new FileUploadResponse(false,"Unautherized");
                 }
@@ -266,7 +266,7 @@ public class FileUploadService {
      * @return A `FileUploadResponse` indicating the success or failure of the operation.
      */
     public FileUploadResponse deleteFile(UUID fileId, UUID deleteRequestedUserId) {
-        User user = userRepository.findById(deleteRequestedUserId.toString()).orElse(null);
+        User user = userRepository.findById(deleteRequestedUserId).orElse(null);
         Upload fileToDelete = uploadRepository.findById(fileId).orElse(null);
         return deleteFile(fileToDelete, user);
     }

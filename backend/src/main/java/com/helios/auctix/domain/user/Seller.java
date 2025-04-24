@@ -1,5 +1,6 @@
 package com.helios.auctix.domain.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public class Seller {
 
     @Id
+    @JsonIgnore
     private UUID id;
 
     @Column(name="is_verified",nullable = false)
@@ -31,6 +33,7 @@ public class Seller {
     @OneToOne
     @MapsId
     @JoinColumn(name = "id", nullable = false)
+    @JsonIgnore
     private User user;
 
 

@@ -7,6 +7,7 @@ import com.helios.auctix.dtos.ComplaintDTO;
 import com.helios.auctix.repositories.ComplaintRepository;
 import com.helios.auctix.repositories.UserRepository;
 //import com.helios.auctix.exceptions.ResourceNotFoundException;
+import com.helios.auctix.services.user.UserDetailsService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,8 +53,11 @@ public class ComplaintService {
     }
 
     public List<Complaint> getComplaintsByUser(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        UserDetailsService userDetailsService = new UserDetailsService();
+        User user = userDetailsService.getUserByUsername(username);
+        if(user == null) {
+            new RuntimeException("User not found");
+        }
         return complaintRepository.findByReportedByOrderByDateReportedDesc(user);
     }
 

@@ -1,12 +1,17 @@
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
+
+
 # AuctiX
 Online auction platform
 # Formating
 Prettier is configured to format the staged files and commit. using husky pre-commit hook
 to skip the formatting use the `git commit` with `-n` or `--no-verify` flag also add files to .prettierignore file to ignore the formatting
 
+# Documentation
 
+- [Backend README](./docs/backend/README.md)
+- [Frontend README](./docs/frontend/README.md)
 
 # Setup
 
@@ -138,3 +143,45 @@ Include the token in the Authorization header for protected routes.
 Example:
 
 `Authorization: Bearer <your-jwt-token>`
+
+## Using Axios Instence
+
+Use the pre-configured axios instance as follows.
+This will automatically handle signing out the user if the JWT token is expired or invalid.
+
+```js
+import { AxiosInstance } from 'axios';
+import AxiosReqest from '@/services/axiosInspector';
+
+export function FunctionalComponent(){
+  const axiosInstance: AxiosInstance = AxiosReqest()
+                                        .axiosInstance;
+
+  axiosInstance
+      .get('/user/getUsers', {
+        //set params, headers...
+      })
+      .then((data) => {
+        // after fetch data
+      })
+}
+```
+
+```js
+import { AxiosInstance } from 'axios';
+import AxiosReqest from '@/services/axiosInspector';
+
+exprot function FunctionalComponent(){
+  const axiosInstance: AxiosInstance = AxiosReqest()
+                                        .axiosInstance;
+
+  axiosInstance
+      .get('/user/getUsers', {
+        //set params, headers...
+      })
+      .then((data) => {
+        // after fetch data
+        console.log(data);
+      })
+}
+```

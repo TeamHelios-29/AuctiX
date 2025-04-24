@@ -11,6 +11,7 @@ import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import com.helios.auctix.services.user.*;
+import org.apache.tomcat.websocket.AuthenticationException;
 import org.eclipse.angus.mail.iap.ByteArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -21,7 +22,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -70,11 +70,11 @@ public class UserController {
         return "hello world!";
     }
 
-    @GetMapping("/user-exists")
+    @GetMapping("/isUserExists")
     public String isUserExcist(@RequestParam(required = false) String username, @RequestParam(required = false) UUID id, @RequestParam(required = false) String email) {
-        boolean hasUname = !username.isBlank();
+        boolean hasUname = !(username==null || username.isBlank());
         boolean hasId = id != null;
-        boolean hasEmail = !email.isBlank();
+        boolean hasEmail = !(email==null || email.isBlank());
         byte providedParamsCount = 0;
         if (hasUname) {
             providedParamsCount++;
@@ -121,6 +121,7 @@ public class UserController {
         }
     }
 
+    @Profile("dev")
     @PostMapping("/createSeller")
     public ResponseEntity<String> createUser(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         try {
@@ -137,6 +138,7 @@ public class UserController {
         }
     }
 
+    @Profile("dev")
     @PostMapping("/createBidder")
     public String createBidder(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Bidder creation request: " + username);
@@ -148,6 +150,7 @@ public class UserController {
         }
     }
 
+    @Profile("dev")
     @PostMapping("/createAdmin")
     public String createAdmin(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Admin creation request: " + username);
@@ -206,6 +209,7 @@ public class UserController {
             return ResponseEntity.status(403).body("User not authenticated");
         }
         catch (Exception e){
+            log.warning(e.getMessage());
             return ResponseEntity.status(500).body("Internal server error");
         }
 

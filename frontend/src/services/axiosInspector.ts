@@ -5,9 +5,11 @@ import { useAppSelector } from '../hooks/hooks';
 
 const AxiosRequest = () => {
   const navigate = useNavigate();
+  const baseURL = import.meta.env.VITE_API_URL;
+
   // Axios instance with default configurations
   const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: baseURL || 'http://localhost:8080/api',
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
