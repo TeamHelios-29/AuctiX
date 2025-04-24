@@ -12,6 +12,7 @@ import CreateAuction from '@/pages/create-auction';
 import SellerProfile from '@/pages/SellerProfile';
 import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/auction-details';
+import Report from '@/pages/report';
 
 export default function AppRouter() {
   return (
@@ -37,6 +38,7 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
+          <Route path="/reports" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Route>
         {/* Other Routes */}
