@@ -4,6 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export default function ComplaintReports() {
   // Sample report data
@@ -94,65 +102,50 @@ export default function ComplaintReports() {
           </Button>
         </div>
 
-        <div className="bg-white rounded-lg border">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="p-4 w-10">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead></TableHead>
+              <TableHead>Report ID</TableHead>
+              <TableHead>Reported User</TableHead>
+              <TableHead>Reported By</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Date Reported</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reports.map((report) => (
+              <TableRow key={report.id}>
+                <TableCell>
                   <Checkbox />
-                </th>
-                <th className="text-left p-4">Report ID</th>
-                <th className="text-left p-4">Reported User</th>
-                <th className="text-left p-4">Reported By</th>
-                <th className="text-left p-4">Reason</th>
-                <th className="text-left p-4">Date Reported</th>
-                <th className="text-left p-4">Status</th>
-                <th className="text-left p-4 w-10"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((report) => (
-                <tr key={report.id} className="border-b">
-                  <td className="p-4">
-                    <Checkbox />
-                  </td>
-                  <td className="p-4">{report.id}</td>
-                  <td className="p-4">{report.user}</td>
-                  <td className="p-4">{report.reportedBy}</td>
-                  <td className="p-4">{report.reason}</td>
-                  <td className="p-4">{report.date}</td>
-                  <td className="p-4">
-                    <Badge
-                      className={`
+                </TableCell>
+                <TableCell>{report.id}</TableCell>
+                <TableCell>{report.user}</TableCell>
+                <TableCell>{report.reportedBy}</TableCell>
+                <TableCell>{report.reason}</TableCell>
+                <TableCell>{report.date}</TableCell>
+                <TableCell>
+                  <Badge
+                    className={`
                       ${report.status === 'Listing Removed' ? 'bg-red-100 text-red-600' : ''}
                       ${report.status === 'Under Review' ? 'bg-blue-100 text-blue-600' : ''}
                       ${report.status === 'New' ? 'bg-green-100 text-green-600' : ''}
                     shadow-none`}
-                    >
-                      {report.status}
-                    </Badge>
-                  </td>
-                  <td className="p-4">
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="p-4 flex justify-between items-center text-sm text-gray-500">
-            <div>1 of 100 row(s) selected.</div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                Previous
-              </Button>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
+                  >
+                    {report.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
