@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AxiosInstance } from 'axios';
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { delay, motion } from 'motion/react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { Octagon, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/hooks';
@@ -15,11 +15,11 @@ import { IAuthUser } from '@/types/IAuthUser';
 import { login } from '@/store/slices/authSlice';
 import { AlertBox } from './AlertBox';
 import AxiosReqest from '@/services/axiosInspector';
-
-interface IValidationError {
-  msg: string;
-  fieldId: string;
-}
+import {
+  IValidationError,
+  ValidateErrorElement,
+  ValidityIndicator,
+} from '../atoms/validityIndicator';
 
 export function TabsDemo({
   onTabChange,
@@ -42,53 +42,73 @@ export function TabsDemo({
   );
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUsernameAvailableLoading, setIsUsernameAvailableLoading] =
+    useState(false);
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState(false);
+  const [isUsernameTyping, setIsUsernameTyping] = useState(false);
+  const [isWaitingForApiCall, setIsWaitingForApiCall] = useState(false);
+
+  useEffect(() => {
+    setIsUsernameTyping(true);
+  }, [username]);
+
+  useEffect(() => {
+    if (isUsernameTyping) {
+      setTimeout(() => {
+        if (isUsernameTyping) {
+          setIsUsernameTyping(false);
+          setIsWaitingForApiCall(true);
+        }
+      }, 1000);
+    }
+  }, [isUsernameTyping]);
+
+  useEffect(() => {
+    if (isWaitingForApiCall) {
+      setIsWaitingForApiCall(false);
+      isUserNameAvailable();
+    }
+  }, [isWaitingForApiCall]);
+
+  const isUserNameAvailableApiCall = () => {
+    console.log('isUserNameAvailableApiCall for', username);
+    axiosInstance
+      .get('/user/isUserExists', {
+        params: {
+          username,
+        },
+      })
+      .then((res) => {
+        console.log('isUserNameAvailable', !res.data);
+        setIsUsernameAvailable(!res.data);
+      })
+      .finally(() => {
+        setIsUsernameAvailableLoading(false);
+      });
+  };
+
+  const isUserNameAvailable = () => {
+    if (username && username.length >= 3) {
+      setIsUsernameAvailableLoading(true);
+
+      setTimeout(() => {
+        if (!isUsernameTyping) {
+          isUserNameAvailableApiCall();
+        }
+      }, 1000);
+    } else {
+      // less than 6 characters, are not available for users
+      setIsUsernameAvailableLoading(false);
+      setIsUsernameAvailable(false);
+    }
+  };
 
   const isLoginSuccessRef = useRef(isLoginSuccess);
-
-  const ValidateErrorElement = ({
-    eleFieldId,
-    errorList,
-  }: {
-    eleFieldId: string;
-    errorList: IValidationError[];
-  }) => {
-    const fieldErrors = errorList.filter(
-      (ve) => (ve.fieldId as string) === eleFieldId,
-    );
-    const initProps = {
-      opacity: 1,
-      scale: 1,
-    };
-    const animateProps = {
-      opacity: [1, 0.9, 1],
-      scale: [1, 1.06, 1],
-    };
-    return fieldErrors.length > 0 ? (
-      <motion.div
-        key={eleFieldId + '-errors' + fieldErrors.length}
-        initial={initProps}
-        animate={animateProps}
-        exit={{ opacity: 0, scale: 0 }}
-        transition={{ duration: 0.5, exit: { duration: 1.5 } }}
-        className="bg-red-50 border border-red-200 rounded-md p-3 mb-3"
-      >
-        <h4 className="text-sm font-medium text-red-800 mb-1">
-          Check the input field rules:
-        </h4>
-        <ul className="text-xs text-red-700 list-disc pl-4 space-y-1">
-          {fieldErrors.map((error, index) => (
-            <li key={index}>{error.msg}</li>
-          ))}
-        </ul>
-      </motion.div>
-    ) : (
-      <></>
-    );
-  };
 
   useEffect(() => {
     validations();
   }, [email, password, repeatPassword, firstName, lastName, username]);
+
   useEffect(() => {
     isLoginSuccessRef.current = isLoginSuccess;
   }, [isLoginSuccess]);
@@ -325,12 +345,6 @@ export function TabsDemo({
         </TabsList>
         <TabsContent value="Buyers">
           <Card className="border-none shadow-none">
-            {/* <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              Make changes to your account here. Click save when you're done.
-            </CardDescription>
-          </CardHeader> */}
             <CardContent className="space-y-2 py-5 px-0">
               <div className="space-y-1">
                 <Label htmlFor="firstName">First Name</Label>
@@ -374,6 +388,11 @@ export function TabsDemo({
                   id="username"
                   onChange={(e) => handleInputType(e)}
                   placeholder="@peduarte"
+                />
+                <ValidityIndicator
+                  isUsernameAvailable={isUsernameAvailable}
+                  isUsernameAvailableLoading={isUsernameAvailableLoading}
+                  offset={{ x: -20, y: -150 }}
                 />
               </div>
               <ValidateErrorElement
@@ -485,6 +504,11 @@ export function TabsDemo({
                   id="username"
                   onChange={(e) => handleInputType(e)}
                   placeholder="@globalLK"
+                />
+                <ValidityIndicator
+                  isUsernameAvailable={isUsernameAvailable}
+                  isUsernameAvailableLoading={isUsernameAvailableLoading}
+                  offset={{ x: -20, y: -150 }}
                 />
               </div>
               <ValidateErrorElement
