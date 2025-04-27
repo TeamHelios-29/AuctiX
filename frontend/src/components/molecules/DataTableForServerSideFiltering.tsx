@@ -1,5 +1,3 @@
-'use client';
-
 import * as React from 'react';
 import {
   ColumnDef,
@@ -50,24 +48,44 @@ export function DataTableForServerSideFiltering<TData, TValue>({
   setSearchText,
   searchText,
 }: DataTableProps<TData, TValue>) {
-  const setNonZeroBasedCurrentPage = (page: number) => {
-    setCurrentPage(page - 1);
-  };
+  const currentPageHandler = React.useCallback(
+    (page: number) => {
+      console.log('[DataTableForServerSideFiltering]: currentPageHandler');
+      setCurrentPage(page);
+    },
+    [setCurrentPage],
+  );
+
+  console.log('[DataTableForServerSideFiltering]:');
+
+  const memoizedData = React.useMemo(() => data || [], [data]);
+  const memoizedColumns = React.useMemo(() => columns, [columns]);
+  const paginationState = React.useMemo(
+    () => ({
+      pageIndex: currentPage ?? 0,
+      pageSize: pageSize ?? 10,
+    }),
+    [currentPage, pageSize],
+  );
 
   const table = useReactTable({
-    data: data || [],
-    columns,
+    data: memoizedData,
+    columns: memoizedColumns,
     getCoreRowModel: getCoreRowModel(),
     enableRowSelection: true,
-
     pageCount: pageCount ?? 0,
+    manualPagination: true,
     state: {
-      pagination: {
-        pageIndex: currentPage ?? 0,
-        pageSize: pageSize ?? 10,
-      },
+      pagination: paginationState,
     },
   });
+
+  React.useEffect(() => {
+    console.log('DataTableForServerSideFiltering mounted');
+    return () => {
+      console.log('DataTableForServerSideFiltering unmounted');
+    };
+  }, []);
 
   return (
     <div className="w-full p-4">
@@ -165,7 +183,7 @@ export function DataTableForServerSideFiltering<TData, TValue>({
         <PaginationNav
           currentPage={currentPage ? currentPage + 1 : 1}
           pages={pageCount ?? 1}
-          handlePage={(e) => setNonZeroBasedCurrentPage(e)}
+          handlePage={currentPageHandler}
         />
       </div>
     </div>

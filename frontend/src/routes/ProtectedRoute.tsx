@@ -36,9 +36,14 @@ const ProtectedRoute = ({
         'autherized',
       );
     }
-  }, [user?.role, allowedUsers, redirectPath, navigate]);
+  }, [user?.role, allowedUsers, redirectPath, navigate, user?.token]);
 
-  return user?.role && allowedUsers.includes(user.role) ? children : <></>;
+  return user?.role &&
+    (allowedUsers.includes(user.role) || allowedUsers.includes('ANY')) ? (
+    children
+  ) : (
+    <></>
+  );
 };
 
 export default ProtectedRoute;

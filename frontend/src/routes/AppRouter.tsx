@@ -13,6 +13,7 @@ import SellerProfile from '@/pages/SellerProfile';
 import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/auction-details';
 import Report from '@/pages/Report';
+import Settings from '@/pages/Settings';
 
 export default function AppRouter() {
   return (
@@ -38,7 +39,18 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-          <Route path="/user" element={<User />} />
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute
+                allowedUsers={['ADMIN', 'SUPPER_ADMIN', 'BIDDER', 'SELLER']}
+                redirectPath="/403"
+              >
+                <User />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/reports" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Route>

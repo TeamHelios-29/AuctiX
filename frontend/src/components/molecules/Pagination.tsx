@@ -7,7 +7,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 export function PaginationNav({
   handlePage,
@@ -18,41 +18,48 @@ export function PaginationNav({
   pages: number;
   currentPage: number;
 }) {
+  const setNonZeroBasedCurrentPage = (page: number) => {
+    handlePage(page - 1);
+    console.log('[Pagination.tsx]: handlePage');
+  };
+
   const handlePreviousClick = () => {
     if (currentPage > 1) {
-      handlePage(currentPage - 1);
+      setNonZeroBasedCurrentPage(currentPage - 1);
     }
   };
 
   const handleNextClick = () => {
     if (currentPage < pages) {
-      handlePage(currentPage + 1);
+      setNonZeroBasedCurrentPage(currentPage + 1);
     }
   };
 
   useEffect(() => {
     console.log('PaginationNav', {
-      handlePage,
+      setNonZeroBasedCurrentPage,
       handlePreviousClick,
       handleNextClick,
       pages,
       currentPage,
     });
-  }, [handlePage, handlePreviousClick, handleNextClick, pages, currentPage]);
+  }, [setNonZeroBasedCurrentPage, pages, currentPage]);
 
   return (
     <Pagination>
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
-            onClick={handlePreviousClick}
+            onClick={() => handlePreviousClick()}
             className={currentPage < 2 ? 'pointer-events-none opacity-70' : ''}
           />
         </PaginationItem>
 
         {currentPage > 2 && (
           <PaginationItem>
-            <PaginationLink onClick={() => handlePage(1)}>1</PaginationLink>
+            <PaginationLink onClick={() => setNonZeroBasedCurrentPage(1)}>
+              1
+            </PaginationLink>
           </PaginationItem>
         )}
 
@@ -64,7 +71,9 @@ export function PaginationNav({
 
         {currentPage > 1 && (
           <PaginationItem>
-            <PaginationLink onClick={() => handlePage(currentPage - 1)}>
+            <PaginationLink
+              onClick={() => setNonZeroBasedCurrentPage(currentPage - 1)}
+            >
               {currentPage - 1}
             </PaginationLink>
           </PaginationItem>
@@ -78,7 +87,9 @@ export function PaginationNav({
 
         {pages > currentPage && (
           <PaginationItem>
-            <PaginationLink onClick={() => handlePage(currentPage + 1)}>
+            <PaginationLink
+              onClick={() => setNonZeroBasedCurrentPage(currentPage + 1)}
+            >
               {currentPage + 1}
             </PaginationLink>
           </PaginationItem>
@@ -92,7 +103,7 @@ export function PaginationNav({
 
         {currentPage < pages - 1 && (
           <PaginationItem>
-            <PaginationLink onClick={() => handlePage(pages)}>
+            <PaginationLink onClick={() => setNonZeroBasedCurrentPage(pages)}>
               {pages}
             </PaginationLink>
           </PaginationItem>
@@ -100,7 +111,7 @@ export function PaginationNav({
 
         <PaginationItem>
           <PaginationNext
-            onClick={handleNextClick}
+            onClick={() => handleNextClick()}
             className={
               currentPage > pages - 1 ? 'pointer-events-none opacity-70' : ''
             }
