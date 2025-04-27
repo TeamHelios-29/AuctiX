@@ -1,6 +1,14 @@
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Upload, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import {
+  X,
+  Upload,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  AlertCircle,
+  BanIcon,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -10,13 +18,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { AlertBox } from '../organisms/AlertBox';
 
 interface Position {
   x: number;
   y: number;
 }
 
-interface ImageResult {
+export interface ImageResult {
   imageData: string | null;
   position: Position;
   scale: number;
@@ -24,9 +33,21 @@ interface ImageResult {
 
 interface ImageUploadPopupProps {
   onConfirm?: (result: ImageResult) => void;
+  minWidth?: number;
+  minHeight?: number;
+  shape?: 'square' | 'circle';
+  acceptingWidth?: number;
+  acceptingHeight?: number;
 }
 
-export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
+export default function ImageUploadPopup({
+  onConfirm,
+  minWidth = 200,
+  minHeight = 200,
+  shape = 'square',
+  acceptingWidth = 200,
+  acceptingHeight = 200,
+}: ImageUploadPopupProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [image, setImage] = useState<string | null>(null);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
@@ -34,6 +55,15 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
   const [scale, setScale] = useState<number>(1);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imgContainerRef = useRef<HTMLDivElement>(null);
+  const originalImageRef = useRef<HTMLImageElement>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const [autoScale, setAutoScale] = useState<number>(1);
+  const [alertOpen, setAlertOpen] = useState<boolean>(false);
 
   const handleOpenDialog = (): void => setIsOpen(true);
 
@@ -42,6 +72,8 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
     setImage(null);
     setPosition({ x: 0, y: 0 });
     setScale(1);
+    setImageError(null);
+    setImageDimensions(null);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
@@ -61,17 +93,126 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
     }
   };
 
+  const validateImage = (img: HTMLImageElement): boolean => {
+    if (img.naturalWidth < minWidth || img.naturalHeight < minHeight) {
+      setImageError(
+        `Image must be at least ${minWidth}x${minHeight} pixels. Current size: ${img.naturalWidth}x${img.naturalHeight}`,
+      );
+      setAlertOpen(true);
+      return false;
+    }
+    setImageError(null);
+    return true;
+  };
+
+  const calculateInitialScale = (
+    imgWidth: number,
+    imgHeight: number,
+    containerWidth: number,
+    containerHeight: number,
+  ): number => {
+    // Calculate the ratio for both width and height to fit inside the accepting area
+    const widthRatio = acceptingWidth / imgWidth;
+    const heightRatio = acceptingHeight / imgHeight;
+
+    // Take the larger ratio to ensure the image fills the highlighted area
+    // This is different from the previous approach where we took the smaller ratio
+    const fillRatio = Math.max(widthRatio, heightRatio);
+
+    // Also consider the container size to avoid images being too large for the container
+    const containerWidthRatio = (containerWidth * 0.9) / imgWidth; // Use 90% of container width
+    const containerHeightRatio = (containerHeight * 0.9) / imgHeight; // Use 90% of container height
+    const containerFitRatio = Math.min(
+      containerWidthRatio,
+      containerHeightRatio,
+    );
+
+    // Choose the appropriate scale based on image size
+    if (imgWidth < acceptingWidth || imgHeight < acceptingHeight) {
+      // For small images, use fillRatio to make them fill the highlighted area
+      // but cap at containerFitRatio to avoid exceeding container bounds
+      return Math.min(fillRatio, containerFitRatio);
+    } else {
+      // For larger images, just ensure they're large enough to cover the highlighted area
+      // but not so large they exceed container bounds
+      return Math.min(Math.max(1.0, fillRatio), containerFitRatio);
+    }
+  };
+
+  const centerImageInContainer = () => {
+    if (imgContainerRef.current && imageDimensions) {
+      // Center position is 0,0 for the transform
+      setPosition({ x: 0, y: 0 });
+    }
+  };
+
   const handleFileSelect = (file: File): void => {
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {
       if (e.target?.result) {
-        setImage(e.target.result as string);
-        setPosition({ x: 0, y: 0 });
-        setScale(1);
+        const img = new Image();
+        img.onload = () => {
+          if (validateImage(img)) {
+            setImage(e.target?.result as string);
+            setImageDimensions({
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+            });
+
+            // Wait for the next render cycle to ensure imgContainerRef is populated
+            setTimeout(() => {
+              if (imgContainerRef.current) {
+                const containerWidth = imgContainerRef.current.clientWidth;
+                const containerHeight = imgContainerRef.current.clientHeight;
+                const initialScale = calculateInitialScale(
+                  img.naturalWidth,
+                  img.naturalHeight,
+                  containerWidth,
+                  containerHeight,
+                );
+                console.log('Container size:', containerWidth, containerHeight);
+                console.log('Image size:', img.naturalWidth, img.naturalHeight);
+                console.log('Calculated scale:', initialScale);
+                setAutoScale(initialScale);
+                setScale(initialScale);
+                // Set initial position to center
+                setPosition({ x: 0, y: 0 });
+              }
+            }, 0);
+          } else {
+            // Reset the file input to allow selecting a new file
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }
+        };
+        img.src = e.target.result as string;
       }
     };
     reader.readAsDataURL(file);
   };
+
+  // Update position and scale when container or image dimensions change
+  useEffect(() => {
+    if (imageDimensions && imgContainerRef.current) {
+      const containerWidth = imgContainerRef.current.clientWidth;
+      const containerHeight = imgContainerRef.current.clientHeight;
+      const newScale = calculateInitialScale(
+        imageDimensions.width,
+        imageDimensions.height,
+        containerWidth,
+        containerHeight,
+      );
+
+      // Only update if significantly different to avoid infinite loops
+      if (Math.abs(newScale - autoScale) > 0.01) {
+        setAutoScale(newScale);
+        setScale(newScale);
+        // Center the image when scale changes
+        centerImageInContainer();
+      }
+    }
+  }, [imageDimensions, acceptingWidth, acceptingHeight]);
 
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
     if (e.target.files && e.target.files[0]) {
@@ -84,26 +225,101 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
   };
 
   const handleZoomIn = (): void => {
-    setScale(scale + 0.1);
+    if (scale < 4) {
+      setScale((prevScale) => {
+        const newScale = prevScale + 0.1;
+        // Adjust position to keep the highlighted area visible
+        constrainPositionAfterZoom(newScale);
+        return newScale;
+      });
+    }
   };
 
   const handleZoomOut = (): void => {
     if (scale > 0.2) {
-      setScale(scale - 0.1);
+      setScale((prevScale) => {
+        const newScale = Math.max(prevScale - 0.1, 0.2);
+        // Adjust position to keep the highlighted area visible
+        constrainPositionAfterZoom(newScale);
+        return newScale;
+      });
     }
   };
 
-  const handleDraging = (
+  const handleResetZoom = (): void => {
+    // Use the autoScale calculated based on image and container dimensions
+    setScale(autoScale);
+    // Reset position to center
+    setPosition({ x: 0, y: 0 });
+    positionRef.current = { x: 0, y: 0 };
+  };
+
+  // Adjust position after zoom to keep the highlighted area visible
+  const constrainPositionAfterZoom = (newScale: number) => {
+    if (!imageDimensions) return;
+
+    const newPos = { ...position };
+    const constrainedPos = constrainPosition(newPos, newScale);
+    setPosition(constrainedPos);
+    positionRef.current = constrainedPos;
+  };
+
+  // Ensure image stays within the highlighted area boundaries
+  const constrainPosition = (
+    newPos: Position,
+    currentScale: number = scale,
+  ): Position => {
+    if (!imgContainerRef.current || !imageDimensions) {
+      return newPos;
+    }
+
+    // Calculate bounds based on scaled image size
+    const scaledImageWidth = imageDimensions.width * currentScale;
+    const scaledImageHeight = imageDimensions.height * currentScale;
+
+    // Calculate the maximum allowed movement to keep the highlighted area visible
+    const halfAcceptingWidth = acceptingWidth / 2;
+    const halfAcceptingHeight = acceptingHeight / 2;
+
+    const maxX = Math.max(scaledImageWidth / 2 - halfAcceptingWidth, 0);
+    const maxY = Math.max(scaledImageHeight / 2 - halfAcceptingHeight, 0);
+
+    return {
+      x: Math.max(Math.min(newPos.x, maxX), -maxX),
+      y: Math.max(Math.min(newPos.y, maxY), -maxY),
+    };
+  };
+
+  const handleDragging = (
     e: Event,
     info: { offset: { x: number; y: number } },
   ) => {
-    setIsDragging(false);
-    console.log('dragged to', info.offset.x, info.offset.y);
-    setPosition({
-      x: positionRef.current.x + info.offset.x,
-      y: positionRef.current.y + info.offset.y,
-    });
+    e.preventDefault();
+    setIsDragging(true);
+
+    const movingFactor = 1 / (scale * 1000);
+
+    // Calculate new position
+    const newPosition = {
+      x: positionRef.current.x + info.offset.x * movingFactor,
+      y: positionRef.current.y + info.offset.y * movingFactor,
+    };
+
+    // Constrain the position
+    const constrainedPosition = constrainPosition(newPosition);
+
+    setPosition(constrainedPosition);
+    positionRef.current = constrainedPosition;
   };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Update positionRef when position changes
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
 
   const handleConfirm = (): void => {
     const result: ImageResult = {
@@ -111,7 +327,6 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
       position,
       scale,
     };
-    console.log('Image set as object:', result);
 
     // If onConfirm prop is provided, call it with the result
     if (onConfirm) {
@@ -135,7 +350,17 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
             <DialogTitle>Upload and Adjust Image</DialogTitle>
           </DialogHeader>
 
-          <div className="my-4">
+          <AlertBox
+            onAlertOpenChange={setAlertOpen}
+            IconElement={<BanIcon className="w-6 h-6 text-red-500" />}
+            alertOpen={alertOpen}
+            title={'Error'}
+            message={imageError || 'Image not valid'}
+            continueBtn="Ok"
+            cancelBtn={null}
+          />
+
+          <div className="w-full max-w-full overflow-hidden">
             {!image ? (
               <Card
                 className="border-2 border-dashed border-gray-300 rounded-lg h-64 flex flex-col items-center justify-center cursor-pointer"
@@ -154,43 +379,72 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
                 <p className="mt-2 text-sm text-gray-500">
                   Drag & drop an image or click to browse
                 </p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Image size must be at least {minWidth}x{minHeight} pixels
+                </p>
               </Card>
             ) : (
-              <div className="relative h-64 w-full overflow-hidden bg-gray-100 rounded-lg">
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  drag
-                  dragMomentum={false}
-                  dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                  dragElastic={0}
-                  onDragStart={() => setIsDragging(true)}
-                  onDrag={handleDraging}
-                  onDragEnd={() => {
-                    setIsDragging(false);
-                  }}
+              <div
+                className="relative h-64 w-full overflow-hidden bg-gray-700 rounded-lg flex items-center justify-center"
+                ref={imgContainerRef}
+              >
+                {/* Dark overlay with highlighted area */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div
+                    className={`absolute ${shape === 'circle' ? 'rounded-full' : 'rounded-none'}`}
+                    style={{
+                      width: acceptingWidth,
+                      height: acceptingHeight,
+                      boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7)',
+                      zIndex: 1,
+                    }}
+                  />
+                </div>
+
+                {/* Image container */}
+                <div
+                  className="absolute flex items-center justify-center"
                   style={{
-                    position: 'relative',
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    touchAction: 'none',
-                    left: position.x,
-                    top: position.y,
-                    scale: scale,
+                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                    transformOrigin: 'center',
                   }}
                 >
                   <img
                     src={image}
+                    ref={originalImageRef}
                     alt="Preview"
-                    className="max-w-full max-h-full"
+                    className="max-w-none max-h-none"
                     draggable="false"
+                    style={{
+                      width: imageDimensions?.width,
+                      height: imageDimensions?.height,
+                    }}
                   />
-                </motion.div>
+                </div>
 
-                <div className="absolute bottom-2 right-2 flex gap-2 bg-black bg-opacity-50 p-2 rounded-md">
+                {/* High z-index drag overlay */}
+                <motion.div
+                  className="absolute inset-0 cursor-grab active:cursor-grabbing z-10"
+                  drag
+                  dragConstraints={imgContainerRef}
+                  dragElastic={0.1}
+                  dragMomentum={false}
+                  onDragStart={() => setIsDragging(true)}
+                  onDrag={handleDragging}
+                  onDragEnd={handleDragEnd}
+                  style={{
+                    touchAction: 'none',
+                    userSelect: 'none',
+                  }}
+                />
+
+                <div className="absolute bottom-2 right-2 flex gap-2 bg-black bg-opacity-50 p-2 rounded-md z-20">
                   <Button
                     size="sm"
                     variant="ghost"
                     className="text-white p-1 h-8 w-8"
                     onClick={handleZoomIn}
+                    title="Zoom In"
                   >
                     <ZoomIn size={16} />
                   </Button>
@@ -199,10 +453,23 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
                     variant="ghost"
                     className="text-white p-1 h-8 w-8"
                     onClick={handleZoomOut}
+                    title="Zoom Out"
                   >
                     <ZoomOut size={16} />
                   </Button>
-                  <div className="flex items-center justify-center text-white p-1 h-8 w-8">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-white p-1 h-8 w-8"
+                    onClick={handleResetZoom}
+                    title="Reset View"
+                  >
+                    <X size={16} />
+                  </Button>
+                  <div
+                    className="flex items-center justify-center text-white p-1 h-8 w-8"
+                    title="Drag to Move"
+                  >
                     <Move size={16} />
                   </div>
                 </div>
@@ -214,7 +481,7 @@ export default function ImageUploadPopup({ onConfirm }: ImageUploadPopupProps) {
             <Button variant="outline" onClick={handleCloseDialog}>
               Cancel
             </Button>
-            <Button onClick={handleConfirm} disabled={!image}>
+            <Button onClick={handleConfirm} disabled={!image || !!imageError}>
               Confirm
             </Button>
           </DialogFooter>

@@ -18,7 +18,7 @@ import { Textarea } from '../ui/textarea';
 import { CheckCircle2, LucideTextSelect, Option } from 'lucide-react';
 import { AlertBox } from './AlertBox';
 import { useState } from 'react';
-import ImageUploadPopup from '../molecules/ProfilePhotoEditor';
+import ImageUploadPopup, { ImageResult } from '../molecules/ProfilePhotoEditor';
 
 const profileFormSchema = z.object({
   username: z
@@ -73,6 +73,10 @@ export function ProfileForm() {
     setIsAlertOpen(true);
   }
 
+  const onProfilePhotoSet = (e: ImageResult) => {
+    console.log(e);
+  };
+
   return (
     <Form {...form}>
       <AlertBox
@@ -103,7 +107,14 @@ export function ProfileForm() {
           )}
         />
 
-        <ImageUploadPopup />
+        <ImageUploadPopup
+          minHeight={100}
+          minWidth={100}
+          acceptingHeight={50}
+          acceptingWidth={50}
+          shape="circle"
+          onConfirm={onProfilePhotoSet}
+        />
 
         <FormField
           control={form.control}
