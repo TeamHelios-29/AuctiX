@@ -190,11 +190,21 @@ public class UserController {
             @RequestParam(value = "search", required = false) String search) {
 
         try{
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User user = userDetailsService.getAuthenticatedUser(authentication);
+            String userRole = user.getRole().getName().toString();
+            log.info("user data requested by "+user.getEmail()+","+userRole);
+            if(!(UserRoleEnum.valueOf(userRole)==UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole)==UserRoleEnum.SUPER_ADMIN)){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("FORBIDDEN");
+            }
             Page userPage = userDetailsService.getAllUsers(limit,offset,order,sortBy,search);
             return ResponseEntity.ok(userPage);
         }
         catch (IllegalArgumentException e){
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body("Bad request");
+        }
+        catch(AuthenticationException e){
+            return ResponseEntity.status(403).body("User not authenticated");
         }
     }
 
