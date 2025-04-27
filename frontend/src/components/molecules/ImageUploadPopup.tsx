@@ -27,6 +27,7 @@ interface Position {
 
 export interface ImageResult {
   imageData: string | null;
+  cropedImage?: string | null;
   position: Position;
   scale: number;
 }
@@ -321,12 +322,69 @@ export default function ImageUploadPopup({
     positionRef.current = position;
   }, [position]);
 
+  // Function to crop the image to the highlighted area
+  const cropImage = (): string | null => {
+    if (!image || !imageDimensions) return null;
+
+    try {
+      // Create a canvas element
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      // Set canvas size to the accepting area dimensions
+      canvas.width = acceptingWidth;
+      canvas.height = acceptingHeight;
+
+      // Create an image element to draw from
+      const img = new Image();
+      img.src = image;
+
+      // Calculate crop area
+      const scaledWidth = imageDimensions.width * scale;
+      const scaledHeight = imageDimensions.height * scale;
+
+      // Calculate source coordinates (the area of the original image to crop)
+      // Center of the scaled image + position offset - half of the accepting area
+      const sourceX =
+        (scaledWidth / 2 - position.x - acceptingWidth / 2) / scale;
+      const sourceY =
+        (scaledHeight / 2 - position.y - acceptingHeight / 2) / scale;
+      const sourceWidth = acceptingWidth / scale;
+      const sourceHeight = acceptingHeight / scale;
+
+      // Draw the cropped portion of the image onto the canvas
+      ctx.drawImage(
+        img,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight, // Source rectangle
+        0,
+        0,
+        acceptingWidth,
+        acceptingHeight, // Destination rectangle
+      );
+
+      // Convert canvas to data URL
+      return canvas.toDataURL('image/png');
+    } catch (error) {
+      console.error('Error cropping image:', error);
+      return null;
+    }
+  };
+
   const handleConfirm = (): void => {
+    // Get the cropped image
+    const croppedImageData = cropImage();
+
     const result: ImageResult = {
       imageData: image,
+      cropedImage: croppedImageData,
       position,
       scale,
     };
+    console.log('Image set as object:', result);
 
     // If onConfirm prop is provided, call it with the result
     if (onConfirm) {

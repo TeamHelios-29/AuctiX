@@ -18,7 +18,7 @@ import { Textarea } from '../ui/textarea';
 import { CheckCircle2, LucideTextSelect, Option } from 'lucide-react';
 import { AlertBox } from './AlertBox';
 import { useState } from 'react';
-import ImageUploadPopup, { ImageResult } from '../molecules/ProfilePhotoEditor';
+import ImageUploadPopup, { ImageResult } from '../molecules/ImageUploadPopup';
 
 const profileFormSchema = z.object({
   username: z
