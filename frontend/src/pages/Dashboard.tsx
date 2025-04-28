@@ -1,8 +1,10 @@
-import { logout } from '@/components/auth/authSlice';
-import { IAuthUser } from '@/Interfaces/IAuthUser';
-import { useAppDispatch, useAppSelector } from '@/services/hooks';
+import { IAuthUser } from '@/types/IAuthUser';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AppSidebar } from '@/components/organisms/app-sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { logout } from '@/store/slices/authSlice';
 
 const Dashboard: React.FC = () => {
   const user: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);
@@ -17,6 +19,7 @@ const Dashboard: React.FC = () => {
       <h1>{user.role}'s Dashboard</h1>
       <div className="dashboard-content">
         <p>Hello {user.username} Welcome to the dashboard</p>
+
         <input
           type="button"
           onClick={handleLogout}
