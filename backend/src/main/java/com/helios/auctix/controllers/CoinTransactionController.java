@@ -21,8 +21,36 @@ public class CoinTransactionController {
         this.transactionService = transactionService;
     }
 
+    @PostMapping("/create")
+    public ResponseEntity<?> createWallet(@RequestParam("userId") UUID userId) {
+        try {
+            TransactionResponseDTO walletResponse = transactionService.createWallet(userId);
+            return ResponseEntity.ok(walletResponse);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating wallet: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/freeze-amount")
+    public ResponseEntity<?> freezeAmount(
+            @RequestParam("userId") UUID userId,
+            @RequestParam("freezeAmount") double freezeAmount) {
+        try {
+            TransactionResponseDTO response = transactionService.freezeAmount(userId, freezeAmount);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error freezing amount: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/process-transaction/{transactionId}")
-    public ResponseEntity<?> processTransaction(@PathVariable Long transactionId) {
+    public ResponseEntity<?> processTransaction(@PathVariable UUID transactionId) {
         try {
             TransactionResponseDTO transaction = transactionService.processTransaction(transactionId);
             return ResponseEntity.ok(transaction);

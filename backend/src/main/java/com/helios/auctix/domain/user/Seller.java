@@ -26,7 +26,7 @@ public class Seller {
     private boolean isActive;
 
     @Column(name="banner_id", nullable = true)
-    private Integer bannerId;
+    private UUID bannerId;
 
     @OneToOne
     @MapsId
