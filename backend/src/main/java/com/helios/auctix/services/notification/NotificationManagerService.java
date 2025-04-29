@@ -14,20 +14,21 @@ import java.util.Set;
 public class NotificationManagerService {
 
     private final Map<NotificationType, NotificationSender> senderMap;
-    private final Map<NotificationCategory, Set<NotificationType>> defaultPreferences;
+    private final NotificationSettingsService notificationSettingsService;
 
-    public NotificationManagerService(List<NotificationSender> senders) {
+    public NotificationManagerService(List<NotificationSender> senders, NotificationSettingsService notificationSettingsService) {
+        this.notificationSettingsService = notificationSettingsService;
         this.senderMap = new HashMap<>();
         for (NotificationSender sender : senders) {
             senderMap.put(sender.getNotificationType(), sender);
         }
 
-        this.defaultPreferences = setDefaultPreferences();
     }
 
     public void handleNotification(Notification notification) {
         NotificationCategory category = notification.getNotificationCategory();
-        Set<NotificationType> typesToSend = defaultPreferences.getOrDefault(category, Set.of(NotificationType.EMAIL));
+
+        Set<NotificationType> typesToSend = notificationSettingsService.resolveNotificationPreference(category, notification.getUser());
 
         for (NotificationType type : typesToSend) {
             NotificationSender sender = senderMap.get(type);
@@ -37,23 +38,5 @@ public class NotificationManagerService {
         }
     }
 
-
-    private Map<NotificationCategory, Set<NotificationType>> setDefaultPreferences() {
-        Map<NotificationCategory, Set<NotificationType>> defaultPreferences = new HashMap<>();
-
-        // Set default preferences like this for now
-        defaultPreferences.put(NotificationCategory.DEFAULT, Set.of(
-                NotificationType.EMAIL,
-//                NotificationType.WEBSOCKET,
-                NotificationType.PUSH
-        ));
-
-        defaultPreferences.put(NotificationCategory.PROMO, Set.of(
-                NotificationType.EMAIL,
-                NotificationType.PUSH
-        ));
-
-        return defaultPreferences;
-    }
 
 }
