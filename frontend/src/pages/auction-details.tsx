@@ -3,6 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Share, Flag, Heart } from 'lucide-react';
+import { useParams } from 'react-router-dom'; // if using react-router
+import axios from 'axios'; // for API calls
 
 // Types
 interface BidHistory {
@@ -89,6 +91,7 @@ const productData: ProductDetails = {
 };
 
 const AuctionDetailsPage = () => {
+  const { auctionId } = useParams(); // get auctionId from URL (if using routes like /auction/:auctionId)
   const [product, setProduct] = useState<ProductDetails>(productData);
   const [bidAmount, setBidAmount] = useState<number>(
     product.currentBid + BID_INCREMENT,
