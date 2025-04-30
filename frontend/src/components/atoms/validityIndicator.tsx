@@ -1,6 +1,6 @@
 import { CheckCircle, CircleDashed, XCircle } from 'lucide-react';
 import React from 'react';
-import { delay, motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const ValidityIndicator = React.memo(
   ({
@@ -12,9 +12,12 @@ export const ValidityIndicator = React.memo(
     isUsernameAvailableLoading: boolean;
     offset: { x: number; y: number };
   }) => {
-    const containerStyle = `flex items-center gap-2 w-fit float-right transform ${offset.x < 0 ? '-' : ''}translate-x-[${Math.abs(offset.x)}%] ${offset.y < 0 ? '-' : ''}translate-y-[${Math.abs(offset.y)}%]`;
+    const containerClasses = `flex items-center gap-2 w-fit float-right`;
+    const containerStyle = {
+      transform: `translate(${offset.x}%,${offset.y}%)`,
+    };
     return isUsernameAvailableLoading ? (
-      <div className={containerStyle}>
+      <div className={containerClasses} style={containerStyle}>
         <motion.span
           key="loading-indicator"
           initial={{ scale: 0.5 }}
@@ -23,24 +26,25 @@ export const ValidityIndicator = React.memo(
             duration: 0.6,
             delay: 0.2,
             repeat: Infinity,
-            scale: {
-              type: 'spring',
-              stiffness: 250,
-              damping: 15,
-            },
+            repeatType: 'reverse',
+            type: 'spring',
+            stiffness: 250,
+            damping: 15,
           }}
         >
           <CircleDashed />
         </motion.span>
       </div>
     ) : isUsernameAvailable ? (
-      <div className={containerStyle}>
+      <div className={containerClasses} style={containerStyle}>
         <motion.span
           key="available-indicator"
-          initial={{ scale: 0.5 }}
+          initial={{
+            scale: 0.5,
+          }}
           animate={{ scale: 1 }}
           transition={{
-            duration: 0.6,
+            duration: 0.4,
             scale: {
               type: 'spring',
               stiffness: 250,
@@ -53,10 +57,12 @@ export const ValidityIndicator = React.memo(
         </motion.span>
       </div>
     ) : (
-      <div className={containerStyle}>
+      <div className={containerClasses} style={containerStyle}>
         <motion.span
           key="unavailable-indicator"
-          initial={{ scale: 0.5 }}
+          initial={{
+            scale: 0.5,
+          }}
           animate={{ scale: 1 }}
           transition={{
             duration: 0.6,

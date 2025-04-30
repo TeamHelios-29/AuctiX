@@ -12,7 +12,7 @@ import { useAppDispatch } from '@/hooks/hooks';
 import { jwtDecode } from 'jwt-decode';
 import { IJwtData } from '@/types/IJwtData';
 import { IAuthUser } from '@/types/IAuthUser';
-import { login } from '@/store/slices/authSlice';
+import { login, user } from '@/store/slices/authSlice';
 import { AlertBox } from './AlertBox';
 import AxiosReqest from '@/services/axiosInspector';
 import {
@@ -20,6 +20,7 @@ import {
   ValidateErrorElement,
   ValidityIndicator,
 } from '../atoms/validityIndicator';
+import ValidateUsernameOrEmail from '../molecules/validateUsernameOrEmail';
 
 export function TabsDemo({
   onTabChange,
@@ -42,66 +43,6 @@ export function TabsDemo({
   );
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isUsernameAvailableLoading, setIsUsernameAvailableLoading] =
-    useState(false);
-  const [isUsernameAvailable, setIsUsernameAvailable] = useState(false);
-  const [isUsernameTyping, setIsUsernameTyping] = useState(false);
-  const [isWaitingForApiCall, setIsWaitingForApiCall] = useState(false);
-
-  useEffect(() => {
-    setIsUsernameTyping(true);
-  }, [username]);
-
-  useEffect(() => {
-    if (isUsernameTyping) {
-      setTimeout(() => {
-        if (isUsernameTyping) {
-          setIsUsernameTyping(false);
-          setIsWaitingForApiCall(true);
-        }
-      }, 1000);
-    }
-  }, [isUsernameTyping]);
-
-  useEffect(() => {
-    if (isWaitingForApiCall) {
-      setIsWaitingForApiCall(false);
-      isUserNameAvailable();
-    }
-  }, [isWaitingForApiCall]);
-
-  const isUserNameAvailableApiCall = () => {
-    console.log('isUserNameAvailableApiCall for', username);
-    axiosInstance
-      .get('/user/isUserExists', {
-        params: {
-          username,
-        },
-      })
-      .then((res) => {
-        console.log('isUserNameAvailable', !res.data);
-        setIsUsernameAvailable(!res.data);
-      })
-      .finally(() => {
-        setIsUsernameAvailableLoading(false);
-      });
-  };
-
-  const isUserNameAvailable = () => {
-    if (username && username.length >= 3) {
-      setIsUsernameAvailableLoading(true);
-
-      setTimeout(() => {
-        if (!isUsernameTyping) {
-          isUserNameAvailableApiCall();
-        }
-      }, 1000);
-    } else {
-      // less than 6 characters, are not available for users
-      setIsUsernameAvailableLoading(false);
-      setIsUsernameAvailable(false);
-    }
-  };
 
   const isLoginSuccessRef = useRef(isLoginSuccess);
 
@@ -377,6 +318,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={email}
+                  offset={{ x: -20, y: -150 }}
+                  type="email"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="email"
@@ -389,10 +335,10 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="@peduarte"
                 />
-                <ValidityIndicator
-                  isUsernameAvailable={isUsernameAvailable}
-                  isUsernameAvailableLoading={isUsernameAvailableLoading}
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={username}
                   offset={{ x: -20, y: -150 }}
+                  type="username"
                 />
               </div>
               <ValidateErrorElement
@@ -493,6 +439,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={email}
+                  offset={{ x: -20, y: -150 }}
+                  type="email"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="email"
@@ -505,10 +456,10 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="@globalLK"
                 />
-                <ValidityIndicator
-                  isUsernameAvailable={isUsernameAvailable}
-                  isUsernameAvailableLoading={isUsernameAvailableLoading}
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={username}
                   offset={{ x: -20, y: -150 }}
+                  type="username"
                 />
               </div>
               <ValidateErrorElement
