@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import AxiosRequest from '@/services/axiosInspector';
 
 const AuctionForm: React.FC = () => {
   const [title, setTitle] = useState<string>('');
@@ -18,6 +19,7 @@ const AuctionForm: React.FC = () => {
   const [category, setCategory] = useState<string>('');
   const navigate = useNavigate();
 
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -44,7 +46,7 @@ const AuctionForm: React.FC = () => {
       formData.append('category', category);
       images.forEach((image) => formData.append('images', image));
 
-      const response = await axios.post('/api/auctions', formData, {
+      const response = await axiosInstance.post('/auctions/create', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

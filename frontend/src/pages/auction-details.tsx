@@ -151,7 +151,7 @@ const AuctionDetailsPage = () => {
           <div className="mb-6">
             <div className="mb-4">
               <img
-                src={product.images[0]}
+                src="http://localhost:8080/api/user/getUserProfilePhoto?file_uuid=61163c7a-5d6c-4f2c-b64a-5cfda6b84565"
                 alt={product.name}
                 className="w-full h-96 object-cover rounded-md"
               />

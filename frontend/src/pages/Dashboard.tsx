@@ -6,6 +6,15 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Check, MoreHorizontal, Plus, Search } from 'lucide-react';
 import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   LineChart,
   Line,
   BarChart,
@@ -209,7 +218,7 @@ export default function AuctionDashboard() {
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#4169E1"
+                  stroke="#ecb02d"
                   strokeWidth={2}
                   activeDot={{ r: 8 }}
                 />
@@ -226,7 +235,7 @@ export default function AuctionDashboard() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="bids" fill="#FF8C00" />
+                <Bar dataKey="bids" fill="#ecb02d" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -267,66 +276,53 @@ export default function AuctionDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-4"></th>
-                <th className="text-left p-4">Auction ID</th>
-                <th className="text-left p-4">Name</th>
-                <th className="text-left p-4">Start</th>
-                <th className="text-left p-4">End</th>
-                <th className="text-left p-4">Start Price</th>
-                <th className="text-left p-4">Current Bid</th>
-                <th className="text-left p-4">Status</th>
-                <th className="text-left p-4"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {auctions.map((auction, index) => (
-                <tr key={index} className="border-b">
-                  <td className="p-4">
-                    <div className="bg-gray-100 w-8 h-8 rounded"></div>
-                  </td>
-                  <td className="p-4">{auction.id}</td>
-                  <td className="p-4">{auction.name}</td>
-                  <td className="p-4">{auction.start}</td>
-                  <td className="p-4">{auction.end}</td>
-                  <td className="p-4">{auction.startPrice}</td>
-                  <td className="p-4">{auction.currentBid}</td>
-                  <td className="p-4">
-                    <Badge
-                      className={`
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead></TableHead>
+              <TableHead className="w-[100px]">Auction ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Start</TableHead>
+              <TableHead>End</TableHead>
+              <TableHead>Start Price</TableHead>
+              <TableHead>Current Bid</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {auctions.map((auction, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <div className="bg-gray-100 w-8 h-8 rounded"></div>
+                </TableCell>
+                <TableCell className="font-medium">{auction.id}</TableCell>
+                <TableCell>{auction.name}</TableCell>
+                <TableCell>{auction.start}</TableCell>
+                <TableCell>{auction.end}</TableCell>
+                <TableCell>{auction.startPrice}</TableCell>
+                <TableCell>{auction.currentBid}</TableCell>
+                <TableCell>
+                  <Badge
+                    className={`
                       ${auction.status === 'Ended' ? 'bg-red-100 text-red-600' : ''}
                       ${auction.status === 'Ongoing' ? 'bg-yellow-100 text-yellow-600' : ''}
                       ${auction.status === 'Upcoming' ? 'bg-blue-100 text-blue-600' : ''}
                       ${auction.status === 'Hidden' ? 'bg-gray-100 text-gray-600' : ''}
                     shadow-none`}
-                    >
-                      {auction.status}
-                    </Badge>
-                  </td>
-                  <td className="p-4">
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="p-4 flex justify-between items-center text-sm text-gray-500">
-            <div>1 of 100 row(s) selected.</div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                Previous
-              </Button>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
+                  >
+                    {auction.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
