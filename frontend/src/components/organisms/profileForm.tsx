@@ -15,7 +15,7 @@ import {
 } from '../ui/form';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
-import { CheckCircle2, LucideTextSelect, Option } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { AlertBox } from './AlertBox';
 import { useCallback, useState } from 'react';
 import ImageUploadPopup, { ImageResult } from '../molecules/ImageUploadPopup';
@@ -73,8 +73,15 @@ export function ProfileForm() {
     setIsAlertOpen(true);
   }
 
+  const [cropedImg, setCropedImg] = useState<string | null>(null);
+  const [imgData, setImgData] = useState<ImageResult | null>(null);
+
   const onProfilePhotoSet = useCallback((e: ImageResult) => {
     console.log(e);
+    if (e.cropedImage != undefined) {
+      setCropedImg(e.cropedImage);
+      setImgData(e);
+    }
   }, []);
 
   return (
@@ -110,11 +117,21 @@ export function ProfileForm() {
         <ImageUploadPopup
           minHeight={100}
           minWidth={100}
-          acceptingHeight={50}
-          acceptingWidth={50}
+          acceptingHeight={500}
+          acceptingWidth={500}
           shape="circle"
           onConfirm={onProfilePhotoSet}
         />
+
+        <img
+          className="border rounded-full"
+          src={cropedImg ? cropedImg : undefined}
+        />
+        <p>
+          {imgData?.cropedImage != undefined
+            ? imgData.position.x + ' ' + imgData.position.y + ' '
+            : 'No image selected'}
+        </p>
 
         <FormField
           control={form.control}

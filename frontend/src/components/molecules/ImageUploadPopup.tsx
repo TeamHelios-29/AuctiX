@@ -65,6 +65,7 @@ export default function ImageUploadPopup({
   } | null>(null);
   const [autoScale, setAutoScale] = useState<number>(1);
   const [alertOpen, setAlertOpen] = useState<boolean>(false);
+  const [globalScale, setGlobalScale] = useState<number>(1);
 
   const handleOpenDialog = (): void => setIsOpen(true);
 
@@ -332,7 +333,7 @@ export default function ImageUploadPopup({
       const ctx = canvas.getContext('2d');
       if (!ctx) return null;
 
-      // Set canvas size to the accepting area dimensions
+      // Set canvas size to the accepting area dimensions (the actual requested size)
       canvas.width = acceptingWidth;
       canvas.height = acceptingHeight;
 
@@ -340,26 +341,50 @@ export default function ImageUploadPopup({
       const img = new Image();
       img.src = image;
 
-      // Calculate crop area
-      const scaledWidth = imageDimensions.width * scale;
-      const scaledHeight = imageDimensions.height * scale;
+      // Calculate the actual visible area in the image based on global scale
+      // We need to account for both the user-applied scale and the container's global scale
+      const visibleHighlightedWidth = acceptingWidth * globalScale;
+      const visibleHighlightedHeight = acceptingHeight * globalScale;
 
       // Calculate source coordinates (the area of the original image to crop)
-      // Center of the scaled image + position offset - half of the accepting area
       const sourceX =
-        (scaledWidth / 2 - position.x - acceptingWidth / 2) / scale;
+        ((imageDimensions.width * scale) / 2 -
+          position.x -
+          visibleHighlightedWidth / 2) /
+        scale;
       const sourceY =
-        (scaledHeight / 2 - position.y - acceptingHeight / 2) / scale;
-      const sourceWidth = acceptingWidth / scale;
-      const sourceHeight = acceptingHeight / scale;
+        ((imageDimensions.height * scale) / 2 -
+          position.y -
+          visibleHighlightedHeight / 2) /
+        scale;
+      const sourceWidth = visibleHighlightedWidth / scale;
+      const sourceHeight = visibleHighlightedHeight / scale;
+
+      // Ensure we don't try to sample outside the image bounds
+      const clampedSourceX = Math.max(
+        0,
+        Math.min(sourceX, imageDimensions.width - sourceWidth),
+      );
+      const clampedSourceY = Math.max(
+        0,
+        Math.min(sourceY, imageDimensions.height - sourceHeight),
+      );
+      const clampedSourceWidth = Math.min(
+        sourceWidth,
+        imageDimensions.width - clampedSourceX,
+      );
+      const clampedSourceHeight = Math.min(
+        sourceHeight,
+        imageDimensions.height - clampedSourceY,
+      );
 
       // Draw the cropped portion of the image onto the canvas
       ctx.drawImage(
         img,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight, // Source rectangle
+        clampedSourceX,
+        clampedSourceY,
+        clampedSourceWidth,
+        clampedSourceHeight, // Source rectangle
         0,
         0,
         acceptingWidth,
@@ -394,6 +419,30 @@ export default function ImageUploadPopup({
     // Close the dialog
     handleCloseDialog();
   };
+
+  // Calculate global scale factor for the highlighted area
+  useEffect(() => {
+    if (imgContainerRef.current) {
+      const containerWidth = imgContainerRef.current.clientWidth;
+      const containerHeight = imgContainerRef.current.clientHeight;
+
+      // Always calculate a scale factor to ensure highlighted area fits within container
+      // Leave some margin (using 0.85 or 85% of container size)
+      const scaleFactorWidth = (containerWidth * 0.85) / acceptingWidth;
+      const scaleFactorHeight = (containerHeight * 0.85) / acceptingHeight;
+
+      // Use the smaller scale factor to ensure the entire highlighted area fits
+      const scaleFactor = Math.min(scaleFactorWidth, scaleFactorHeight);
+
+      // Never scale up, only down if needed
+      const finalScale = Math.min(1, scaleFactor);
+      setGlobalScale(finalScale);
+
+      console.log(
+        `Container: ${containerWidth}x${containerHeight}, Accepting: ${acceptingWidth}x${acceptingHeight}, Scale: ${finalScale}`,
+      );
+    }
+  }, [acceptingWidth, acceptingHeight]);
 
   return (
     <div className="flex flex-col items-center">
@@ -451,8 +500,8 @@ export default function ImageUploadPopup({
                   <div
                     className={`absolute ${shape === 'circle' ? 'rounded-full' : 'rounded-none'}`}
                     style={{
-                      width: acceptingWidth,
-                      height: acceptingHeight,
+                      width: acceptingWidth * globalScale,
+                      height: acceptingHeight * globalScale,
                       boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7)',
                       zIndex: 1,
                     }}
