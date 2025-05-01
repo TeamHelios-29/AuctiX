@@ -4,22 +4,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AxiosInstance } from 'axios';
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { delay, motion } from 'motion/react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { Octagon, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/hooks';
 import { jwtDecode } from 'jwt-decode';
 import { IJwtData } from '@/types/IJwtData';
 import { IAuthUser } from '@/types/IAuthUser';
-import { login } from '@/store/slices/authSlice';
+import { login, user } from '@/store/slices/authSlice';
 import { AlertBox } from './AlertBox';
 import AxiosReqest from '@/services/axiosInspector';
-
-interface IValidationError {
-  msg: string;
-  fieldId: string;
-}
+import {
+  IValidationError,
+  ValidateErrorElement,
+  ValidityIndicator,
+} from '../atoms/validityIndicator';
+import ValidateUsernameOrEmail from '../molecules/validateUsernameOrEmail';
 
 export function TabsDemo({
   onTabChange,
@@ -45,50 +46,10 @@ export function TabsDemo({
 
   const isLoginSuccessRef = useRef(isLoginSuccess);
 
-  const ValidateErrorElement = ({
-    eleFieldId,
-    errorList,
-  }: {
-    eleFieldId: string;
-    errorList: IValidationError[];
-  }) => {
-    const fieldErrors = errorList.filter(
-      (ve) => (ve.fieldId as string) === eleFieldId,
-    );
-    const initProps = {
-      opacity: 1,
-      scale: 1,
-    };
-    const animateProps = {
-      opacity: [1, 0.9, 1],
-      scale: [1, 1.06, 1],
-    };
-    return fieldErrors.length > 0 ? (
-      <motion.div
-        key={eleFieldId + '-errors' + fieldErrors.length}
-        initial={initProps}
-        animate={animateProps}
-        exit={{ opacity: 0, scale: 0 }}
-        transition={{ duration: 0.5, exit: { duration: 1.5 } }}
-        className="bg-red-50 border border-red-200 rounded-md p-3 mb-3"
-      >
-        <h4 className="text-sm font-medium text-red-800 mb-1">
-          Check the input field rules:
-        </h4>
-        <ul className="text-xs text-red-700 list-disc pl-4 space-y-1">
-          {fieldErrors.map((error, index) => (
-            <li key={index}>{error.msg}</li>
-          ))}
-        </ul>
-      </motion.div>
-    ) : (
-      <></>
-    );
-  };
-
   useEffect(() => {
     validations();
   }, [email, password, repeatPassword, firstName, lastName, username]);
+
   useEffect(() => {
     isLoginSuccessRef.current = isLoginSuccess;
   }, [isLoginSuccess]);
@@ -325,12 +286,6 @@ export function TabsDemo({
         </TabsList>
         <TabsContent value="Buyers">
           <Card className="border-none shadow-none">
-            {/* <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              Make changes to your account here. Click save when you're done.
-            </CardDescription>
-          </CardHeader> */}
             <CardContent className="space-y-2 py-5 px-0">
               <div className="space-y-1">
                 <Label htmlFor="firstName">First Name</Label>
@@ -363,6 +318,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={email}
+                  offset={{ x: -20, y: -150 }}
+                  type="email"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="email"
@@ -374,6 +334,11 @@ export function TabsDemo({
                   id="username"
                   onChange={(e) => handleInputType(e)}
                   placeholder="@peduarte"
+                />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={username}
+                  offset={{ x: -20, y: -150 }}
+                  type="username"
                 />
               </div>
               <ValidateErrorElement
@@ -474,6 +439,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={email}
+                  offset={{ x: -20, y: -150 }}
+                  type="email"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="email"
@@ -485,6 +455,11 @@ export function TabsDemo({
                   id="username"
                   onChange={(e) => handleInputType(e)}
                   placeholder="@globalLK"
+                />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={username}
+                  offset={{ x: -20, y: -150 }}
+                  type="username"
                 />
               </div>
               <ValidateErrorElement

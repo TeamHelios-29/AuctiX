@@ -126,7 +126,7 @@ public class UserController {
     public ResponseEntity<String> createUser(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         try {
             log.info("Seller creation request: " + username);
-            UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.SELLER);
+            UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.SELLER,null);
             if (res.isSuccess()) {
                 return ResponseEntity.ok("Success: Seller Created");
             } else {
@@ -142,7 +142,7 @@ public class UserController {
     @PostMapping("/createBidder")
     public String createBidder(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Bidder creation request: " + username);
-        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.BIDDER);
+        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.BIDDER,null);
         if (res.isSuccess()) {
             return "Success: Bidder Created";
         } else {
@@ -154,7 +154,15 @@ public class UserController {
     @PostMapping("/createAdmin")
     public String createAdmin(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Admin creation request: " + username);
-        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.ADMIN);
+        User currentUser = null;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        }
+        catch(Exception e){
+            log.warning(e.getMessage());
+        }
+        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.ADMIN,currentUser);
         if (res.isSuccess()) {
             return "Success: Admin Created";
         } else {
@@ -190,11 +198,21 @@ public class UserController {
             @RequestParam(value = "search", required = false) String search) {
 
         try{
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User user = userDetailsService.getAuthenticatedUser(authentication);
+            String userRole = user.getRole().getName().toString();
+            log.info("user data requested by "+user.getEmail()+","+userRole);
+            if(!(UserRoleEnum.valueOf(userRole)==UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole)==UserRoleEnum.SUPER_ADMIN)){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("FORBIDDEN");
+            }
             Page userPage = userDetailsService.getAllUsers(limit,offset,order,sortBy,search);
             return ResponseEntity.ok(userPage);
         }
         catch (IllegalArgumentException e){
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body("Bad request");
+        }
+        catch(AuthenticationException e){
+            return ResponseEntity.status(403).body("User not authenticated");
         }
     }
 

@@ -5,6 +5,7 @@ import com.helios.auctix.domain.user.User;
 import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.repositories.NotificationRepository;
 import com.helios.auctix.repositories.UserRepository;
+import com.helios.auctix.services.user.UserRegisterService;
 import lombok.extern.java.Log;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -26,18 +27,21 @@ public class AuctiXApplication implements CommandLineRunner {
 	private final NotificationEventPublisher notificationEventPublisher;
 	private final AuctionRepository auctionRepository; // Add this
 	private final AuctionService auctionService; // Add this
+	private final UserRegisterService userRegisterService;
 
 	public AuctiXApplication(
 			UserRepository userRepository,
 			NotificationRepository notificationRepository,
 			NotificationEventPublisher notificationEventPublisher,
 			AuctionRepository auctionRepository, // Add this
-			AuctionService auctionService // Add this
+			AuctionService auctionService, // Add this
+			UserRegisterService userRegisterService
 	) {
 		this.userRepository = userRepository;
 		this.notificationEventPublisher = notificationEventPublisher;
 		this.auctionRepository = auctionRepository; // Add this
         this.auctionService = auctionService; // Add this
+		this.userRegisterService = userRegisterService;
 	}
 
 	public static void main(String[] args) {
@@ -46,6 +50,7 @@ public class AuctiXApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
+		userRegisterService.registerSupperAdmin();
 		log.info("AuctiX backend started successfully!");
 
 		// Existing code for user and notification modules

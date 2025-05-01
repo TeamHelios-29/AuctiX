@@ -6,29 +6,36 @@ import com.helios.auctix.dtos.LoginRequestDTO;
 import com.helios.auctix.dtos.RegistrationRequestDTO;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.UserAuthenticationService;
+import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.services.user.UserRegisterService;
 import com.helios.auctix.services.user.UserServiceResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RequestMapping("/api/auth")
 @RestController
 public class UserAuthController {
 
     private final UserRegisterService userRegisterService;
+    private final UserDetailsService userDetailsService;
     private UserAuthenticationService userAuthenticationService;
 
     private UserRepository userRepository; // TODO Replace with UserService when it is implemented
 
-    public UserAuthController(UserAuthenticationService userAuthenticationService, UserRepository userRepository, UserRegisterService userRegisterService) {
+    public UserAuthController(UserAuthenticationService userAuthenticationService, UserRepository userRepository, UserRegisterService userRegisterService, UserDetailsService userDetailsService) {
         this.userAuthenticationService = userAuthenticationService;
         this.userRepository = userRepository;
         this.userRegisterService = userRegisterService;
+        this.userDetailsService = userDetailsService;
     }
 
     @PostMapping("/register")
@@ -36,6 +43,15 @@ public class UserAuthController {
 
         if (registrationRequestDTO == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request");
+        }
+
+        User currentUser = null;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        }
+        catch(Exception e){
+            log.warn("only admins and supper admins can create admins");
         }
 
         // TODO use UserService check if user already exists
@@ -46,7 +62,9 @@ public class UserAuthController {
                 registrationRequestDTO.getPassword(),
                 registrationRequestDTO.getFirstName(),
                 registrationRequestDTO.getLastName(),
-                UserRoleEnum.valueOf(registrationRequestDTO.getRole()));
+                UserRoleEnum.valueOf(registrationRequestDTO.getRole()),
+                currentUser
+        );
 
         if (!registrationResponse.isSuccess()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(registrationResponse.getMessage());

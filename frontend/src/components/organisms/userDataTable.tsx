@@ -1,5 +1,5 @@
 import { ColumnDef, Table } from '@tanstack/react-table';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,11 +67,26 @@ export default function UserDataTable() {
           setPageSize(usersData?.data?.size);
           console.log('Users Data:', usersData);
         })
+        .catch((error) => {
+          console.error('Error fetching users:', error);
+        })
         .finally(() => {
           setIsLoading(false);
         });
     }
   }, [sortBy, order, limit, offset, isInSearchDelay]);
+
+  useEffect(() => {
+    console.log('userDataTable mounted');
+
+    return () => {
+      console.log('userDataTable unmounted');
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('userDataTable updated');
+  }, [users, sortBy, order, limit, offset]);
 
   let delay = null;
   useEffect(() => {
@@ -302,6 +317,30 @@ export default function UserDataTable() {
     },
   ];
 
+  const offsetHandler = useCallback(
+    (offset: number) => {
+      setOffset(offset);
+      console.log('[userDataTable] offsetHandler');
+    },
+    [setOffset],
+  );
+
+  const pageSizeHandler = useCallback(
+    (pageSize: number) => {
+      setPageSize(pageSize);
+      console.log('[userDataTable] pageSizeHandler');
+    },
+    [pageSize],
+  );
+
+  const searchHandler = useCallback(
+    (search: string) => {
+      setSearch(search);
+      console.log('[userDataTable] searchHandler');
+    },
+    [setSearch],
+  );
+
   return (
     <>
       <h1 className="text-center text-5xl mt-5">User Data Table</h1>
@@ -311,9 +350,9 @@ export default function UserDataTable() {
         pageCount={pageCount}
         pageSize={pageSize}
         currentPage={currentPage}
-        setCurrentPage={setOffset}
-        setPageSize={setPageSize}
-        setSearchText={setSearch}
+        setCurrentPage={offsetHandler}
+        setPageSize={pageSizeHandler}
+        setSearchText={searchHandler}
         searchText={search}
       />
     </>

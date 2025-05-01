@@ -45,7 +45,8 @@ class UserRegisterServiceTest {
                         "password123",
                         "FirstName" + j,
                         "LastName" + j,
-                        UserRoleEnum.BIDDER
+                        UserRoleEnum.BIDDER,
+                        null
                 );
                 Thread.sleep(100);
             }
