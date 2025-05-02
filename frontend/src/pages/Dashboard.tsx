@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAppSelector } from '@/hooks/hooks';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ import {
 
 export default function AuctionDashboard() {
   const [activeTab, setActiveTab] = useState('all');
+  const userData = useAppSelector((state) => state.user);
 
   // Sample auction data
   const auctions = [
@@ -130,16 +132,29 @@ export default function AuctionDashboard() {
         <div className="bg-gray-50 p-6 rounded-lg mb-8">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <img
-                src="{imageUrl}"
-                alt="Profile"
-                className="rounded-lg w-16 h-16"
-              />
+              {userData.profile_photo ? (
+                <img
+                  src={userData.profile_photo}
+                  alt="Profile"
+                  className="rounded-full w-10 h-10"
+                />
+              ) : (
+                <svg
+                  className="rounded-full w-10 h-10 bg-white text-gray-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.866 0-7 3.134-7 7h14c0-3.866-3.134-7-7-7z" />
+                </svg>
+              )}
             </div>
             <div>
               <div className="text-gray-500">Hello,</div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold">Sam Perera</h2>
+                <h2 className="text-2xl font-bold">
+                  {userData.username || 'Guest'}
+                </h2>
                 <span className="text-green-500">
                   <Check className="h-5 w-5" />
                 </span>
