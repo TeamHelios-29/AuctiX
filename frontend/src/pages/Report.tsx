@@ -12,51 +12,41 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import ComplaintDataTable from '../components/organisms/complaintDataTable';
+import { getAllComplaints } from '../services/complaints';
+import { AxiosInstance } from 'axios';
+import AxiosReqest from '@/services/axiosInspector';
+import { useEffect, useState } from 'react';
 
 export default function ComplaintReports() {
-  // Sample report data
-  const reports = [
-    {
-      id: 'R001',
-      user: 'John Doe',
-      reportedBy: 'Ken Wotson',
-      reason: 'Fake profile',
-      date: '2024-12-15',
-      status: 'Listing Removed',
-    },
-    {
-      id: 'R002',
-      user: 'John Doe',
-      reportedBy: 'Ken Wotson',
-      reason: 'Fake profile',
-      date: '2024-12-15',
-      status: 'Under Review',
-    },
-    {
-      id: 'R003',
-      user: 'John Doe',
-      reportedBy: 'Ken Wotson',
-      reason: 'Fake profile',
-      date: '2024-12-15',
-      status: 'Under Review',
-    },
-    {
-      id: 'R004',
-      user: 'John Doe',
-      reportedBy: 'Ken Wotson',
-      reason: 'Fake profile',
-      date: '2024-12-15',
-      status: 'Under Review',
-    },
-    {
-      id: 'R005',
-      user: 'John Doe',
-      reportedBy: 'Ken Wotson',
-      reason: 'Fake profile',
-      date: '2024-12-15',
-      status: 'New',
-    },
-  ];
+  interface User {
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profile_photo: string | null;
+    role: string;
+  }
+
+  interface Complaint {
+    id: string;
+    reportedUser: User;
+    reportedBy: User;
+    reason: string;
+    dateReported: string;
+    status: string;
+  }
+
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  useEffect(() => {
+    getAllComplaints()
+      .then((response) => {
+        setComplaints(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching complaints:', error);
+      });
+  }, []);
 
   return (
     <div className="bg-white">
@@ -69,20 +59,35 @@ export default function ComplaintReports() {
         </header>
 
         <div className="grid grid-cols-4 gap-4 mb-8">
-          <Card className="p-4 shadow-none">
-            <div className="text-4xl font-bold">15</div>
+          <Card className="p-4 shadow-none bg-gray-100">
+            <div className="text-4xl font-bold">{complaints.length}</div>
             <div className="text-sm text-gray-500">Reports</div>
           </Card>
-          <Card className="p-4 shadow-none">
-            <div className="text-4xl font-bold">1</div>
-            <div className="text-sm text-gray-500">New Report</div>
-          </Card>
           <Card className="p-4 border-2 border-yellow-400">
-            <div className="text-4xl font-bold">3</div>
+            <div className="text-4xl font-bold">
+              {
+                complaints.filter((report) => report.status === 'PENDING')
+                  .length
+              }
+            </div>
+            <div className="text-sm text-gray-500">Pending</div>
+          </Card>
+          <Card className="p-4 shadow-none">
+            <div className="text-4xl font-bold">
+              {
+                complaints.filter((report) => report.status === 'UNDER_REVIEW')
+                  .length
+              }
+            </div>
             <div className="text-sm text-gray-500">Under Review</div>
           </Card>
           <Card className="p-4 shadow-none">
-            <div className="text-4xl font-bold">1</div>
+            <div className="text-4xl font-bold">
+              {
+                complaints.filter((report) => report.status === 'REJECTED')
+                  .length
+              }
+            </div>
             <div className="text-sm text-gray-500">Rejected</div>
           </Card>
         </div>
@@ -116,25 +121,26 @@ export default function ComplaintReports() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reports.map((report) => (
-              <TableRow key={report.id}>
+            {complaints.map((complaint) => (
+              <TableRow key={complaint.id}>
                 <TableCell>
                   <Checkbox />
                 </TableCell>
-                <TableCell>{report.id}</TableCell>
-                <TableCell>{report.user}</TableCell>
-                <TableCell>{report.reportedBy}</TableCell>
-                <TableCell>{report.reason}</TableCell>
-                <TableCell>{report.date}</TableCell>
+                <TableCell>{complaint.id}</TableCell>
+                <TableCell>{complaint.reportedUser.username}</TableCell>
+                <TableCell>{complaint.reportedBy.username}</TableCell>
+                <TableCell>{complaint.reason}</TableCell>
+                <TableCell>{complaint.dateReported}</TableCell>
                 <TableCell>
                   <Badge
                     className={`
-                      ${report.status === 'Listing Removed' ? 'bg-red-100 text-red-600' : ''}
-                      ${report.status === 'Under Review' ? 'bg-blue-100 text-blue-600' : ''}
-                      ${report.status === 'New' ? 'bg-green-100 text-green-600' : ''}
+                      ${complaint.status === 'REJECTED' ? 'bg-red-100 text-red-600' : ''}
+                      ${complaint.status === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-600' : ''}
+                      ${complaint.status === 'RESOLVED' ? 'bg-green-100 text-green-600' : ''}
+                      ${complaint.status === 'PENDING' ? 'bg-yellow-100 text-yellow-600' : ''}
                     shadow-none`}
                   >
-                    {report.status}
+                    {complaint.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -146,6 +152,7 @@ export default function ComplaintReports() {
             ))}
           </TableBody>
         </Table>
+        <ComplaintDataTable />
       </div>
     </div>
   );
