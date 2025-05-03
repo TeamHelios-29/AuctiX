@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Share, Flag, Heart } from 'lucide-react';
 import { useParams } from 'react-router-dom'; // if using react-router
 import axios from 'axios'; // for API calls
+import { Client } from '@stomp/stompjs'; // for WebSocket connection
 
 // Types
 interface BidHistory {
@@ -52,54 +53,154 @@ interface ProductDetails {
 // Constants
 const BID_INCREMENT = 1000;
 
-// Mock data - this would be replaced with data from your backend
-const productData: ProductDetails = {
-  id: '12345',
-  category: 'Category',
-  name: 'Product Name',
-  description:
-    'Lorem ipsum dolor sit amet consectetur. Augue quis justo amet tristique nibh. Elementum risus sem ultricies sed sit. Quam qelit aenm eu egestas diam ut sector nunc ulteries. In consetetur, urna non molestie. Tincidunt sitsusant et pretium cursus urna sociates et. Quis adipiscing laoreet risus malesuada elementum.',
-  images: [
-    '/api/placeholder/400/320',
-    '/api/placeholder/150/100',
-    '/api/placeholder/150/100',
-    '/api/placeholder/150/100',
-    '/api/placeholder/150/100',
-  ],
-  startingPrice: 5000,
-  currentBid: 7000,
-  bidIncrement: BID_INCREMENT,
-  currentBidder: {
-    id: '67890',
-    name: 'Tishan Dias',
-    avatar: '/api/placeholder/32/32',
-  },
-  seller: {
-    id: '54321',
-    name: 'John Dolly',
-    avatar: '/api/placeholder/32/32',
-  },
-  endTime: '2025-04-20T12:00:00Z', // Example future date
-  bidHistory: [],
-  productOwner: {
-    id: '54321',
-    name: 'John Dolly',
-    avatar: '/api/placeholder/32/32',
-    rating: 4.8,
-    joinedDate: '2023-01-15',
-  },
-};
+// // Mock data - this would be replaced with data from your backend
+// const productData: ProductDetails = {
+//   id: '12345',
+//   category: 'Category',
+//   name: 'Product Name',
+//   description:
+//     'Lorem ipsum dolor sit amet consectetur. Augue quis justo amet tristique nibh. Elementum risus sem ultricies sed sit. Quam qelit aenm eu egestas diam ut sector nunc ulteries. In consetetur, urna non molestie. Tincidunt sitsusant et pretium cursus urna sociates et. Quis adipiscing laoreet risus malesuada elementum.',
+//   images: [
+//     '/api/placeholder/400/320',
+//     '/api/placeholder/150/100',
+//     '/api/placeholder/150/100',
+//     '/api/placeholder/150/100',
+//     '/api/placeholder/150/100',
+//   ],
+//   startingPrice: 5000,
+//   currentBid: 7000,
+//   bidIncrement: BID_INCREMENT,
+//   currentBidder: {
+//     id: '67890',
+//     name: 'Tishan Dias',
+//     avatar: '/api/placeholder/32/32',
+//   },
+//   seller: {
+//     id: '54321',
+//     name: 'John Dolly',
+//     avatar: '/api/placeholder/32/32',
+//   },
+//   endTime: '2025-04-20T12:00:00Z', // Example future date
+//   bidHistory: [],
+//   productOwner: {
+//     id: '54321',
+//     name: 'John Dolly',
+//     avatar: '/api/placeholder/32/32',
+//     rating: 4.8,
+//     joinedDate: '2023-01-15',
+//   },
+// };
 
 const AuctionDetailsPage = () => {
-  const { auctionId } = useParams(); // get auctionId from URL (if using routes like /auction/:auctionId)
-  const [product, setProduct] = useState<ProductDetails>(productData);
-  const [bidAmount, setBidAmount] = useState<number>(
-    product.currentBid + BID_INCREMENT,
-  );
+  const { auctionId } = useParams<{ auctionId: string }>();
+  const [product, setProduct] = useState<ProductDetails | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [bidAmount, setBidAmount] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [stompClient, setStompClient] = useState<Client | null>(null);
+
+  // Fetch auction details from API
+  useEffect(() => {
+    const fetchAuctionDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`/api/auctions/${auctionId}`);
+        setProduct(response.data);
+        // Initialize bid amount to current bid + increment
+        setBidAmount(response.data.currentBid + response.data.bidIncrement);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching auction details:', err);
+        setError('Failed to load auction details. Please try again later.');
+        setLoading(false);
+      }
+    };
+
+    if (auctionId) {
+      fetchAuctionDetails();
+    }
+  }, [auctionId]);
+
+  // Setup WebSocket connection for real-time bid updates
+  useEffect(() => {
+    if (!auctionId) return;
+
+    // Create STOMP client
+    const client = new Client({
+      brokerURL: 'ws://localhost:8080/ws', // Adjust to your WebSocket endpoint
+      debug: function (str) {
+        console.log(str);
+      },
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+    });
+
+    client.activate();
+
+    // Cleanup function to disconnect the client
+    return () => {
+      if (client.connected) {
+        client.deactivate();
+      }
+    };
+
+    // Connect and subscribe to auction updates
+    client.onConnect = () => {
+      console.log('Connected to WebSocket');
+
+      // Subscribe to auction updates
+      client.subscribe(`/topic/auction/${auctionId}`, (message) => {
+        const updatedAuction = JSON.parse(message.body);
+        setProduct((prevProduct) => {
+          if (!prevProduct) return updatedAuction;
+
+          // Update with new data
+          const newProduct = { ...prevProduct, ...updatedAuction };
+
+          // Adjust bid amount if needed
+          setBidAmount(newProduct.currentBid + newProduct.bidIncrement);
+
+          return newProduct;
+        });
+      });
+
+      // Subscribe to bid history updates
+      client.subscribe(`/topic/auction/${auctionId}/bids`, (message) => {
+        const newBid = JSON.parse(message.body);
+        setProduct((prevProduct) => {
+          if (!prevProduct) return null;
+          return {
+            ...prevProduct,
+            currentBid: newBid.amount,
+            currentBidder: newBid.bidder,
+            bidHistory: [newBid, ...prevProduct.bidHistory],
+          };
+        });
+      });
+    };
+
+    client.onStompError = (frame) => {
+      console.error('STOMP error', frame);
+      setError('Lost connection to the auction. Please refresh the page.');
+    };
+
+    client.activate();
+    setStompClient(client);
+
+    // Cleanup on unmount
+    return () => {
+      if (client && client.active) {
+        client.deactivate();
+      }
+    };
+  }, [auctionId]);
 
   // Calculate time remaining
   useEffect(() => {
+    if (!product) return;
+
     const calculateTimeRemaining = () => {
       const now = new Date();
       const endTime = new Date(product.endTime);
@@ -124,22 +225,75 @@ const AuctionDetailsPage = () => {
     const interval = setInterval(calculateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [product.endTime]);
+  }, [product]);
 
   const handleIncrementBid = () => {
-    setBidAmount(bidAmount + BID_INCREMENT);
+    if (!product) return;
+    setBidAmount(bidAmount + product.bidIncrement);
   };
 
   const handleDecrementBid = () => {
-    if (bidAmount - BID_INCREMENT >= product.currentBid + BID_INCREMENT) {
-      setBidAmount(bidAmount - BID_INCREMENT);
+    if (!product) return;
+    if (
+      bidAmount - product.bidIncrement >=
+      product.currentBid + product.bidIncrement
+    ) {
+      setBidAmount(bidAmount - product.bidIncrement);
     }
   };
 
-  const handlePlaceBid = () => {
-    // This will be implemented later to connect with your backend
-    console.log('Placing bid:', bidAmount);
+  const handlePlaceBid = async () => {
+    if (!product || !auctionId) return;
+
+    try {
+      // Send bid to backend
+      await axios.post(`/api/bids`, {
+        auctionId: auctionId,
+        amount: bidAmount,
+        // You might need to include authentication info or user ID
+        // depending on your backend implementation
+      });
+
+      // No need to update state here as it will be updated via WebSocket
+    } catch (err) {
+      console.error('Error placing bid:', err);
+      // Handle different error types (e.g., bid too low, auction ended)
+      const errorResponse =
+        (err as any)?.response?.data?.message ||
+        'Failed to place bid. Please try again.';
+      setError(errorResponse);
+
+      // Clear error after 5 seconds
+      setTimeout(() => setError(null), 5000);
+    }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
+        <p>Loading auction details...</p>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !product) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
+  // If product is null after loading, show not found message
+  if (!product) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
+        <p>Auction not found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">

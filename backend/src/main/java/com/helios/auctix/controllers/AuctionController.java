@@ -154,24 +154,18 @@ public class AuctionController {
         }
     }
 
-    // Retrieve an auction by ID
+    // Get auction by ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> getAuctionById(@PathVariable Long id) {
+    public ResponseEntity<Auction> getAuctionById(@PathVariable Long id) {
         try {
             Optional<Auction> auction = auctionService.getAuctionById(id);
             return auction.map(ResponseEntity::ok)
-                    .orElseGet(() -> {
-                        log.warning("Auction not found with ID: " + id);
-                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                .body("Auction not found with ID: " + id);
-                    });
+                    .orElseGet(() -> ResponseEntity.notFound().build());
         } catch (Exception e) {
-            log.warning("Error fetching auction with ID " + id + ": " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching auction details: " + e.getMessage());
+            log.warning("Error fetching auction by id " + id + ": " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
-
 //
 //    // Update an auction
 //    @PutMapping("/{id}")
