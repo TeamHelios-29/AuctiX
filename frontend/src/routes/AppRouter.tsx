@@ -14,8 +14,11 @@ import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/auction-details';
 import Report from '@/pages/Report';
 import Settings from '@/pages/Settings';
+import { useNotificationRegistration } from '@/hooks/use-notification-registration';
 
 export default function AppRouter() {
+  useNotificationRegistration();
+
   return (
     <BrowserRouter>
       <Routes>
