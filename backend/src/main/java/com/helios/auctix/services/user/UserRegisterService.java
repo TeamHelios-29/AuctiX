@@ -179,7 +179,7 @@ public class UserRegisterService {
 
             User userWithUsername = userRepository.findByUsername(supperAdminConfig.getUsername());
             User userWithEmail = userRepository.findByEmail(supperAdminConfig.getEmail());
-            log.info(userWithUsername.getId().toString()+" "+userWithEmail.getId().toString());
+            //log.info(userWithUsername.getId().toString()+" "+userWithEmail.getId().toString());
 
             if( userWithEmail!=null || userWithUsername!=null ) {
                 if(userWithEmail!=null && userWithUsername!=null && userWithUsername.getId().equals(userWithEmail.getId())) {

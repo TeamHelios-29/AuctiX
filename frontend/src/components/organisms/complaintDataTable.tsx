@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@radix-ui/react-checkbox';
 import { AxiosInstance } from 'axios';
 import AxiosReqest from '@/services/axiosInspector';
-import { Skeleton } from '../ui/skeleton';
 
 interface IUser {
   username: string;
@@ -35,7 +34,7 @@ interface IComplaint {
 
 export default function ComplaintDataTable() {
   const axiosInstance: AxiosInstance = AxiosReqest().axiosInstance;
-  const [complaints, setComplaints] = useState<IComplaint[] | null>(null);
+  const [complaints, setComplaints] = useState<IComplaint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<null | string>(null);
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
@@ -61,7 +60,7 @@ export default function ComplaintDataTable() {
           },
         })
         .then((complaintsData) => {
-          setComplaints(complaintsData?.data?.content);
+          setComplaints(complaintsData?.data?.content || []);
           setCurrentPage(complaintsData?.data?.pageable?.pageNumber);
           setPageCount(complaintsData?.data?.totalPages);
           setPageSize(complaintsData?.data?.size);
@@ -89,59 +88,6 @@ export default function ComplaintDataTable() {
     console.log('Complaints:', complaints);
   }, [complaints]);
 
-  {
-    /*const ProfilePhoto = (id: string | null) => {
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-      if (id) {
-        setIsLoading(true);
-        axiosInstance
-          .get(`/user/getUserProfilePhoto?file_uuid=${id}`, {
-            responseType: 'blob',
-          })
-          .then((response) => {
-            const url = URL.createObjectURL(response.data);
-            setImageUrl(url);
-          })
-          .catch((error) => {
-            console.error('Error fetching profile image:', error);
-            setImageUrl(null);
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
-      } else {
-        setIsLoading(false);
-      }
-
-      return () => {
-        if (imageUrl) {
-          URL.revokeObjectURL(imageUrl);
-        }
-      };
-    }, [id, axiosInstance]);
-
-    return (
-      <div className="flex items-center justify-center">
-        {!isLoading ? (
-          <div className="h-10 w-10 rounded-full overflow-hidden border border-gray-200">
-            <img
-              src={imageUrl || '/defaultProfilePhoto.jpg'}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          </div>
-        ) : (
-          <Skeleton className="h-10 w-10 rounded-full" />
-        )}
-      </div>
-    );
-  };
-  */
-  }
-
   const complaintsColumns: ColumnDef<IComplaint>[] = [
     {
       id: 'select',
@@ -166,21 +112,21 @@ export default function ComplaintDataTable() {
       enableHiding: false,
     },
     {
-      accessorKey: 'reportID',
+      accessorKey: 'id',
       header: 'Report ID',
-      cell: ({ row }) => <div>{row.getValue('reportID')}</div>,
+      cell: ({ row }) => <div>{row.getValue('id')}</div>,
       enableHiding: false,
     },
     {
-      accessorKey: 'reportedUser',
+      accessorKey: 'reportedUser.username',
       header: 'Reported User',
-      cell: ({ row }) => <div>{row.getValue('reportedUser')}</div>,
+      cell: ({ row }) => <div>{row.original.reportedUser.username}</div>,
       enableHiding: true,
     },
     {
-      accessorKey: 'reportedBy',
+      accessorKey: 'reportedBy.username',
       header: 'Reported By',
-      cell: ({ row }) => <div>{row.getValue('reportedBy')}</div>,
+      cell: ({ row }) => <div>{row.original.reportedBy.username}</div>,
       enableHiding: true,
     },
     {
@@ -205,14 +151,34 @@ export default function ComplaintDataTable() {
           </Button>
         );
       },
-      cell: ({ row }) => <div>{row.getValue('dateReported')}</div>,
+      cell: ({ row }) => (
+        <div>{new Date(row.getValue('dateReported')).toLocaleDateString()}</div>
+      ),
       enableHiding: true,
       enableSorting: true,
     },
     {
       accessorKey: 'status',
       header: 'Status',
-      cell: ({ row }) => <div>{row.getValue('status')}</div>,
+      cell: ({ row }) => {
+        const status = row.getValue('status') as keyof typeof statusStyles;
+        const statusStyles = {
+          PENDING: 'bg-yellow-100 text-yellow-600',
+          UNDER_REVIEW: 'bg-blue-100 text-blue-600',
+          RESOLVED: 'bg-green-100 text-green-600',
+          REJECTED: 'bg-red-100 text-red-600',
+        };
+
+        return (
+          <span
+            className={`px-2 py-1 rounded-md text-sm font-medium ${
+              statusStyles[status] || 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            {status}
+          </span>
+        );
+      },
       enableHiding: true,
       enableGrouping: true,
     },
@@ -249,10 +215,9 @@ export default function ComplaintDataTable() {
 
   return (
     <>
-      <h1 className="text-center text-5xl mt-5">All Complaints</h1>
       <DataTableForServerSideFiltering
         columns={complaintsColumns}
-        data={complaints}
+        data={complaints || []}
         pageCount={pageCount}
         pageSize={pageSize}
         currentPage={currentPage}
