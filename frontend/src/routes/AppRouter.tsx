@@ -8,10 +8,11 @@ import User from '@/pages/User';
 import Register from '@/pages/Register';
 import LoginPage from '@/pages/Login';
 import Home from '@/pages/Home';
-import CreateAuction from '@/pages/create-auction';
+import CreateAuction from '@/pages/CreateAuction';
 import SellerProfile from '@/pages/SellerProfile';
 import AuctionChat from '@/components/organisms/auction-chat';
-import AuctionDetailsPage from '@/pages/auction-details';
+import AuctionDetailsPage from '@/pages/AuctionDetails';
+import AuctionsPage from '@/pages/ExploreAuctions';
 
 export default function AppRouter() {
   return (
@@ -23,6 +24,7 @@ export default function AppRouter() {
           <Route path="/seller" element={<SellerProfile />} />
           <Route path="/auction-details" element={<AuctionDetailsPage />} />
           <Route path="/create-auction" element={<CreateAuction />} />
+          <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>
         {/* Routes using DashboardLayout */}
         <Route element={<DashboardLayout />}>
