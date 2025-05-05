@@ -33,7 +33,7 @@ export function useNotificationRegistration() {
 
   useEffect(() => {
     const handleNotificationRegistration = async () => {
-      if (userData) {
+      if (userData.email != null) {
         const token = await registerSWAndRequestNotificationPermission();
         if (token) {
           await sendFcmTokenToServer(token);
