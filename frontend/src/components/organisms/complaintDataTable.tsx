@@ -112,9 +112,9 @@ export default function ComplaintDataTable() {
       enableHiding: false,
     },
     {
-      accessorKey: 'id',
+      accessorKey: 'readableId',
       header: 'Report ID',
-      cell: ({ row }) => <div>{row.getValue('id')}</div>,
+      cell: ({ row }) => <div>{row.getValue('readableId')}</div>,
       enableHiding: false,
     },
     {
