@@ -11,11 +11,13 @@ import com.helios.auctix.domain.notification.preferences.NotificationGlobalPrefe
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.repositories.NotificationEventPreferencesRepository;
 import com.helios.auctix.repositories.NotificationGlobalPreferencesRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class NotificationSettingsService {
 
@@ -49,6 +51,7 @@ public class NotificationSettingsService {
                         }
                     }
 
+                    log.info( "event specific notification preferences are found");
                     // Since event-specific preference exists for this notification event category, return it
                     return enabledNotificationTypes;
                 }
@@ -64,7 +67,7 @@ public class NotificationSettingsService {
                         .map(Map.Entry::getKey) // get the NotificationType
                         .collect(Collectors.toSet());
 
-
+                log.info( "global notification preferences are found");
                 // We return the global settings since we found them
                 return enabledNotificationTypes;
 
@@ -73,18 +76,17 @@ public class NotificationSettingsService {
 
             // Last fall back is default notification preferences when there is no event category settings
             Map<NotificationCategory, Set<NotificationType>> defaultPreferences = setDefaultPreferences();
+            log.info( "Fallbacking to default preferencees");
 
             enabledNotificationTypes = defaultPreferences.get(category);
 
             return enabledNotificationTypes;
 
-        } catch (JsonMappingException e) {
-            throw new RuntimeException(e);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            log.error("Error resolving notification preferences for user {} for category {}. Falling back to defaults. Error: {}", user, category, e.getMessage());
+            Map<NotificationCategory, Set<NotificationType>> defaultPreferences = setDefaultPreferences();
+            return defaultPreferences.get(category);
         }
-
-
     }
 
     /**
