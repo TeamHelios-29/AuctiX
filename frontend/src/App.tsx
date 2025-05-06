@@ -14,8 +14,6 @@ const App: React.FC = () => {
   const auth: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);
 
   useEffect(() => {
-    registerSWAndRequestNotificationPermission();
-    listenForForegroundMessages(); // todo check if we are going to use ws instead for foreground msgs
     dispatch(restoreUser()); // Get the user auth data from local storage and set it in the redux store
   }, []);
 

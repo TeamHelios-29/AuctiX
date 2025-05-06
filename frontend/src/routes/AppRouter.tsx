@@ -14,8 +14,12 @@ import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/auction-details';
 import Report from '@/pages/Report';
 import Settings from '@/pages/Settings';
-
+import { useNotificationRegistration } from '@/hooks/use-notification-registration';
+import UserDeliveryPage from '@/pages/User_Delivery';
+import SellerDeliveryPage from '@/pages/Seller_Delivery';
 export default function AppRouter() {
+  useNotificationRegistration();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -57,6 +61,8 @@ export default function AppRouter() {
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/user-delivery" element={<UserDeliveryPage />} />
+        <Route path="/seller-delivery" element={<SellerDeliveryPage />} />
 
         <Route path="/403" element={<h2>403 Unautherized</h2>} />
         <Route path="/test-chat" element={<AuctionChat />} />
