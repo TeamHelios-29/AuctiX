@@ -42,7 +42,7 @@ public class ChatMessage {
         return "ChatMessage{" +
                 "id=" + id +
                 ", chatRoom=" + chatRoom +
-                ", sender=" + sender +
+                ", sender=" + sender.getEmail() +
                 ", content='" + content + '\'' +
                 ", timestamp=" + timestamp +
                 '}';
