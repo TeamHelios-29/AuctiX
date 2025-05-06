@@ -26,6 +26,7 @@ public class ChatMessageMapperImpl implements Mapper<ChatMessage, ChatMessageDTO
         return ChatMessageDTO.builder()
                 .chatMessageId(String.valueOf(chatMessage.getId()))
                 .senderId(String.valueOf(chatMessage.getSender().getId()))
+                .senderUsername(chatMessage.getSender().getUsername())
                 .senderName(chatMessage.getSender().getFirstName() + " " + chatMessage.getSender().getLastName())
                 .senderRole(chatMessage.getSender().getRoleEnum().name())
                 .content(chatMessage.getContent())
