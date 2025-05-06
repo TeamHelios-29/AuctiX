@@ -6,7 +6,6 @@ import lombok.*;
 
 import java.util.UUID;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,17 +15,18 @@ import java.util.UUID;
 public class NotificationGlobalPreference {
 
     @Id
-    @Column(name = "user_id")
-    private UUID userId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
+    private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, insertable = false, updatable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
     /**
-     *  Settings column will have a json with the preferences in the format similar to : { "email": true, "push": false }
+     * Settings column will have a json with the preferences in the format similar to: { "EMAIL": true, "PUSH": false }
      */
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String settings;
-
 }

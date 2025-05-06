@@ -18,29 +18,20 @@ import java.util.UUID;
 public class NotificationEventPreference {
 
     @Id
-    @Column(name = "user_id")
-    private UUID userId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
+    private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, insertable = false, updatable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
     /**
      *  Settings column will have a json with the preferences in the format similar to :
-     *  {"PROMO" : { "email": true, "push": false }, "BID_WIN" : { "email": true, "push": false } }
-     *  }
+     *  {"PROMO" : { "EMAIL": true, "PUSH": false }, "BID_WIN" : { "EMAIL": true, "PUSH": false } }
      */
-    @Column(columnDefinition = "jsonb")
+    @Column(name = "settings", columnDefinition = "jsonb")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     private String settings;
-
-    @PrePersist
-    public void prePersist() {
-        if (user != null && user.getId() != null) {
-            userId = user.getId();
-        }
-        if (userId == null) {
-            throw new IllegalStateException("userId cannot be null for NotificationGlobalPreferences");
-        }
-    }
 
 }

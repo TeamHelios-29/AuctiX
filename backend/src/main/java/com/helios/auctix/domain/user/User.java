@@ -1,12 +1,11 @@
 package com.helios.auctix.domain.user;
 
 import com.fasterxml.jackson.annotation.*;
+import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
+import com.helios.auctix.domain.notification.preferences.NotificationGlobalPreference;
 import com.helios.auctix.domain.upload.Upload;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serial;
 import java.util.List;
@@ -74,4 +73,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserFCMToken> fcmTokens;
 
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private NotificationEventPreference notificationEventPreference;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private NotificationGlobalPreference notificationGlobalPreference;
 }

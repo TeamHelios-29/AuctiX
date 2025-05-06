@@ -9,8 +9,11 @@ import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
 import com.helios.auctix.domain.notification.preferences.NotificationGlobalPreference;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.NotificationPreferencesDTO;
+import com.helios.auctix.mappers.NotificationPreferencesMapper;
 import com.helios.auctix.repositories.NotificationEventPreferencesRepository;
 import com.helios.auctix.repositories.NotificationGlobalPreferencesRepository;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -24,11 +27,13 @@ public class NotificationSettingsService {
 
     private final NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository;
     private final NotificationEventPreferencesRepository notificationEventPreferencesRepository;
+    private final NotificationPreferencesMapper preferencesDTOMapper;
     private final ObjectMapper objectMapper;
 
-    public NotificationSettingsService(NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository, NotificationEventPreferencesRepository notificationEventPreferencesRepository, ObjectMapper objectMapper) {
+    public NotificationSettingsService(NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository, NotificationEventPreferencesRepository notificationEventPreferencesRepository, NotificationPreferencesMapper preferencesDTOMapper, ObjectMapper objectMapper) {
         this.notificationGlobalPreferencesRepository = notificationGlobalPreferencesRepository;
         this.notificationEventPreferencesRepository = notificationEventPreferencesRepository;
+        this.preferencesDTOMapper = preferencesDTOMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -38,9 +43,10 @@ public class NotificationSettingsService {
         try {
 
             // * 1st check the preferences for event categories
-            Optional<NotificationEventPreference> eventPreference = notificationEventPreferencesRepository.findById(user.getId());
+            Optional<NotificationEventPreference> eventPreference = notificationEventPreferencesRepository.findByUserId(user.getId());
+//            log.info("Event preferences" + eventPreference.get().getSettings());
             if (eventPreference.isPresent()) {
-                // settings will be a string of   {"PROMO" : { "email": true, "push": false }, "BID_WIN" : { "email": true, "push": false } }
+                // settings will be a string of   {"PROMO" : { "EMAIL": true, "PUSH": false }, "BID_WIN" : { "EMAIL": true, "PUSH": false } }
                 Map<NotificationCategory, Map<NotificationType, Boolean>> eventPreferenceSettings = getSettingsNotificationTypesForEventCategories(eventPreference.get().getSettings());
 
                 Map<NotificationType, Boolean> categorySettings = eventPreferenceSettings.get(category);
@@ -58,7 +64,7 @@ public class NotificationSettingsService {
             }
 
             // 2nd check if there are global notification preferences set for the user
-            Optional<NotificationGlobalPreference> globalPreference = notificationGlobalPreferencesRepository.findById(user.getId());
+            Optional<NotificationGlobalPreference> globalPreference = notificationGlobalPreferencesRepository.findByUserId(user.getId());
             if (globalPreference.isPresent()) {
                 Map<NotificationType, Boolean> globalNotificationPreference = getSettingsGlobalNotificationPreference(globalPreference.get().getSettings());
 
@@ -83,7 +89,8 @@ public class NotificationSettingsService {
             return enabledNotificationTypes;
 
         } catch (JsonProcessingException e) {
-            log.error("Error resolving notification preferences for user {} for category {}. Falling back to defaults. Error: {}", user, category, e.getMessage());
+            log.error("Error resolving notification preferences for user {} for category {}. Falling back to defaults. Error: {}", user.getUsername(), category, e.getMessage());
+            e.printStackTrace();
             Map<NotificationCategory, Set<NotificationType>> defaultPreferences = setDefaultPreferences();
             return defaultPreferences.get(category);
         }
@@ -92,7 +99,7 @@ public class NotificationSettingsService {
     /**
      * Get the preferences of the user for the event categories
      *
-     * @param settingsJsonString event notification settings as a json format similar to - {"PROMO" : { "email": true, "push": false }, "BID_WIN" : { "email": true, "push": false } }
+     * @param settingsJsonString event notification settings as a json format similar to - {"PROMO" : { "EMAIL": true, "PUSH": false }, "BID_WIN" : { "EMAIL": true, "PUSH": false } }
      * @return Map<NotificationCategory, Map < NotificationType, Boolean>> eventCategoryNotificationSettings
      * @throws JsonProcessingException
      */
@@ -109,7 +116,7 @@ public class NotificationSettingsService {
     /**
      * Get the global preferences of the user for notification delivery types
      *
-     * @param settingsJsonString global notification settings as a json in a format similar to - { "email" : true, "push": false }
+     * @param settingsJsonString global notification settings as a json in a format similar to - { "EMAIL" : true, "PUSH": false }
      * @return Map<NotificationType, Boolean> globalNotificationSettings
      * @throws JsonProcessingException
      */
@@ -141,4 +148,63 @@ public class NotificationSettingsService {
         return defaultPreferences;
     }
 
+    public void savePreferences(User user, @Valid NotificationPreferencesDTO dto) {
+        if (dto.getGlobal() != null) {
+            String globalSettingsJson = toJson(dto.getGlobal());
+
+            NotificationGlobalPreference existingGlobalPref = notificationGlobalPreferencesRepository
+                    .findByUserId(user.getId())
+                    .orElse(null);
+
+            if (existingGlobalPref != null) {
+                existingGlobalPref.setSettings(globalSettingsJson);
+                notificationGlobalPreferencesRepository.save(existingGlobalPref);
+            } else {
+                NotificationGlobalPreference globalPref = NotificationGlobalPreference.builder()
+                        .user(user)
+                        .settings(globalSettingsJson)
+                        .build();
+                notificationGlobalPreferencesRepository.save(globalPref);
+            }
+        }
+
+        if (dto.getEvents() != null) {
+            String eventSettingsJson = toJson(dto.getEvents());
+
+            NotificationEventPreference existingEventPref = notificationEventPreferencesRepository
+                    .findByUserId(user.getId())
+                    .orElse(null);
+
+            if (existingEventPref != null) {
+                existingEventPref.setSettings(eventSettingsJson);
+                notificationEventPreferencesRepository.save(existingEventPref);
+            } else {
+                NotificationEventPreference eventPref = NotificationEventPreference.builder()
+                        .user(user)
+                        .settings(eventSettingsJson)
+                        .build();
+                notificationEventPreferencesRepository.save(eventPref);
+            }
+        }
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return new ObjectMapper().writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize notification preferences", e);
+        }
+    }
+
+     public NotificationPreferencesDTO getPreferences(User user) {
+
+        Optional<NotificationEventPreference> eventPreferenceOptional = notificationEventPreferencesRepository.findByUserId(user.getId());
+        Optional<NotificationGlobalPreference> globalPreferenceOptional = notificationGlobalPreferencesRepository.findByUserId(user.getId());
+
+         // for now null if preferences don't exist
+         NotificationEventPreference eventPreference = eventPreferenceOptional.orElse(null);
+         NotificationGlobalPreference globalPreference = globalPreferenceOptional.orElse(null);
+
+         return preferencesDTOMapper.toDTO(globalPreference, eventPreference);
+     }
 }

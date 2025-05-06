@@ -7,7 +7,8 @@ import {
 import AxiosRequest from '@/services/axiosInspector';
 
 export function useNotificationRegistration() {
-  const userData = useAppSelector((state) => state.user);
+  // const userData = useAppSelector((state) => state.user);
+  const authUser = useAppSelector((state) => state.auth);
   const { axiosInstance } = AxiosRequest();
   const axiosRef = useRef(axiosInstance);
 
@@ -33,7 +34,7 @@ export function useNotificationRegistration() {
 
   useEffect(() => {
     const handleNotificationRegistration = async () => {
-      if (userData.email != null) {
+      if (authUser.token != null) {
         const token = await registerSWAndRequestNotificationPermission();
         if (token) {
           await sendFcmTokenToServer(token);
@@ -44,5 +45,5 @@ export function useNotificationRegistration() {
     };
 
     handleNotificationRegistration();
-  }, [userData, sendFcmTokenToServer]);
+  }, [authUser.token, sendFcmTokenToServer]);
 }
