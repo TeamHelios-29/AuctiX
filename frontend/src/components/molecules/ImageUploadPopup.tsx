@@ -8,6 +8,12 @@ import {
   Move,
   AlertCircle,
   BanIcon,
+  RefreshCcwDot,
+  DeleteIcon,
+  Delete,
+  RemoveFormatting,
+  LucideRemoveFormatting,
+  LucideDelete,
 } from 'lucide-react';
 import {
   Dialog,
@@ -54,10 +60,8 @@ export default function ImageUploadPopup({
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
   const positionRef = useRef<Position>(position);
   const [scale, setScale] = useState<number>(1);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgContainerRef = useRef<HTMLDivElement>(null);
-  const originalImageRef = useRef<HTMLImageElement>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{
     width: number;
@@ -256,6 +260,17 @@ export default function ImageUploadPopup({
     positionRef.current = { x: 0, y: 0 };
   };
 
+  const handleRemoveImage = (): void => {
+    setImage(null);
+    setPosition({ x: 0, y: 0 });
+    setScale(1);
+    setImageError(null);
+    setImageDimensions(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Adjust position after zoom to keep the highlighted area visible
   const constrainPositionAfterZoom = (newScale: number) => {
     if (!imageDimensions) return;
@@ -280,13 +295,18 @@ export default function ImageUploadPopup({
     const scaledImageHeight = imageDimensions.height * currentScale;
 
     // Calculate the maximum allowed movement to keep the highlighted area visible
-    const halfAcceptingWidth = acceptingWidth / 2;
-    const halfAcceptingHeight = acceptingHeight / 2;
+    // Apply global scale to properly constrain within the visible highlighted area
+    const halfAcceptingWidth = (acceptingWidth * globalScale) / 2;
+    const halfAcceptingHeight = (acceptingHeight * globalScale) / 2;
 
     const maxX = Math.max(scaledImageWidth / 2 - halfAcceptingWidth, 0);
     const maxY = Math.max(scaledImageHeight / 2 - halfAcceptingHeight, 0);
 
     return {
+      // maxX and maxY will only be positive if the image is larger than the highlighted area
+      // Otherwise, the image will be centered in the highlighted area
+      // insider min function keep the maximum bounds not more than maxX or maxY
+      // and outer max function keep the minimum bounds not less than -maxX or -maxY
       x: Math.max(Math.min(newPos.x, maxX), -maxX),
       y: Math.max(Math.min(newPos.y, maxY), -maxY),
     };
@@ -297,8 +317,6 @@ export default function ImageUploadPopup({
     info: { offset: { x: number; y: number } },
   ) => {
     e.preventDefault();
-    setIsDragging(true);
-
     const movingFactor = 1 / (scale * 1000);
 
     // Calculate new position
@@ -312,10 +330,6 @@ export default function ImageUploadPopup({
 
     setPosition(constrainedPosition);
     positionRef.current = constrainedPosition;
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
   };
 
   // Update positionRef when position changes
@@ -420,29 +434,30 @@ export default function ImageUploadPopup({
     handleCloseDialog();
   };
 
-  // Calculate global scale factor for the highlighted area
+  // Fix: Update the global scale on dialog open and when container ref is available
   useEffect(() => {
-    if (imgContainerRef.current) {
+    if (isOpen && imgContainerRef.current) {
       const containerWidth = imgContainerRef.current.clientWidth;
       const containerHeight = imgContainerRef.current.clientHeight;
 
-      // Always calculate a scale factor to ensure highlighted area fits within container
-      // Leave some margin (using 0.85 or 85% of container size)
-      const scaleFactorWidth = (containerWidth * 0.85) / acceptingWidth;
-      const scaleFactorHeight = (containerHeight * 0.85) / acceptingHeight;
+      // Set a fixed maximum percentage of container dimensions for the highlight area
+      const maxHighlightWidth = containerWidth * 0.8; // 80% of container width
+      const maxHighlightHeight = containerHeight * 0.8; // 80% of container height
+
+      // Calculate scale factors
+      const scaleFactorWidth = maxHighlightWidth / acceptingWidth;
+      const scaleFactorHeight = maxHighlightHeight / acceptingHeight;
 
       // Use the smaller scale factor to ensure the entire highlighted area fits
       const scaleFactor = Math.min(scaleFactorWidth, scaleFactorHeight);
 
-      // Never scale up, only down if needed
+      // ignore the scale down below 1
       const finalScale = Math.min(1, scaleFactor);
-      setGlobalScale(finalScale);
 
-      console.log(
-        `Container: ${containerWidth}x${containerHeight}, Accepting: ${acceptingWidth}x${acceptingHeight}, Scale: ${finalScale}`,
-      );
+      // Update the global scale
+      setGlobalScale(finalScale);
     }
-  }, [acceptingWidth, acceptingHeight]);
+  }, [isOpen, acceptingWidth, acceptingHeight, imgContainerRef.current]);
 
   return (
     <div className="flex flex-col items-center">
@@ -518,7 +533,6 @@ export default function ImageUploadPopup({
                 >
                   <img
                     src={image}
-                    ref={originalImageRef}
                     alt="Preview"
                     className="max-w-none max-h-none"
                     draggable="false"
@@ -536,9 +550,7 @@ export default function ImageUploadPopup({
                   dragConstraints={imgContainerRef}
                   dragElastic={0.1}
                   dragMomentum={false}
-                  onDragStart={() => setIsDragging(true)}
                   onDrag={handleDragging}
-                  onDragEnd={handleDragEnd}
                   style={{
                     touchAction: 'none',
                     userSelect: 'none',
@@ -571,14 +583,17 @@ export default function ImageUploadPopup({
                     onClick={handleResetZoom}
                     title="Reset View"
                   >
-                    <X size={16} />
+                    <RefreshCcwDot size={16} />
                   </Button>
-                  <div
-                    className="flex items-center justify-center text-white p-1 h-8 w-8"
-                    title="Drag to Move"
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-white p-1 h-8 w-8"
+                    onClick={handleRemoveImage}
+                    title="Reset View"
                   >
-                    <Move size={16} />
-                  </div>
+                    <LucideDelete size={16} />
+                  </Button>
                 </div>
               </div>
             )}
