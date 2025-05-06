@@ -1,0 +1,14 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{email/email-layout :: head(~{::title})}">
+    <title>Test Email</title>
+  </head>
+  <body>
+    <div th:replace="~{email/email-layout :: layout(~{::section})}">
+      <section>
+        <h2>Welcome, <span th:text="${username}">User</span>!</h2>
+        <p>This is a test email template.</p>
+      </section>
+    </div>
+  </body>
+</html>

@@ -7,11 +7,24 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-@AllArgsConstructor
 @Data
 public class UserServiceResponse {
     private boolean success;
     private String message;
 
     private User user = null;
+    private Upload upload = null;
+
+    public UserServiceResponse(boolean success, String message) {
+        this.success = success;
+        this.message = message;
+    }
+
+    public UserServiceResponse(boolean success, String message, User user) {
+        this.success = success;
+        this.message = message;
+        this.user = user;
+    }
+
+
 }

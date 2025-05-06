@@ -1,5 +1,6 @@
 package com.helios.auctix.domain.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public class Admin {
 
     @Id
+    @JsonIgnore
     private UUID id;
 
     @Column(name="is_active", nullable = false)
@@ -24,6 +26,7 @@ public class Admin {
 
     @OneToOne
     @MapsId
+    @JsonIgnore
     @JoinColumn(name = "id")
     private User user;
 

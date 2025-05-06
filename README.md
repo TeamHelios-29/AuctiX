@@ -1,12 +1,17 @@
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
+
+
 # AuctiX
 Online auction platform
 # Formating
 Prettier is configured to format the staged files and commit. using husky pre-commit hook
 to skip the formatting use the `git commit` with `-n` or `--no-verify` flag also add files to .prettierignore file to ignore the formatting
 
+# Documentation
 
+- [Backend README](./docs/backend/README.md)
+- [Frontend README](./docs/frontend/README.md)
 
 # Setup
 
@@ -24,15 +29,34 @@ to skip the formatting use the `git commit` with `-n` or `--no-verify` flag also
 cd backend
 ```
 
-2. Start the docker container for the database
+2. Setup the environment variables and Firebase credentials json
+
+Copy the .env.example and rename the copy to .env
+```shell
+cp .env.example .env
+```
+
+Edit the .env by the placeholder values with your actual configurations for your database, mail server, and other environment settings 
+
+Note: for mail server you can use any SMTP server or a service like mailtrap for testing
+
+Configure Firebase:
+  - Go to the Firebase Console.
+  - Select your Firebase project.
+  - Navigate to Project settings > Service accounts.
+  - Under Firebase Admin SDK, click Generate new private key. This will download a JSON file containing your service account credentials.
+  - Add Firebase credentials to the backend .env, the environment variables corresponding to each key in the JSON file are in the format 
+  `FIREBASE_{KEY_NAME}`. For example, if your JSON file has a key called `project_id`, you would set it in the .env as `FIREBASE_PROJECT_ID`.
+   refer to env.example for the env variable formats
+
+
+3. Start the docker container for the database
 ```shell
 docker compose up
 ```
 
-3. Run the backend
+4. Run the backend
 ```shell
-
-
 ### without wrapper
 mvn spring-boot:run
 ```
@@ -119,3 +143,45 @@ Include the token in the Authorization header for protected routes.
 Example:
 
 `Authorization: Bearer <your-jwt-token>`
+
+## Using Axios Instence
+
+Use the pre-configured axios instance as follows.
+This will automatically handle signing out the user if the JWT token is expired or invalid.
+
+```js
+import { AxiosInstance } from 'axios';
+import AxiosReqest from '@/services/axiosInspector';
+
+export function FunctionalComponent(){
+  const axiosInstance: AxiosInstance = AxiosReqest()
+                                        .axiosInstance;
+
+  axiosInstance
+      .get('/user/getUsers', {
+        //set params, headers...
+      })
+      .then((data) => {
+        // after fetch data
+      })
+}
+```
+
+```js
+import { AxiosInstance } from 'axios';
+import AxiosReqest from '@/services/axiosInspector';
+
+exprot function FunctionalComponent(){
+  const axiosInstance: AxiosInstance = AxiosReqest()
+                                        .axiosInstance;
+
+  axiosInstance
+      .get('/user/getUsers', {
+        //set params, headers...
+      })
+      .then((data) => {
+        // after fetch data
+        console.log(data);
+      })
+}
+```

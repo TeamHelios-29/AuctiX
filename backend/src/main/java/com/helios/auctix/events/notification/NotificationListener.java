@@ -2,21 +2,25 @@ package com.helios.auctix.events.notification;
 
 import com.helios.auctix.domain.notification.Notification;
 import com.helios.auctix.domain.notification.NotificationCategory;
-import com.helios.auctix.domain.notification.NotificationType;
-import com.helios.auctix.services.notification.senders.EmailNotificationSender;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.helios.auctix.services.notification.NotificationManagerService;
+import lombok.extern.java.Log;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
+@Log
 @Component
 public class NotificationListener implements ApplicationListener<NotificationEvent> {
 
-    @Autowired
-    private EmailNotificationSender emailNotificationSender;
+
+    private final NotificationManagerService notificationManagerService;
+
+    NotificationListener(NotificationManagerService notificationManagerService) {
+        this.notificationManagerService = notificationManagerService;
+    }
 
     @Override
     public void onApplicationEvent(NotificationEvent event) {
-        System.out.println("Received spring event - " + event.getMessage());
+        log.info("Received spring event - " + event.getMessage());
 
         NotificationCategory notificationCategory = event.getNotificationCategory();
 
@@ -27,15 +31,9 @@ public class NotificationListener implements ApplicationListener<NotificationEve
                         .notificationCategory(event.getNotificationCategory())
                         .notificationEvent(event.toString()) // TODO decide if we are storing this
                         .title(event.getTitle())
-                        .content(event.getMessage())
-                ;
+                        .content(event.getMessage());
 
-        switch (notificationCategory) {
-            case DEFAULT -> {
-                System.out.println(notificationCategory + " category sending to all notification senders");
-                notificationBuilder.notificationType(NotificationType.EMAIL);
-                emailNotificationSender.sendNotification(notificationBuilder.build());
-            }
-        }
+
+        notificationManagerService.handleNotification(notificationBuilder.build());
     }
 }

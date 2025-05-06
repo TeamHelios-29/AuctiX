@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serial;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -52,10 +53,25 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role;
 
+    @OneToOne
+    @JoinColumn(name = "id")
+    private Seller seller;
 
-    // helper method to make things clearer
+    @OneToOne
+    @JoinColumn(name = "id")
+    private Admin admin;
+
+    @OneToOne
+    @JoinColumn(name = "id")
+    private Bidder bidder;
+
+    // helper method to make it cleaner to get the role enum
     @JsonProperty("role")
     public UserRoleEnum getRoleEnum() {
         return role.getName();
     }
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserFCMToken> fcmTokens;
+
 }
