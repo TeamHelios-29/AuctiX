@@ -234,6 +234,43 @@ public class UserController {
         return ResponseEntity.ok(currentUser);
     }
 
+    @GetMapping("/getUser")
+    public ResponseEntity<?> getUser(
+            @RequestParam(value = "username", required = false) String username,
+            @RequestParam(value = "email" , required = false) String email,
+            @RequestParam(value = "userId" , required = false) UUID userId
+    ) {
+        User user = null;
+        boolean hasUname = !(username==null || username.isBlank());
+        boolean hasId = userId != null;
+        boolean hasEmail = !(email==null || email.isBlank());
+        byte providedParamsCount = 0;
+        if (hasUname) {
+            providedParamsCount++;
+        }
+        if (hasId) {
+            providedParamsCount++;
+        }
+        if (hasEmail) {
+            providedParamsCount++;
+        }
+        if (providedParamsCount != 1) {
+            return ResponseEntity.badRequest().body("Error: must provide only one of username,id or email");
+        } else {
+            if (hasEmail) {
+                user = userDetailsService.getUserByEmail(email);
+            } else if (hasUname) {
+                user = userDetailsService.getUserByUsername(username);
+            } else if (hasId) {
+                user = userDetailsService.getUserById(userId);
+            }
+        }
+        if(user==null){
+            return ResponseEntity.status(404).body("User not found");
+        }
+        return ResponseEntity.ok(user);
+    }
+
     @PostMapping("/uploadUserProfilePhoto")
     public ResponseEntity<String> uploadUserProfilePhoto(@RequestParam("file") MultipartFile file) {
 
