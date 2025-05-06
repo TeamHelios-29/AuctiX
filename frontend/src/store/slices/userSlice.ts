@@ -34,6 +34,22 @@ export const fetchCurrentUser = createAsyncThunk(
         },
       });
       console.log('Current user data fetched:', response.data);
+
+      // Ensure we have user data in the response
+      if (!response.data) {
+        return rejectWithValue('No user data received');
+      }
+
+      // Add aditional setup for user data
+      const userData = {
+        ...response.data,
+        profile_photo:
+          `${baseURL}/${response.data.profile_photo}` ||
+          '/defaultProfilePhoto.jpg',
+        fcmTokens: response.data.fcmTokens || [],
+      };
+
+      console.log('Processed user data:', userData);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
