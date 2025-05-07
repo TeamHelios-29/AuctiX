@@ -77,4 +77,20 @@ const registerServiceWorker = async () => {
   }
 };
 
+export const unregisterServiceWorker = () => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) => {
+        registrations.forEach((registration) => {
+          console.log('Unregistering Service Worker:', registration);
+          registration.unregister();
+        });
+      })
+      .catch((error) => {
+        console.error('Error unregistering service worker:', error);
+      });
+  }
+};
+
 export { messaging };

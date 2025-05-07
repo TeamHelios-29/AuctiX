@@ -4,22 +4,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AxiosInstance } from 'axios';
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { delay, motion } from 'motion/react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { Octagon, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/hooks';
 import { jwtDecode } from 'jwt-decode';
 import { IJwtData } from '@/types/IJwtData';
 import { IAuthUser } from '@/types/IAuthUser';
-import { login } from '@/store/slices/authSlice';
+import { login, user } from '@/store/slices/authSlice';
 import { AlertBox } from './AlertBox';
 import AxiosReqest from '@/services/axiosInspector';
-
-interface IValidationError {
-  msg: string;
-  fieldId: string;
-}
+import {
+  IValidationError,
+  ValidateErrorElement,
+  ValidityIndicator,
+} from '../atoms/validityIndicator';
+import ValidateUsernameOrEmail from '../molecules/validateUsernameOrEmail';
 
 export function TabsDemo({
   onTabChange,
@@ -41,52 +42,14 @@ export function TabsDemo({
     [],
   );
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
-  const isLoginSuccessRef = useRef(isLoginSuccess);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const ValidateErrorElement = ({
-    eleFieldId,
-    errorList,
-  }: {
-    eleFieldId: string;
-    errorList: IValidationError[];
-  }) => {
-    const fieldErrors = errorList.filter(
-      (ve) => (ve.fieldId as string) === eleFieldId,
-    );
-    const initProps = {
-      opacity: 1,
-      scale: 1,
-    };
-    const animateProps = {
-      opacity: [1, 0.9, 1],
-      scale: [1, 1.06, 1],
-    };
-    return fieldErrors.length > 0 ? (
-      <motion.div
-        key={eleFieldId + '-errors' + fieldErrors.length}
-        initial={initProps}
-        animate={animateProps}
-        exit={{ opacity: 0, scale: 0 }}
-        transition={{ duration: 0.5, exit: { duration: 1.5 } }}
-        className="bg-red-50 border border-red-200 rounded-md p-3 mb-3"
-      >
-        <h4 className="text-sm font-medium text-red-800 mb-1">
-          Check the input field rules:
-        </h4>
-        <ul className="text-xs text-red-700 list-disc pl-4 space-y-1">
-          {fieldErrors.map((error, index) => (
-            <li key={index}>{error.msg}</li>
-          ))}
-        </ul>
-      </motion.div>
-    ) : (
-      <></>
-    );
-  };
+  const isLoginSuccessRef = useRef(isLoginSuccess);
 
   useEffect(() => {
     validations();
   }, [email, password, repeatPassword, firstName, lastName, username]);
+
   useEffect(() => {
     isLoginSuccessRef.current = isLoginSuccess;
   }, [isLoginSuccess]);
@@ -109,9 +72,58 @@ export function TabsDemo({
     }
   };
 
-  const validations = () => {
+  const validations = (isRegBtnClicked = false) => {
     let isValid = true;
     let errorList: IValidationError[] = [];
+    if (isRegBtnClicked) {
+      if (!username) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'username',
+          msg: 'Username is required',
+        });
+      }
+
+      if (!email) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'email',
+          msg: 'Email is required',
+        });
+      }
+
+      if (!password) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'password',
+          msg: 'Password is required',
+        });
+      }
+
+      if (!repeatPassword) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'repeat-password',
+          msg: 'Repeat password is required',
+        });
+      }
+
+      if (!firstName) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'fname',
+          msg: 'First name is required',
+        });
+      }
+
+      if (!lastName) {
+        isValid = false;
+        errorList.push({
+          fieldId: 'lname',
+          msg: 'Last name is required',
+        });
+      }
+    }
 
     if (username && username.length < 3) {
       errorList.push({
@@ -179,7 +191,8 @@ export function TabsDemo({
   const dispatch = useAppDispatch();
   const handleRegister = (userType: string) => {
     console.log('Registering', userType);
-    if (validations()) {
+    if (validations(true)) {
+      setIsLoading(true);
       axiosInstance
         .post('/auth/register', {
           email: email,
@@ -212,6 +225,9 @@ export function TabsDemo({
             'Error: ' +
               (error.response?.data || error.message || 'Unknown error'),
           );
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     } else {
       showErrorAlert(
@@ -270,12 +286,6 @@ export function TabsDemo({
         </TabsList>
         <TabsContent value="Buyers">
           <Card className="border-none shadow-none">
-            {/* <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              Make changes to your account here. Click save when you're done.
-            </CardDescription>
-          </CardHeader> */}
             <CardContent className="space-y-2 py-5 px-0">
               <div className="space-y-1">
                 <Label htmlFor="firstName">First Name</Label>
@@ -308,6 +318,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={email}
+                  offset={{ x: -20, y: -150 }}
+                  type="email"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="email"
@@ -320,6 +335,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="@peduarte"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={username}
+                  offset={{ x: -20, y: -150 }}
+                  type="username"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="username"
@@ -329,6 +349,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Enter your password"
                 />
@@ -341,6 +362,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Repeat Password</Label>
                 <Input
                   id="repeat_password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Repeat your password"
                 />
@@ -353,10 +375,21 @@ export function TabsDemo({
             <CardFooter className="px-0 flex flex-col">
               <Button
                 className="w-full"
-                onClick={() => handleRegister('BIDDER')}
+                onClick={() => {
+                  handleRegister('BIDDER');
+                }}
+                disabled={isLoading}
               >
-                Sign up
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Signing up...</span>
+                  </div>
+                ) : (
+                  'Sign up'
+                )}
               </Button>
+
               <Button
                 variant="secondary"
                 className="w-full mt-2 flex items-center justify-center"
@@ -406,6 +439,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={email}
+                  offset={{ x: -20, y: -150 }}
+                  type="email"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="email"
@@ -418,6 +456,11 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="@globalLK"
                 />
+                <ValidateUsernameOrEmail
+                  usernameOrEmail={username}
+                  offset={{ x: -20, y: -150 }}
+                  type="username"
+                />
               </div>
               <ValidateErrorElement
                 eleFieldId="username"
@@ -427,6 +470,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Enter your password"
                 />
@@ -439,6 +483,7 @@ export function TabsDemo({
                 <Label htmlFor="password">Repeat Password</Label>
                 <Input
                   id="repeat_password"
+                  type="password"
                   onChange={(e) => handleInputType(e)}
                   placeholder="Repeat your password"
                 />
@@ -451,9 +496,19 @@ export function TabsDemo({
             <CardFooter className="px-0 flex flex-col">
               <Button
                 className="w-full"
-                onClick={() => handleRegister('SELLER')}
+                onClick={() => {
+                  handleRegister('SELLER');
+                }}
+                disabled={isLoading}
               >
-                Sign up
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Signing up...</span>
+                  </div>
+                ) : (
+                  'Sign up'
+                )}
               </Button>
               <Button
                 variant="secondary"

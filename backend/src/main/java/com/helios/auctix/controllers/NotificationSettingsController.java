@@ -2,7 +2,9 @@ package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.FCMTokenRegisterRequestDTO;
+import com.helios.auctix.dtos.NotificationPreferencesDTO;
 import com.helios.auctix.services.FirebaseCloudMessageService;
+import com.helios.auctix.services.notification.NotificationSettingsService;
 import com.helios.auctix.services.user.UserRegisterService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -21,11 +23,13 @@ public class NotificationSettingsController {
 
     private final FirebaseCloudMessageService firebaseCloudMessageService;
     private final UserRegisterService userRegisterService;
+    private final NotificationSettingsService notificationSettingsService;
     private final Logger log = Logger.getLogger(NotificationSettingsController.class.getName());
 
-    public NotificationSettingsController(FirebaseCloudMessageService firebaseCloudMessageService, UserRegisterService userRegisterService) {
+    public NotificationSettingsController(FirebaseCloudMessageService firebaseCloudMessageService, UserRegisterService userRegisterService, NotificationSettingsService notificationSettingsService) {
         this.firebaseCloudMessageService = firebaseCloudMessageService;
         this.userRegisterService = userRegisterService;
+        this.notificationSettingsService = notificationSettingsService;
     }
 
 
@@ -61,5 +65,62 @@ public class NotificationSettingsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing the request request");
         }
     }
+
+    @GetMapping("/preferences")
+    public ResponseEntity<NotificationPreferencesDTO> getNotificationPreferences(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        String userEmail = userDetails.getUsername();
+
+        try {
+            User user = userRegisterService.getUserFromEmail(userEmail);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            NotificationPreferencesDTO preferences = notificationSettingsService.getPreferences(user);
+            return ResponseEntity.ok(preferences);
+
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Error occurred while fetching notification preferences", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PostMapping("/preferences")
+    public ResponseEntity<String> setNotificationPreferences(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody NotificationPreferencesDTO dto) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
+        }
+
+        String userEmail = userDetails.getUsername();
+
+        try {
+            User user = userRegisterService.getUserFromEmail(userEmail);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            }
+
+            notificationSettingsService.savePreferences(user, dto);
+
+            return ResponseEntity.ok("Notification preferences updated successfully");
+
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Error occurred while updating notification preferences", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing the request");
+        }
+    }
+
+
+
+
+
 
 }

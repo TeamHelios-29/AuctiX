@@ -22,8 +22,12 @@ function AuctionChat() {
   const [chatRoomId, setChatRoomId] = useState(
     '5ded2b18-e4c6-4bed-8716-aa551123b469',
   ); // TODO Change
-  const user: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);
-  const isAuthenticated = !!user && !!user.token;
+  const user = useAppSelector((state) => state.user);
+  const userAuth: IAuthUser = useAppSelector(
+    (state) => state.auth as IAuthUser,
+  );
+
+  const isAuthenticated = !!userAuth && !!userAuth.token;
   const displayName = user?.username || 'Guest';
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const [hasMore, setHasMore] = useState(true);
@@ -63,7 +67,7 @@ function AuctionChat() {
               userRole: msg.senderRole || 'User',
               timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
               isSentByCurrentUser:
-                isAuthenticated && msg.senderName === user.username,
+                isAuthenticated && msg.senderUsername === user.username,
             }),
           );
           setMessages((prevMessages) => [
@@ -118,7 +122,7 @@ function AuctionChat() {
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       connectHeaders: isAuthenticated
-        ? { Authorization: `Bearer ${user.token}` }
+        ? { Authorization: `Bearer ${userAuth.token}` }
         : {},
       onConnect: () => {
         console.log('Connected to WebSocket');
@@ -151,7 +155,7 @@ function AuctionChat() {
                     : new Date(),
                   isSentByCurrentUser:
                     isAuthenticated &&
-                    receivedMessage.senderName === user.username,
+                    receivedMessage.senderUsername === user.username,
                 };
 
                 setMessages((prevMessages) => [
@@ -162,7 +166,9 @@ function AuctionChat() {
                 console.error('Error parsing message:', error);
               }
             },
-            isAuthenticated ? { Authorization: `Bearer ${user.token}` } : {},
+            isAuthenticated
+              ? { Authorization: `Bearer ${userAuth.token}` }
+              : {},
           );
         }
       },
@@ -193,7 +199,14 @@ function AuctionChat() {
         client.deactivate();
       }
     };
-  }, [chatRoomId, webSocketURL, user, isAuthenticated, displayName]);
+  }, [
+    chatRoomId,
+    webSocketURL,
+    user,
+    isAuthenticated,
+    displayName,
+    userAuth.token,
+  ]);
 
   const sendMessage = () => {
     if (!isAuthenticated) {
@@ -216,7 +229,7 @@ function AuctionChat() {
         destination: `/app/chat.sendMessage/${chatRoomId}`,
         body: JSON.stringify(chatMessage),
         headers: {
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${userAuth.token}`,
         },
       });
 
@@ -234,7 +247,7 @@ function AuctionChat() {
       const container = scrollContainerRef.current;
       if (!container || isLoading || !hasMore) return;
 
-      console.log('Scroll position:', container.scrollTop);
+      // console.log('Scroll position:', container.scrollTop);
 
       if (container.scrollTop === 0) {
         console.log('Reached top, loading more messages');

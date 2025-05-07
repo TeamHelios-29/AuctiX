@@ -1,10 +1,8 @@
 package com.helios.auctix.domain.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.UUID;
 
@@ -14,9 +12,11 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "bidders" )
+@ToString(exclude = "user") // or else we get cyclic dependency
 public class Bidder {
 
     @Id
+    @JsonIgnore
     private UUID id;
 
     @Column(name="is_active", nullable = false)
@@ -24,6 +24,7 @@ public class Bidder {
 
     @OneToOne
     @MapsId
+    @JsonIgnore
     @JoinColumn(name = "id")
     private User user;
 

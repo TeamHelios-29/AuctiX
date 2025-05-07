@@ -1,19 +1,17 @@
 import { IAuthUser } from '@/types/IAuthUser';
 import { getStoredAuthUser } from '@/services/authService';
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 
 interface AuthState {
   token?: string | null;
-  username?: string | null;
   role?: string | null;
+  isUserLoggedIn?: boolean;
 }
 
-export const user = getStoredAuthUser();
-
 const initialState: AuthState = {
-  token: user?.token,
-  username: user?.username,
-  role: user?.role,
+  token: null,
+  role: null,
+  isUserLoggedIn: false,
 };
 
 const authSlice = createSlice({
@@ -22,13 +20,12 @@ const authSlice = createSlice({
   reducers: {
     login: (state, action: PayloadAction<IAuthUser>) => {
       state.token = action.payload.token;
-      state.username = action.payload.username;
       state.role = action.payload.role;
+      state.isUserLoggedIn = true;
       localStorage.setItem(
         'authUser',
         JSON.stringify({
           token: action.payload.token,
-          username: action.payload.username,
           role: action.payload.role,
         } as IAuthUser),
       );
@@ -37,10 +34,22 @@ const authSlice = createSlice({
       localStorage.removeItem('authUser');
       state.token = null;
       state.role = null;
-      state.username = null;
+      state.isUserLoggedIn = false;
+    },
+    restoreUser: (state) => {
+      const storedAuthUser = getStoredAuthUser();
+      if (storedAuthUser) {
+        state.token = storedAuthUser.token;
+        state.role = storedAuthUser.role;
+        state.isUserLoggedIn = true;
+      } else {
+        state.token = null;
+        state.role = null;
+        state.isUserLoggedIn = false;
+      }
     },
   },
 });
 
-export const { login, logout } = authSlice.actions;
+export const { login, logout, restoreUser } = authSlice.actions;
 export default authSlice.reducer;

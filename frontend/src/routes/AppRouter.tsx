@@ -14,7 +14,10 @@ import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/AuctionDetails';
 import AuctionsPage from '@/pages/ExploreAuctions';
 
+
 export default function AppRouter() {
+  useNotificationRegistration();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -39,15 +42,29 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute
+                allowedUsers={['ADMIN', 'SUPPER_ADMIN', 'BIDDER', 'SELLER']}
+                redirectPath="/403"
+              >
+                <User />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/reports" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/user-delivery" element={<UserDeliveryPage />} />
+        <Route path="/seller-delivery" element={<SellerDeliveryPage />} />
 
         <Route path="/403" element={<h2>403 Unautherized</h2>} />
         <Route path="/test-chat" element={<AuctionChat />} />
-        <Route path="/user" element={<User />} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>
     </BrowserRouter>

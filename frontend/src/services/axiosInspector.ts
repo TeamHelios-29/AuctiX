@@ -1,13 +1,18 @@
 import { IAuthUser } from '@/types/IAuthUser';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
+import { logout } from '@/store/slices/authSlice';
+import { useDispatch } from 'react-redux';
 
-const AxiosReqest = () => {
-  const navigate = useNavigate();
+const AxiosRequest = () => {
+  const dispatch = useDispatch();
+  // const navigate = useNavigate();
+  const baseURL = import.meta.env.VITE_API_URL;
+
   // Axios instance with default configurations
   const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: baseURL || 'http://localhost:8080/api',
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
@@ -35,7 +40,7 @@ const AxiosReqest = () => {
     (error) => {
       if (error.response && error.response.status === 401) {
         console.error('Unauthorized! Redirecting to login...');
-        navigate('/login');
+        dispatch(logout());
       }
       return Promise.reject(error);
     },
@@ -44,4 +49,4 @@ const AxiosReqest = () => {
   return { axiosInstance };
 };
 
-export default AxiosReqest;
+export default AxiosRequest;

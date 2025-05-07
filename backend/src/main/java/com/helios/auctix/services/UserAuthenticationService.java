@@ -22,6 +22,7 @@ public class UserAuthenticationService {
     private final UserRoleRepository roleRepository;
 
     private final CustomUserDetailsService userDetailsService;
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     public UserAuthenticationService(JwtService jwtService,
                                      AuthenticationManager authenticationManager,
@@ -32,8 +33,6 @@ public class UserAuthenticationService {
         this.roleRepository = roleRepository;
         this.userDetailsService = userDetailsService;
     }
-
-    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     public User register(String email, String username, String password, UserRoleEnum role) {
 
@@ -56,7 +55,7 @@ public class UserAuthenticationService {
         return userRepository.save(user);
     }
 
-    public String verify(User user, String rawPasswordFromLogin) {
+    public String verify(User user, String rawPasswordFromLogin) throws BadCredentialsException {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
 
@@ -70,9 +69,7 @@ public class UserAuthenticationService {
                 );
 
         if (authentication.isAuthenticated()) {
-            String jwt = jwtService.generateToken(user.getEmail(), user.getRoleEnum());
-            System.out.println("JWT: " + jwt);
-            return jwt;
+            return jwtService.generateToken(user.getEmail(), user.getRoleEnum());
         }
         throw new BadCredentialsException("Invalid username or password");
     }

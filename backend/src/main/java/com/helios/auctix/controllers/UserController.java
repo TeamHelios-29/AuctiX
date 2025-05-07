@@ -6,11 +6,12 @@ import com.helios.auctix.config.JwtAuthenticationFilter;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.repositories.UserRepository;
+import com.helios.auctix.services.CustomUserDetailsService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
-import com.helios.auctix.services.user.UserRegisterService;
-import com.helios.auctix.services.user.UserServiceResponse;
-import com.helios.auctix.services.user.UserUploadsService;
+import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
+import com.helios.auctix.services.user.*;
+import org.apache.tomcat.websocket.AuthenticationException;
 import org.eclipse.angus.mail.iap.ByteArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -23,6 +24,8 @@ import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,6 +56,10 @@ public class UserController {
     @Autowired
     private FileUploadService fileUploadService;
 
+    @Autowired
+    private UserDetailsService userDetailsService ;
+
+
     public UserController(UserRepository userRepository, UserRegisterService userRegisterService) {
         this.userRepository = userRepository;
         this.userRegisterService = userRegisterService;
@@ -63,11 +70,11 @@ public class UserController {
         return "hello world!";
     }
 
-    @GetMapping("/user-exists")
+    @GetMapping("/isUserExists")
     public String isUserExcist(@RequestParam(required = false) String username, @RequestParam(required = false) UUID id, @RequestParam(required = false) String email) {
-        boolean hasUname = !username.isBlank();
+        boolean hasUname = !(username==null || username.isBlank());
         boolean hasId = id != null;
-        boolean hasEmail = !email.isBlank();
+        boolean hasEmail = !(email==null || email.isBlank());
         byte providedParamsCount = 0;
         if (hasUname) {
             providedParamsCount++;
@@ -95,24 +102,31 @@ public class UserController {
 
     @PostMapping("/uploadVerificationDocs")
     public String uploadVerificationDocs(@RequestParam("file") MultipartFile file) {
-        ErrorConfig errorConf = new ErrorConfig();
-        FileUploadResponse res = uploader.uploadFile(file, "userVerifications");
-        if (res.isSuccess()) {
-            return res.getMessage();
-        } else {
-            if (errorConf.isShowDetailed()) {
+
+        User currentUser = null;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+            FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENTS.toString() , currentUser.getId(), false);
+            if (res.isSuccess()) {
                 return res.getMessage();
             } else {
+                log.warning(res.getMessage());
                 return "File upload failed";
             }
         }
+        catch(Exception e){
+            log.warning(e.getMessage());
+            return "File upload failed";
+        }
     }
 
+    @Profile("dev")
     @PostMapping("/createSeller")
     public ResponseEntity<String> createUser(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         try {
             log.info("Seller creation request: " + username);
-            UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.SELLER);
+            UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.SELLER,null);
             if (res.isSuccess()) {
                 return ResponseEntity.ok("Success: Seller Created");
             } else {
@@ -124,10 +138,11 @@ public class UserController {
         }
     }
 
+    @Profile("dev")
     @PostMapping("/createBidder")
     public String createBidder(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Bidder creation request: " + username);
-        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.BIDDER);
+        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.BIDDER,null);
         if (res.isSuccess()) {
             return "Success: Bidder Created";
         } else {
@@ -135,10 +150,19 @@ public class UserController {
         }
     }
 
+    @Profile("dev")
     @PostMapping("/createAdmin")
     public String createAdmin(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Admin creation request: " + username);
-        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.ADMIN);
+        User currentUser = null;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        }
+        catch(Exception e){
+            log.warning(e.getMessage());
+        }
+        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.ADMIN,currentUser);
         if (res.isSuccess()) {
             return "Success: Admin Created";
         } else {
@@ -148,22 +172,20 @@ public class UserController {
 
     @Profile("dev")
     @GetMapping("/getAuthUser")
-    public String getUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        log.info("auth details: " + authentication.getPrincipal().getClass().getName());
-        // get user role
-        UserRoleEnum userRole = null;
-        if (authentication != null || authentication.getAuthorities() != null) {
-            log.info("getAuthUser: " + authentication.getName());
-            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-            Optional<GrantedAuthority> grantedAuthority = (Optional<GrantedAuthority>) authorities.stream().findFirst();
-            if (grantedAuthority.isPresent()) {
-                String tmp = grantedAuthority.get().getAuthority().replace("ROLE_", "");
-                userRole = UserRoleEnum.valueOf(tmp);
-            }
+    public ResponseEntity<?> getUser() {
+        User currentUser = null;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        }
+        catch (AuthenticationException e){
+            return ResponseEntity.status(403).body("User not authenticated");
+        }
+        catch (Exception e){
+            return ResponseEntity.status(500).body("Internal server error");
         }
 
-        return userRole.toString();
+        return ResponseEntity.ok(currentUser);
 
     }
 
@@ -175,65 +197,103 @@ public class UserController {
             @RequestParam(value = "order", required = false, defaultValue = "asc") String order,
             @RequestParam(value = "search", required = false) String search) {
 
-        if (limit < 0 || offset < 0) {
-            return ResponseEntity.badRequest().body("Error: limit and offset must be positive");
+        try{
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User user = userDetailsService.getAuthenticatedUser(authentication);
+            String userRole = user.getRole().getName().toString();
+            log.info("user data requested by "+user.getEmail()+","+userRole);
+            if(!(UserRoleEnum.valueOf(userRole)==UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole)==UserRoleEnum.SUPER_ADMIN)){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("FORBIDDEN");
+            }
+            Page userPage = userDetailsService.getAllUsers(limit,offset,order,sortBy,search);
+            return ResponseEntity.ok(userPage);
         }
-        if(limit > 100) {
-            return ResponseEntity.badRequest().body("Error: limit must be less than or equal to 100");
+        catch (IllegalArgumentException e){
+            return ResponseEntity.badRequest().body("Bad request");
         }
-
-        List<String> validSortFields = Arrays.asList("id", "username", "email", "role");
-        if (!validSortFields.contains(sortBy)) {
-            return ResponseEntity.badRequest().body("Error: Invalid sortBy value. Valid values: id, username, email, role");
+        catch(AuthenticationException e){
+            return ResponseEntity.status(403).body("User not authenticated");
         }
-
-        if (!order.equalsIgnoreCase("asc") && !order.equalsIgnoreCase("desc")) {
-            return ResponseEntity.badRequest().body("Error: Invalid order value. Valid values: asc, desc");
-        }
-
-        Sort.Direction direction = order.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(offset, limit, Sort.by(direction, sortBy));
-
-        Page<User> userPage;
-        if (search != null && !search.trim().isEmpty()) {
-            userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pageable);
-        } else {
-            userPage = userRepository.findAll(pageable);
-        }
-
-        return ResponseEntity.ok(userPage);
     }
 
+    @GetMapping("/getCurrentUser")
+    public ResponseEntity<?> getCurrentUser() {
+        User currentUser = null;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        }
+        catch (AuthenticationException e){
+            return ResponseEntity.status(403).body("User not authenticated");
+        }
+        catch (Exception e){
+            log.warning(e.getMessage());
+            return ResponseEntity.status(500).body("Internal server error");
+        }
+
+        return ResponseEntity.ok(currentUser);
+    }
+
+    @GetMapping("/getUser")
+    public ResponseEntity<?> getUser(
+            @RequestParam(value = "username", required = false) String username,
+            @RequestParam(value = "email" , required = false) String email,
+            @RequestParam(value = "userId" , required = false) UUID userId
+    ) {
+        User user = null;
+        boolean hasUname = !(username==null || username.isBlank());
+        boolean hasId = userId != null;
+        boolean hasEmail = !(email==null || email.isBlank());
+        byte providedParamsCount = 0;
+        if (hasUname) {
+            providedParamsCount++;
+        }
+        if (hasId) {
+            providedParamsCount++;
+        }
+        if (hasEmail) {
+            providedParamsCount++;
+        }
+        if (providedParamsCount != 1) {
+            return ResponseEntity.badRequest().body("Error: must provide only one of username,id or email");
+        } else {
+            if (hasEmail) {
+                user = userDetailsService.getUserByEmail(email);
+            } else if (hasUname) {
+                user = userDetailsService.getUserByUsername(username);
+            } else if (hasId) {
+                user = userDetailsService.getUserById(userId);
+            }
+        }
+        if(user==null){
+            return ResponseEntity.status(404).body("User not found");
+        }
+        return ResponseEntity.ok(user);
+    }
 
     @PostMapping("/uploadUserProfilePhoto")
     public ResponseEntity<String> uploadUserProfilePhoto(@RequestParam("file") MultipartFile file) {
 
-        try {
-            // Authenticate user
+        User currentUser = null;
+        try{
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String userEmail = null;
-            if (authentication == null || authentication.getAuthorities() == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-            }
-            userEmail = authentication.getName();
-            if (userEmail == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-            }
-            log.info("File upload by user " + userEmail);
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+            log.info("File upload by user " + currentUser.getUsername());
 
 
             // Upload file
             log.info("Trying to upload file");
-            FileUploadResponse uploadRes = uploader.uploadFile(file, "userProfilePhotos", userEmail , true );
+            FileUploadResponse uploadRes = uploader.uploadFile(file, FileUploadUseCaseEnum.PROFILE_PHOTO.toString() , currentUser.getEmail() , true );
 
             if (uploadRes.isSuccess()) {
                 // save file upload data
                 log.info("Trying to save file upload data");
-                UserServiceResponse res = userUploadsService.UserProfilePhotoUpdate(userEmail, uploadRes.getUpload());
+                UserServiceResponse res = userUploadsService.UserProfilePhotoUpdate(currentUser.getEmail(), uploadRes.getUpload());
                 log.info("File upload data saved");
 
                 if (res.isSuccess()) {
-                    return ResponseEntity.ok().body("Profile photo uploaded successfully");
+                    return ResponseEntity.ok().body("Profile photo uploaded successfully "+ res.getUser().getUpload().getId());
                 } else {
                     log.warning(res.getMessage());
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data saving failed");
@@ -255,44 +315,63 @@ public class UserController {
     @GetMapping("/getUserProfilePhoto")
     public ResponseEntity<?> getUserProfilePhoto(@RequestParam("file_uuid") UUID file_uuid) {
         log.info("file id requested: "+ file_uuid);
-        try {
-            // Authenticate user
+
+        // Authenticate user
+        User currentUser = null;
+        try{
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String userEmail = null;
-            if (authentication == null || authentication.getAuthorities() == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-            }
-            userEmail = authentication.getName();
-
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
             FileUploadResponse res;
-            if (userEmail == null || userEmail.equalsIgnoreCase("anonymousUser")) {
-                res = fileUploadService.getFile(file_uuid);
-                if (!res.isSuccess()) {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
-                }
+            log.info("getting File by user " + currentUser.getEmail());
+
+            // Get file upload data
+            res = fileUploadService.getFile(file_uuid, currentUser.getEmail());
+
+            if (!res.isSuccess()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
             }
-            else {
 
-                log.info("getting File by user " + userEmail);
-
-                // Get file upload data
-                res = fileUploadService.getFile(file_uuid, userEmail);
-
-                if (!res.isSuccess()) {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
-                }
-            }
 
             BinaryData binaryFile = res.getBinaryData();
 
-            String fileName = "file.png";
-            String contentType = "image/png";
+            String fileName = res.getUpload().getFileName();
+            String contentType = res.getUpload().getFileType().getContentType();
 
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                     .body(binaryFile.toBytes());
+
+        }
+        catch(UsernameNotFoundException e){
+            log.warning(e.getMessage());
+        }
+        catch(AuthenticationException e){
+            log.warning(e.getMessage());
+        }
+        catch (Exception e) {
+            log.warning(e.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data retrieval failed");
+    }
+
+    @DeleteMapping("/deleteUserProfilePhoto")
+    public ResponseEntity<String> deleteUserProfilePhoto(@RequestParam("username") String username) {
+        try {
+            // Authenticate user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+            log.info("File upload by user " + currentUser.getEmail());
+
+            // Delete file
+            UserServiceResponse res = userUploadsService.UserProfilePhotoDelete(currentUser.getEmail());
+            if (res.isSuccess()) {
+                return ResponseEntity.ok().body("Profile photo deleted successfully");
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+            }
 
         } catch (Exception e) {
             log.warning(e.getMessage());

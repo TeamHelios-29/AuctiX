@@ -1,4 +1,7 @@
 import { Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface AuctionCardProps {
   imageUrl: string;
@@ -23,7 +26,7 @@ export default function AuctionCard({
   const isEndingSoon = timeRemaining.startsWith('0d');
 
   return (
-    <div className="w-72 border rounded-lg shadow-lg overflow-hidden bg-white">
+    <Card className="w-72 overflow-hidden">
       {/* Image with Timer Badge */}
       <div className="relative">
         <img
@@ -31,37 +34,38 @@ export default function AuctionCard({
           alt="Product"
           className="w-full h-40 object-cover"
         />
-        <div
-          className={`absolute top-2 left-2 ${
-            isEndingSoon ? 'bg-red-500' : 'bg-yellow-400'
-          } text-white font-semibold px-3 py-1 rounded-md text-sm flex items-center`}
+        <Badge
+          className={`absolute top-0 left-0 ${
+            isEndingSoon
+              ? 'bg-red-500 text-white'
+              : 'bg-yellow-400 text-gray-900'
+          } font-bold px-3 py-1 rounded-none rounded-br-md text-sm flex items-center`}
         >
           <Clock className="w-4 h-4 mr-1" /> {timeRemaining}
-        </div>
+        </Badge>
       </div>
 
       {/* Card Content */}
-      <div className="p-4">
-        <h3 className="text-lg font-bold text-black">{productName}</h3>
+      <CardContent className="p-4">
+        <h3 className="text-lg font-bold text-gray-900">{productName}</h3>
         <p className="text-gray-600 text-sm">{category}</p>
 
         {/* Seller Info */}
         <div className="flex items-center gap-2 mt-2">
           <span>By</span>
-          <img
-            src={sellerAvatar}
-            alt="Seller"
-            className="w-6 h-6 rounded-full border"
-          />
+          <Avatar className="w-6 h-6">
+            <AvatarImage src={sellerAvatar} />
+            <AvatarFallback>?</AvatarFallback>
+          </Avatar>
           <p className="text-sm text-gray-700 font-medium">{sellerName}</p>
         </div>
 
         {/* Price */}
         <div className="mt-3 flex justify-between items-center">
-          <p className="text-sm text-gray-500">Starting Price:</p>
-          <p className="text-lg font-bold text-black">LKR {startingPrice}</p>
+          <p className="text-sm text-gray-700">Starting Price:</p>
+          <p className="text-lg font-bold text-gray-700">LKR {startingPrice}</p>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

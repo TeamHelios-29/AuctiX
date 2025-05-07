@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.flogger.Flogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.data.domain.Limit;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,11 +43,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
-import java.util.Formatter;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Logger;
+
+import static com.helios.auctix.services.fileUpload.FileUploadUtilService.byteArrayToHex;
+import static com.helios.auctix.services.fileUpload.FileUploadUtilService.getFileType;
 
 @Service
 @RequiredArgsConstructor
@@ -56,21 +58,40 @@ public class FileUploadService {
 
     private static Logger log = Logger.getLogger(FileUploadService.class.getName());
 
-
-    public FileUploadResponse uploadFile(MultipartFile file,String upload_dir){
+    /**
+     * Uploads a file to the specified directory as a public file.
+     *
+     * @param file The file to be uploaded.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse uploadFile(MultipartFile file, String category){
         log.warning("unauthorized file upload request");
-        return uploadFile(file, upload_dir, (UUID) null , true);
+        return uploadFile(file, category ,(UUID) null , true);
     }
 
-    public FileUploadResponse uploadFile(MultipartFile file, String upload_dir, String ownerEmail , boolean isPublic) {
+    /**
+     * Uploads a file with ownership informations and access control.
+     *
+     * @param file The file to be uploaded.
+     * @param ownerEmail The email of the user who owns the file.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse uploadFile(MultipartFile file, String category ,String ownerEmail , boolean isPublic) {
         User user = userRepository.findByEmail(ownerEmail);
         if(user == null) {
             return new FileUploadResponse(false,"User not found");
         }
-        return uploadFile(file, upload_dir, user.getId() , isPublic );
+        return uploadFile(file ,category ,user.getId(), isPublic );
     }
 
-    public FileUploadResponse uploadFile(MultipartFile file,String upload_dir,UUID ownerUserId, boolean isPublic) {
+    /**
+     * Uploads a file with ownership informations and access control.
+     *
+     * @param file The file to be uploaded.
+     * @param ownerUserId The UUID of the user who owns the file.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse uploadFile(MultipartFile file, String category, UUID ownerUserId, boolean isPublic) {
         try {
 
             if(azureStorageConfig.getAccountName() == null || azureStorageConfig.getAccountKey() == null || azureStorageConfig.getContainerName() == null) {
@@ -95,14 +116,7 @@ public class FileUploadService {
 //            TODO: Rate limit mechanism
 
             log.info("File Uploading to Azure Blob Storage");
-            URI StorageContainer = new URI(
-                    azureStorageConfig.getSslEnabled()?"https:":"http:" +
-                    "//" +
-                    azureStorageConfig.getHost() +
-                    ":" +
-                    azureStorageConfig.getPort() +
-                    "/devstoreaccount1/" +
-                    azureStorageConfig.getContainerName());
+            URI StorageContainer = azureStorageConfig.getStorageContainerURI();
 
             BlobContainerClient containerClient = new BlobContainerClientBuilder()
                     .endpoint(StorageContainer.toString())
@@ -111,8 +125,7 @@ public class FileUploadService {
 
             containerClient.createIfNotExists();
 
-            String blobPath = upload_dir + "/" + fileName;
-            BlobClient blobClient = containerClient.getBlobClient(blobPath);
+            BlobClient blobClient = containerClient.getBlobClient(fileName);
 
             try (InputStream inputStream = file.getInputStream()) {
                 blobClient.upload(inputStream, filesize, true);
@@ -125,9 +138,10 @@ public class FileUploadService {
                     .fileSize(filesize)
                     .fileType(filetype)
                     .hash256(sha256)
-                    .url(blobPath)
+                    .fileId(fileName)
                     .ownerId(ownerUserId)
                     .isPublic(isPublic)
+                    .category(category)
                     .build();
 
             uploadRepository.save(uploadInfo);
@@ -136,47 +150,72 @@ public class FileUploadService {
         }
         catch (NoSuchAlgorithmException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: ");
         }
         catch(URISyntaxException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: " );
         }
         catch (IllegalArgumentException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false, "File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false, "File upload failed: " );
         }
         catch (IOException e) {
             log.warning(e.getMessage());
-            return new FileUploadResponse(false,"File upload failed: " + e.getMessage());
+            return new FileUploadResponse(false,"File upload failed: " );
         }
     }
 
-    public FileUploadResponse getFile(UUID fileId, String requestedUserEmail) {
+    /**
+     * Retrieves a uploaded file from Azure Blob Storage.
+     *
+     * @param id The UUID of the file to be retrieved.
+     * @param requestedUserEmail The email of the user requesting the file.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse getFile(UUID id, String requestedUserEmail) {
         User user = userRepository.findByEmail(requestedUserEmail);
         if(user == null) {
             return new FileUploadResponse(false,"User not found");
         }
-        return getFile(fileId, user.getId());
+        return getFile(id, user.getId());
     }
 
-    public FileUploadResponse getFile(UUID fileId) {
-        return getFile(fileId, (UUID) null);
+    /**
+     * Retrieves a uploaded file from Azure Blob Storage. only public files can be accessed with this method
+     *
+     * @param id The UUID of the file to be retrieved.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse getFile(UUID id) {
+        return getFile(id, (UUID) null);
     }
 
-    private FileUploadResponse getFile(UUID fileId, UUID requestedUserId ){
+    /**
+     * Retrieves a uploaded file from Azure Blob Storage.both public and private can be accessed with this method
+     *
+     * @param id The UUID of the recode to be retrieved.
+     * @param requestedUserId The UUID of the user requesting the file.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    private FileUploadResponse getFile(UUID id, UUID requestedUserId ){
             if(azureStorageConfig.getAccountName() == null || azureStorageConfig.getAccountKey() == null || azureStorageConfig.getContainerName() == null) {
                 throw new IllegalArgumentException("Blob account configurations not found");
             }
 
-            Upload uploadedFileInfo = uploadRepository.findById(fileId).orElse(null);
+            Upload uploadedFileInfo = uploadRepository.findById(id).orElse(null);
             if(uploadedFileInfo == null) {
                 return new FileUploadResponse(false,"File not found");
             }
 
+            log.info("checking whether the file is deleted");
+            if(uploadedFileInfo.getIsDeleted()) {
+                return new FileUploadResponse(false,"File is deleted");
+            }
+
             log.info("checking file ownership");
             if(uploadedFileInfo.getIsPublic()==false){
-                User requestedUser = userRepository.findById(requestedUserId.toString()).orElse(null);
+                User requestedUser = userRepository.findById(requestedUserId).orElse(null);
                 if(requestedUser == null) {
                     return new FileUploadResponse(false,"Unautherized");
                 }
@@ -189,21 +228,14 @@ public class FileUploadService {
 
             log.info("Trying to get file from Azure Blob Storage");
             try {
-                URI StorageContainer = new URI(
-                        azureStorageConfig.getSslEnabled() ? "https:" : "http:" +
-                                "//" +
-                                azureStorageConfig.getHost() +
-                                ":" +
-                                azureStorageConfig.getPort() +
-                                "/devstoreaccount1/" +
-                                azureStorageConfig.getContainerName());
+                URI StorageContainer = azureStorageConfig.getStorageContainerURI();
 
                 BlobContainerClient containerClient = new BlobContainerClientBuilder()
                         .endpoint(StorageContainer.toString())
                         .credential(new StorageSharedKeyCredential(azureStorageConfig.getAccountName(), azureStorageConfig.getAccountKey()))
                         .buildClient();
 
-                BlobClient blobClient = containerClient.getBlobClient(uploadedFileInfo.getUrl());
+                BlobClient blobClient = containerClient.getBlobClient(uploadedFileInfo.getFileId());
                 if(!blobClient.exists()) {
                     log.warning("File not found in blob storage: " + blobClient.getBlobUrl());
                     return new FileUploadResponse(false,"File not found");
@@ -212,7 +244,7 @@ public class FileUploadService {
 
                 BinaryData binaryData =  blobClient.downloadContent();
 
-                return new FileUploadResponse(true,"File found", binaryData);
+                return new FileUploadResponse(true,"File found", binaryData, uploadedFileInfo);
 
             }
             catch(URISyntaxException e){
@@ -226,29 +258,70 @@ public class FileUploadService {
 
     }
 
-    private static String byteArrayToHex(byte[] bytes) {
-        try (Formatter formatter = new Formatter()) {
-            for (byte b : bytes) {
-                formatter.format("%02x", b);
-            }
-            return formatter.toString();
-        }
+    /**
+     * mark the file as deleted in the database. marked files will deleted after a certain period of time
+     *
+     * @param fileId The UUID of the file to be deleted.
+     * @param deleteRequestedUserId The UUID of the user requesting the deletion.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse deleteFile(UUID fileId, UUID deleteRequestedUserId) {
+        User user = userRepository.findById(deleteRequestedUserId).orElse(null);
+        Upload fileToDelete = uploadRepository.findById(fileId).orElse(null);
+        return deleteFile(fileToDelete, user);
     }
 
-    private static FileTypeEnum getFileType(String contentType) {
-        if(contentType == null) {
-            return FileTypeEnum.Unknown;
+    /**
+     * mark the file as deleted in the database. marked files will deleted after a certain period of time
+     *
+     * @param fileId The UUID of the file to be deleted.
+     * @param deleteRequestedUserEmail The email of the user requesting the deletion.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse deleteFile(UUID fileId,String deleteRequestedUserEmail) {
+        User user = userRepository.findByEmail(deleteRequestedUserEmail);
+        if(user == null) {
+            return new FileUploadResponse(false,"User not found");
         }
-        contentType = contentType.split("/").length>1?contentType.split("/")[1].toLowerCase():contentType.toLowerCase();
-        log.info("getting FileType for: "+contentType);
-          for(FileTypeEnum type : FileTypeEnum.values()) {
-              log.info("Checking for: "+type.toString());
-              if(contentType.equals(type.toString().toLowerCase())) {
-                  return type;
-              }
-          }
-            log.warning("Unknown file type: "+contentType);
-            return FileTypeEnum.Unknown;
+        Upload fileToDelete = uploadRepository.findById(fileId).orElse(null);
+        return deleteFile(fileToDelete, user);
     }
+
+    /**
+     * mark the file as deleted in the database. marked files will deleted after a certain period of time
+     *
+     * @param fileToDelete The file to be deleted.
+     * @param deleteRequestedUser The UUID of the user requesting the deletion.
+     * @return A `FileUploadResponse` indicating the success or failure of the operation.
+     */
+    public FileUploadResponse deleteFile(Upload fileToDelete, User deleteRequestedUser) {
+        // only make the uploads isdeleted true
+
+        if(fileToDelete == null) {
+            return new FileUploadResponse(false,"File not found");
+        }
+        log.info("checking whether the file is deleted");
+        if(fileToDelete.getIsDeleted()) {
+            return new FileUploadResponse(false,"File is already deleted");
+        }
+
+        log.info("checking file delete permissions");
+        if(deleteRequestedUser == null) {
+            return new FileUploadResponse(false,"Unautherized");
+        }
+        if(deleteRequestedUser.getId()== null && !deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN)) {
+            return new FileUploadResponse(false,"Only admins can delete the files without ownership");
+        }
+        if(!(deleteRequestedUser.getId().equals(fileToDelete.getOwnerId()) || deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN))) {
+            return new FileUploadResponse(false,"Only file owner or admins can delete this file");
+        }
+        log.info("marking the file as deleted");
+        fileToDelete.setIsDeleted(true);
+        uploadRepository.save(fileToDelete);
+        log.info("File marked as deleted");
+        return new FileUploadResponse(true,"File deleted successfully");
+
+    }
+
 
 }

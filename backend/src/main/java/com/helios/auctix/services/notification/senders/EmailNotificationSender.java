@@ -31,8 +31,6 @@ public class EmailNotificationSender implements NotificationSender {
 
     @Override
     public void sendNotification(Notification notification) {
-        System.out.println("Got the notification to send to email" + notification.toString());
-
 
         Map<String, Object> variables = Map.of("username", notification.getUser().getUsername());
 
@@ -42,17 +40,16 @@ public class EmailNotificationSender implements NotificationSender {
                     notification.getTitle(),
                     "email/test-email",
                     variables
-                    );
+            );
 
-
-        notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
+            notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
 
         } catch (MessagingException e) {
-                log.error("MessagingException: Failed to send email to {}: {}", notification.getUser().getEmail(), e.getMessage());
+            log.error("MessagingException: Failed to send email to {}: {}", notification.getUser().getEmail(), e.getMessage());
         } catch (MailException e) {
-                log.error("MailException: Mail sending failed for {}: {}", notification.getUser().getEmail(), e.getMessage());
+            log.error("MailException: Mail sending failed for {}: {}", notification.getUser().getEmail(), e.getMessage());
         } catch (Exception e) {
-                log.error("Unexpected exception while sending email for {}: {}", notification.getUser().getEmail(), e.getMessage());
+            log.error("Unexpected exception while sending email for {}: {}", notification.getUser().getEmail(), e.getMessage());
         }
     }
 }

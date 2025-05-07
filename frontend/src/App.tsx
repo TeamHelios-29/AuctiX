@@ -1,23 +1,27 @@
 import React, { useEffect } from 'react';
-import { Provider } from 'react-redux';
 import AppRouter from '@/routes/AppRouter';
-import { store } from '@/store/store';
 import {
   listenForForegroundMessages,
   registerSWAndRequestNotificationPermission,
 } from './firebase/firebase';
+import { restoreUser } from './store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from './hooks/hooks';
+import { fetchCurrentUser } from './store/slices/userSlice';
+import { IAuthUser } from './types/IAuthUser';
 
 const App: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const auth: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);
+
   useEffect(() => {
-    registerSWAndRequestNotificationPermission();
-    listenForForegroundMessages(); // todo check if we are going to use ws instead for foreground msgs
+    dispatch(restoreUser()); // Get the user auth data from local storage and set it in the redux store
   }, []);
 
-  return (
-    <Provider store={store}>
-      <AppRouter />
-    </Provider>
-  );
+  useEffect(() => {
+    dispatch(fetchCurrentUser()); // Fetch the current user data from the server and set it in the redux store
+  }, [auth.isUserLoggedIn]);
+
+  return <AppRouter />;
 };
 
 export default App;
