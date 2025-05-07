@@ -37,6 +37,7 @@ public class AuctionService {
 
         return auctionRepository.save(auction);
 
+
 //        try {
 //            // Validate and save the auction
 //            return auctionRepository.save(auction);
@@ -45,6 +46,20 @@ public class AuctionService {
 //        } catch (Exception e) {
 //            throw new RuntimeException("Failed to create auction: " + e.getMessage());
 //        }
+    }
+
+    public List<Auction> getAllAuctions() {
+        return auctionRepository.findAll();
+    }
+
+    public Optional<Auction> getAuctionById(Long id) {
+        return auctionRepository.findById(id);
+    }
+
+    // Add methods for fetching active auctions
+    public List<Auction> getActiveAuctions() {
+        Instant now = Instant.now();
+        return auctionRepository.findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(now, now);
     }
 
 //    public Auction createAuction(Auction auction, List<MultipartFile> images) {

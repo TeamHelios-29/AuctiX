@@ -130,17 +130,42 @@ public class AuctionController {
         }
     }
 
-//    // Retrieve all auctions
-//    @GetMapping
-//    public List<Auction> getAllAuctions() {
-//        return auctionService.getAllAuctions();
-//    }
-//
-//    // Retrieve an auction by ID
-//    @GetMapping("/{id}")
-//    public Optional<Auction> getAuctionById(@PathVariable Long id) {
-//        return auctionService.getAuctionById(id);
-//    }
+    // Retrieve all auctions
+    @GetMapping
+    public ResponseEntity<List<Auction>> getAllAuctions() {
+        try {
+            List<Auction> auctions = auctionService.getAllAuctions();
+            return ResponseEntity.ok(auctions);
+        } catch (Exception e) {
+            log.warning("Error fetching all auctions: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Retrieve active auctions for displaying on the main page
+    @GetMapping("/active")
+    public ResponseEntity<List<Auction>> getActiveAuctions() {
+        try {
+            List<Auction> activeAuctions = auctionService.getActiveAuctions();
+            return ResponseEntity.ok(activeAuctions);
+        } catch (Exception e) {
+            log.warning("Error fetching active auctions: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Get auction by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Auction> getAuctionById(@PathVariable Long id) {
+        try {
+            Optional<Auction> auction = auctionService.getAuctionById(id);
+            return auction.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.warning("Error fetching auction by id " + id + ": " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 //
 //    // Update an auction
 //    @PutMapping("/{id}")
