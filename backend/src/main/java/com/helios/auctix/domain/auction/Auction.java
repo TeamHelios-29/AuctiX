@@ -1,5 +1,7 @@
 package com.helios.auctix.domain.auction;
 
+import com.helios.auctix.domain.user.Bidder;
+import com.helios.auctix.domain.user.Seller;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import java.util.List;
 import java.time.Instant;  // You need to add this import
+import java.util.UUID;
 
 
 @Data
@@ -28,13 +31,21 @@ public class Auction {
     private Instant endTime;        // For precise event timing (UTC)
     private Boolean isPublic;
     private String category;
+    private UUID sellerId;
+
 
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;      // Changed to Instant for consistency
 
     @Column(name = "updated_at")
-    private Instant updatedAt;      // Changed to Instant for consistency
+    private Instant updatedAt; // Changed to Instant for consistency
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id")
+    @PrimaryKeyJoinColumn(name = "seller_id")
+    private Seller seller;
+
 
     @PrePersist
     protected void onCreate() {
