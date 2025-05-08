@@ -65,6 +65,8 @@ public class BidService {
             }
         }
 
+
+
         // Create and save the bid
         Bid bid = Bid.builder()
                 .auction(auction)
