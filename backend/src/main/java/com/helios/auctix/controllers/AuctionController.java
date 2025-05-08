@@ -36,7 +36,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/auctions")
 public class AuctionController {
     private final AuctionService auctionService;
-    private final Logger log = Logger.getLogger(UserController.class.getName());
+    private final Logger log = Logger.getLogger(AuctionController.class.getName());
     private final UserDetailsService userDetailsService;
 
     @Autowired
@@ -179,7 +179,7 @@ public class AuctionController {
 
     // Get auction by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Auction> getAuctionById(@PathVariable Long id) {
+    public ResponseEntity<Auction> getAuctionById(@PathVariable UUID id) {
         try {
             Optional<Auction> auction = auctionService.getAuctionById(id);
             return auction.map(ResponseEntity::ok)

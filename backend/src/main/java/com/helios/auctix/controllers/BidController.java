@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @RestController
@@ -25,7 +26,7 @@ public class BidController {
     }
 
     @GetMapping("/auction/{auctionId}")
-    public ResponseEntity<List<Bid>> getBidHistoryForAuction(@PathVariable Long auctionId) {
+    public ResponseEntity<List<Bid>> getBidHistoryForAuction(@PathVariable UUID auctionId) {
         try {
             List<Bid> bidHistory = bidService.getBidHistoryForAuction(auctionId);
             return ResponseEntity.ok(bidHistory);
@@ -36,7 +37,7 @@ public class BidController {
     }
 
     @GetMapping("/auction/{auctionId}/highest")
-    public ResponseEntity<?> getHighestBidForAuction(@PathVariable Long auctionId) {
+    public ResponseEntity<?> getHighestBidForAuction(@PathVariable UUID auctionId) {
         try {
             Optional<Bid> highestBid = bidService.getHighestBidForAuction(auctionId);
             return highestBid.map(ResponseEntity::ok)
@@ -70,18 +71,18 @@ public class BidController {
 
     // Request DTO for placing bids
     public static class PlaceBidRequest {
-        private Long auctionId;
-        private Long bidderId;
+        private UUID auctionId;
+        private UUID bidderId;
         private String bidderName;
         private String bidderAvatar;
         private Double amount;
 
         // Getters and setters
-        public Long getAuctionId() { return auctionId; }
-        public void setAuctionId(Long auctionId) { this.auctionId = auctionId; }
+        public UUID getAuctionId() { return auctionId; }
+        public void setAuctionId(UUID auctionId) { this.auctionId = auctionId; }
 
-        public Long getBidderId() { return bidderId; }
-        public void setBidderId(Long bidderId) { this.bidderId = bidderId; }
+        public UUID getBidderId() { return bidderId; }
+        public void setBidderId(UUID bidderId) { this.bidderId = bidderId; }
 
         public String getBidderName() { return bidderName; }
         public void setBidderName(String bidderName) { this.bidderName = bidderName; }

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class BidService {
@@ -25,23 +26,19 @@ public class BidService {
     }
 
     // Get bid history for an auction
-    public List<Bid> getBidHistoryForAuction(Long auctionId) {
+    public List<Bid> getBidHistoryForAuction(UUID auctionId) {
         return bidRepository.findByAuctionIdOrderByBidTimeDesc(auctionId);
     }
 
     // Get highest bid for an auction
-    public Optional<Bid> getHighestBidForAuction(Long auctionId) {
+    public Optional<Bid> getHighestBidForAuction(UUID auctionId) {
         return bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
     }
 
-    // Get bid count for an auction
-    public Long getBidCountForAuction(Long auctionId) {
-        return bidRepository.countByAuctionId(auctionId);
-    }
 
     // Place a new bid
     @Transactional
-    public Bid placeBid(Long auctionId, Long bidderId, String bidderName, String bidderAvatar, Double amount) {
+    public Bid placeBid(UUID auctionId, UUID bidderId, String bidderName, String bidderAvatar, Double amount) {
         // Find the auction
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));

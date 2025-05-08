@@ -7,18 +7,19 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface BidRepository extends JpaRepository<Bid, Long> {
+public interface BidRepository extends JpaRepository<Bid, UUID> {
 
-    List<Bid> findByAuctionIdOrderByAmountDesc(Long auctionId);
+    List<Bid> findByAuctionIdOrderByAmountDesc(UUID auctionId);
 
     // Find the highest bid for an auction
-    Optional<Bid> findTopByAuctionIdOrderByAmountDesc(Long auctionId);
+    Optional<Bid> findTopByAuctionIdOrderByAmountDesc(UUID auctionId);
 
     // Find bid history for an auction, ordered by time (newest first)
-    List<Bid> findByAuctionIdOrderByBidTimeDesc(Long auctionId);
+    List<Bid> findByAuctionIdOrderByBidTimeDesc(UUID auctionId);
 
     // Count the number of bids for an auction
-    Long countByAuctionId(Long auctionId);
+    Long countByAuctionId(UUID auctionId);
 }

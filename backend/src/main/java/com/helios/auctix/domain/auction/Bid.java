@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -18,14 +19,14 @@ public class Bid {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "auction_id", nullable = false)
     private Auction auction;
 
     @Column(name = "bidder_id", nullable = false)
-    private Long bidderId;
+    private UUID bidderId;
 
     @Column(name = "bidder_name", nullable = false)
     private String bidderName;

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuctionService {
@@ -52,7 +53,7 @@ public class AuctionService {
         return auctionRepository.findAll();
     }
 
-    public Optional<Auction> getAuctionById(Long id) {
+    public Optional<Auction> getAuctionById(UUID id) {
         return auctionRepository.findById(id);
     }
 
