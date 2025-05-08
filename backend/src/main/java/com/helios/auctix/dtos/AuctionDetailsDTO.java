@@ -1,5 +1,6 @@
 package com.helios.auctix.dtos;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,26 +14,27 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuctionDetailsDTO {
-    private Long id;
-    private String title;
-    private String description;
-    private Double startingPrice;
-    private Double currentBid;
-    private Double bidIncrement;
-    private Instant startTime;
-    private Instant endTime;
+    private String id;
     private String category;
-    private List<String> imagePaths;
+    private String name;
+    private String description;
+    private List<String> images;
+    private double startingPrice;
+    private double currentBid;
+    private double bidIncrement;
     private BidderDTO currentBidder;
     private SellerDTO seller;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
+    private Instant endTime;
     private List<BidHistoryDTO> bidHistory;
+    private ProductOwnerDTO productOwner;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BidderDTO {
-        private Long id;
+        private String id;
         private String name;
         private String avatar;
     }
@@ -42,10 +44,21 @@ public class AuctionDetailsDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SellerDTO {
-        private Long id;
+        private String id;
         private String name;
         private String avatar;
-        private Double rating;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProductOwnerDTO {
+        private String id;
+        private String name;
+        private String avatar;
+        private double rating;
+        @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
         private Instant joinedDate;
     }
 
@@ -55,7 +68,8 @@ public class AuctionDetailsDTO {
     @AllArgsConstructor
     public static class BidHistoryDTO {
         private BidderDTO bidder;
-        private Double amount;
+        private double amount;
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
         private Instant timestamp;
     }
 }
