@@ -13,7 +13,11 @@ import SellerProfile from '@/pages/SellerProfile';
 import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/AuctionDetails';
 import AuctionsPage from '@/pages/ExploreAuctions';
-
+import { useNotificationRegistration } from '@/hooks/use-notification-registration';
+import Settings from '@/pages/Settings';
+import UserDeliveryPage from '@/pages/User_Delivery';
+import Report from '@/pages/Report'; // Ensure Report is imported correctly
+import SellerDeliveryPage from '@/pages/Seller_Delivery';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -53,7 +57,6 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-          <Route path="/settings" element={<Settings />} />
           <Route path="/reports" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Route>

@@ -50,46 +50,44 @@ interface ProductDetails {
   productOwner: ProductOwner;
 }
 
-// Constants
 const BID_INCREMENT = 1000;
 
-// // Mock data - this would be replaced with data from your backend
-// const productData: ProductDetails = {
-//   id: '12345',
-//   category: 'Category',
-//   name: 'Product Name',
-//   description:
-//     'Lorem ipsum dolor sit amet consectetur. Augue quis justo amet tristique nibh. Elementum risus sem ultricies sed sit. Quam qelit aenm eu egestas diam ut sector nunc ulteries. In consetetur, urna non molestie. Tincidunt sitsusant et pretium cursus urna sociates et. Quis adipiscing laoreet risus malesuada elementum.',
-//   images: [
-//     '/api/placeholder/400/320',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//   ],
-//   startingPrice: 5000,
-//   currentBid: 7000,
-//   bidIncrement: BID_INCREMENT,
-//   currentBidder: {
-//     id: '67890',
-//     name: 'Tishan Dias',
-//     avatar: '/api/placeholder/32/32',
-//   },
-//   seller: {
-//     id: '54321',
-//     name: 'John Dolly',
-//     avatar: '/api/placeholder/32/32',
-//   },
-//   endTime: '2025-04-20T12:00:00Z', // Example future date
-//   bidHistory: [],
-//   productOwner: {
-//     id: '54321',
-//     name: 'John Dolly',
-//     avatar: '/api/placeholder/32/32',
-//     rating: 4.8,
-//     joinedDate: '2023-01-15',
-//   },
-// };
+const productData: ProductDetails = {
+  id: '12345',
+  category: 'Category',
+  name: 'Product Name',
+  description:
+    'Lorem ipsum dolor sit amet consectetur. Augue quis justo amet tristique nibh. Elementum risus sem ultricies sed sit. Quam qelit aenm eu egestas diam ut sector nunc ulteries. In consetetur, urna non molestie. Tincidunt sitsusant et pretium cursus urna sociates et. Quis adipiscing laoreet risus malesuada elementum.',
+  images: [
+    '/api/placeholder/400/320',
+    '/api/placeholder/150/100',
+    '/api/placeholder/150/100',
+    '/api/placeholder/150/100',
+    '/api/placeholder/150/100',
+  ],
+  startingPrice: 5000,
+  currentBid: 7000,
+  bidIncrement: BID_INCREMENT,
+  currentBidder: {
+    id: '67890',
+    name: 'Tishan Dias',
+    avatar: '/api/placeholder/32/32',
+  },
+  seller: {
+    id: '54321',
+    name: 'John Dolly',
+    avatar: '/api/placeholder/32/32',
+  },
+  endTime: '2025-04-20T12:00:00Z', // Example future date
+  bidHistory: [],
+  productOwner: {
+    id: '54321',
+    name: 'John Dolly',
+    avatar: '/api/placeholder/32/32',
+    rating: 4.8,
+    joinedDate: '2023-01-15',
+  },
+};
 
 const AuctionDetailsPage = () => {
   const { auctionId } = useParams<{ auctionId: string }>();
@@ -101,25 +99,32 @@ const AuctionDetailsPage = () => {
   const [stompClient, setStompClient] = useState<Client | null>(null);
 
   // Fetch auction details from API
-  useEffect(() => {
-    const fetchAuctionDetails = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`/api/auctions/${auctionId}`);
-        setProduct(response.data);
-        // Initialize bid amount to current bid + increment
-        setBidAmount(response.data.currentBid + response.data.bidIncrement);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching auction details:', err);
-        setError('Failed to load auction details. Please try again later.');
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchAuctionDetails = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const response = await axios.get(`/api/auctions/${auctionId}`);
+  //       setProduct(response.data);
+  //       // Initialize bid amount to current bid + increment
+  //       setBidAmount(response.data.currentBid + response.data.bidIncrement);
+  //       setLoading(false);
+  //     } catch (err) {
+  //       console.error('Error fetching auction details:', err);
+  //       setError('Failed to load auction details. Please try again later.');
+  //       setLoading(false);
+  //     }
+  //   };
 
-    if (auctionId) {
-      fetchAuctionDetails();
-    }
+  //   if (auctionId) {
+  //     fetchAuctionDetails();
+  //   }
+  // }, [auctionId]);
+
+  useEffect(() => {
+    // Directly set mock data for demo
+    setProduct(productData);
+    setBidAmount(productData.currentBid + productData.bidIncrement);
+    setLoading(false);
   }, [auctionId]);
 
   // Setup WebSocket connection for real-time bid updates
