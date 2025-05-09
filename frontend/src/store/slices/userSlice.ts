@@ -17,7 +17,7 @@ const initialState: UserState = {
   fcmTokens: [],
   profile_photo: null,
   role: null,
-  loading: false,
+  loading: true,
   error: null,
 };
 
@@ -43,17 +43,18 @@ export const fetchCurrentUser = createAsyncThunk(
       // Add aditional setup for user data
       const userData = {
         ...response.data,
-        profile_photo:
-          `${baseURL}/${response.data.profile_photo}` ||
-          '/defaultProfilePhoto.jpg',
+        profile_photo_link: response.data.profilePicture?.id
+          ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.profilePicture.id}`
+          : '/defaultProfilePhoto.jpg',
         fcmTokens: response.data.fcmTokens || [],
       };
+      delete userData.profilePicture;
 
       console.log('Processed user data:', userData);
-      return response.data;
+      return userData;
     } catch (error: any) {
       if (error.response?.status === 401) {
-        console.error('Unauthorized! Redirecting to login...');
+        console.error('Unauthorized! logging out...');
         dispatch(logout());
       }
       return rejectWithValue(
@@ -82,7 +83,7 @@ const userSlice = createSlice({
         state.lastName = action.payload.lastName;
         state.fcmTokens = action.payload.fcmTokens;
         state.profile_photo =
-          action.payload.profile_photo || '/defaultProfilePhoto.jpg';
+          action.payload.profile_photo_link || '/defaultProfilePhoto.jpg';
         state.role = action.payload.role;
         console.log('User data updated:', action.payload);
       })

@@ -37,7 +37,7 @@ public class Upload {
     private Long fileSize; // in bytes
 
     @Column(name="file_id", nullable = false)
-    private String fileId;
+    private UUID fileId;
 
     @JsonIgnore
     @Column(name="hash_256", nullable = false)

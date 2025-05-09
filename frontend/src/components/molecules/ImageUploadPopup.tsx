@@ -1,18 +1,11 @@
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  X,
   Upload,
   ZoomIn,
   ZoomOut,
-  Move,
-  AlertCircle,
   BanIcon,
   RefreshCcwDot,
-  DeleteIcon,
-  Delete,
-  RemoveFormatting,
-  LucideRemoveFormatting,
   LucideDelete,
 } from 'lucide-react';
 import {
@@ -25,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AlertBox } from '../organisms/AlertBox';
+import { error } from 'console';
 
 interface Position {
   x: number;
@@ -33,7 +27,8 @@ interface Position {
 
 export interface ImageResult {
   imageData: string | null;
-  cropedImage?: string | null;
+  croppedImageBase64?: string | null;
+  croppedImageFile: File;
   position: Position;
   scale: number;
 }
@@ -70,6 +65,7 @@ export default function ImageUploadPopup({
   const [autoScale, setAutoScale] = useState<number>(1);
   const [alertOpen, setAlertOpen] = useState<boolean>(false);
   const [globalScale, setGlobalScale] = useState<number>(1);
+  const [fileName, setFileName] = useState<string>('profilePhoto');
 
   const handleOpenDialog = (): void => setIsOpen(true);
 
@@ -153,6 +149,7 @@ export default function ImageUploadPopup({
   };
 
   const handleFileSelect = (file: File): void => {
+    setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {
       if (e.target?.result) {
@@ -176,9 +173,9 @@ export default function ImageUploadPopup({
                   containerWidth,
                   containerHeight,
                 );
-                console.log('Container size:', containerWidth, containerHeight);
-                console.log('Image size:', img.naturalWidth, img.naturalHeight);
-                console.log('Calculated scale:', initialScale);
+                // console.log('Container size:', containerWidth, containerHeight);
+                // console.log('Image size:', img.naturalWidth, img.naturalHeight);
+                // console.log('Calculated scale:', initialScale);
                 setAutoScale(initialScale);
                 setScale(initialScale);
                 // Set initial position to center
@@ -413,17 +410,38 @@ export default function ImageUploadPopup({
     }
   };
 
-  const handleConfirm = (): void => {
+  const convertToFile = async (
+    base64File: string,
+    fileName: string,
+  ): Promise<File> => {
+    // Extract content type from base64 string
+    const contentType = base64File.split(';')[0].split(':')[1];
+
+    // Convert the base64 encoded image to a blob
+    const base64Response = await fetch(base64File);
+    const blob = await base64Response.blob();
+
+    // Create a file from the blob
+    return new File([blob], fileName, { type: contentType });
+  };
+
+  const handleConfirm = async (): Promise<void> => {
     // Get the cropped image
     const croppedImageData = cropImage();
 
+    if (!croppedImageData) {
+      throw new Error('image data not present');
+    }
+    const file = await convertToFile(croppedImageData, fileName);
+
     const result: ImageResult = {
       imageData: image,
-      cropedImage: croppedImageData,
+      croppedImageBase64: croppedImageData,
+      croppedImageFile: file,
       position,
       scale,
     };
-    console.log('Image set as object:', result);
+    // console.log('Image set as object:', result);
 
     // If onConfirm prop is provided, call it with the result
     if (onConfirm) {
@@ -466,7 +484,7 @@ export default function ImageUploadPopup({
         Upload Image
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
         <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl">
           <DialogHeader>
             <DialogTitle>Upload and Adjust Image</DialogTitle>

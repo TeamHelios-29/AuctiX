@@ -5,22 +5,18 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AxiosInstance } from 'axios';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { Octagon, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/hooks';
-import { jwtDecode } from 'jwt-decode';
 import { IJwtData } from '@/types/IJwtData';
-import { IAuthUser } from '@/types/IAuthUser';
-import { login, user } from '@/store/slices/authSlice';
 import { AlertBox } from './AlertBox';
-import AxiosReqest from '@/services/axiosInspector';
 import {
   IValidationError,
   ValidateErrorElement,
-  ValidityIndicator,
 } from '../atoms/validityIndicator';
-import ValidateUsernameOrEmail from '../molecules/validateUsernameOrEmail';
+import UserValidityIndicator from '../molecules/UserValidityIndicator';
+import { IRegisterUser, registerUser } from '@/services/authService';
+import AxiosRequest from '@/services/axiosInspector';
 
 export function TabsDemo({
   onTabChange,
@@ -33,7 +29,6 @@ export function TabsDemo({
   const [firstName, setFirstName] = useState<string | null>(null);
   const [lastName, setLastName] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
-  const axiosInstance: AxiosInstance = AxiosReqest().axiosInstance;
   const [alertOpen, setAlertOpen] = useState(false);
   const [AlertIcon, setAlertIcon] = useState<React.ReactNode>(null);
   const [msg, setMsg] = useState('');
@@ -189,42 +184,30 @@ export function TabsDemo({
 
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const handleRegister = (userType: string) => {
     console.log('Registering', userType);
     if (validations(true)) {
       setIsLoading(true);
-      axiosInstance
-        .post('/auth/register', {
-          email: email,
-          password: password,
-          username: username,
-          firstName: firstName,
-          lastName: lastName,
-          role: userType,
-        })
-        .then((response) => {
+
+      const registerData: IRegisterUser = {
+        email: email as string,
+        password: password as string,
+        username: username as string,
+        firstName: firstName as string,
+        lastName: lastName as string,
+        role: userType as 'SELLER' | 'BIDDER',
+      };
+      registerUser(registerData, axiosInstance, dispatch)
+        .then((response: IJwtData) => {
           console.log('Registered', response);
           setIsLoginSuccess(true);
           showSuccessAlert('Account created successfully');
-          const token = response.data;
-          console.log('token:', token);
-          const decoded = jwtDecode(token) as IJwtData;
-          console.log('decoded token:', decoded);
-          dispatch(
-            login({
-              token: token,
-              username: decoded.username,
-              role: decoded.role,
-            } as IAuthUser),
-          );
-          console.log('Logged in');
-          // navigate('/dashboard');
         })
-        .catch((error) => {
-          showErrorAlert(
-            'Error: ' +
-              (error.response?.data || error.message || 'Unknown error'),
-          );
+        .catch((error: any) => {
+          console.error('Error registering', error);
+          setIsLoginSuccess(false);
+          showErrorAlert(error.response.data.message);
         })
         .finally(() => {
           setIsLoading(false);
@@ -318,7 +301,7 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
-                <ValidateUsernameOrEmail
+                <UserValidityIndicator
                   usernameOrEmail={email}
                   offset={{ x: -20, y: -150 }}
                   type="email"
@@ -335,7 +318,7 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="@peduarte"
                 />
-                <ValidateUsernameOrEmail
+                <UserValidityIndicator
                   usernameOrEmail={username}
                   offset={{ x: -20, y: -150 }}
                   type="username"
@@ -439,7 +422,7 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="peduarte@gmail.com"
                 />
-                <ValidateUsernameOrEmail
+                <UserValidityIndicator
                   usernameOrEmail={email}
                   offset={{ x: -20, y: -150 }}
                   type="email"
@@ -456,7 +439,7 @@ export function TabsDemo({
                   onChange={(e) => handleInputType(e)}
                   placeholder="@globalLK"
                 />
-                <ValidateUsernameOrEmail
+                <UserValidityIndicator
                   usernameOrEmail={username}
                   offset={{ x: -20, y: -150 }}
                   type="username"

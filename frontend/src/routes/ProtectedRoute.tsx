@@ -1,4 +1,4 @@
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ReactNode, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/hooks';
 
@@ -12,34 +12,42 @@ const ProtectedRoute = ({
   redirectPath?: string;
 }): ReactNode => {
   const navigate = useNavigate();
-  const user = useAppSelector((state) => state.auth);
+  const authUser = useAppSelector((state) => state.auth);
+  const user = useAppSelector((state) => state.user);
 
   useEffect(() => {
     console.log('ProtectedRoute called');
-    if (user?.role && !allowedUsers.includes(user.role)) {
+    if (authUser?.role && !allowedUsers.includes(authUser.role)) {
       console.log(
         'user :',
-        user?.role,
+        authUser?.role,
         'not allowed, redirecting to:',
         redirectPath,
       );
       navigate(redirectPath);
-    } else if (!user?.token) {
-      console.log('user token is null, redirecting to login', user?.token);
+    } else if (!authUser?.token && !user.loading) {
+      console.log('user token is null, redirecting to login', authUser?.token);
       navigate('/login');
     } else {
       console.log(
         'userRole:',
-        user?.role,
+        authUser?.role,
         'allowedUsers:',
         allowedUsers,
-        'autherized',
+        'authorized',
       );
     }
-  }, [user?.role, allowedUsers, redirectPath, navigate, user?.token]);
+  }, [
+    authUser.role,
+    authUser.token,
+    allowedUsers,
+    redirectPath,
+    navigate,
+    user.loading,
+  ]);
 
-  return user?.role &&
-    (allowedUsers.includes(user.role) || allowedUsers.includes('ANY')) ? (
+  return authUser?.role &&
+    (allowedUsers.includes(authUser.role) || allowedUsers.includes('ANY')) ? (
     children
   ) : (
     <></>

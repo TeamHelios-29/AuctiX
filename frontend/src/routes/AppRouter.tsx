@@ -12,12 +12,12 @@ import CreateAuction from '@/pages/CreateAuction';
 import SellerProfile from '@/pages/SellerProfile';
 import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/AuctionDetails';
-import AuctionsPage from '@/pages/ExploreAuctions';
+import Report from '@/pages/Report';
+import ProfileSettings from '@/pages/ProfileSettings';
 import { useNotificationRegistration } from '@/hooks/use-notification-registration';
-import Settings from '@/pages/Settings';
 import UserDeliveryPage from '@/pages/User_Delivery';
-import Report from '@/pages/Report'; // Ensure Report is imported correctly
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
+import AuctionsPage from '@/pages/ExploreAuctions';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -54,6 +54,17 @@ export default function AppRouter() {
                 redirectPath="/403"
               >
                 <User />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/profile"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER']}
+                redirectPath="/403"
+              >
+                <ProfileSettings />
               </ProtectedRoute>
             }
           />
