@@ -64,6 +64,10 @@ public class User {
     @JoinColumn(name = "id")
     private Bidder bidder;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id")
+    private UserAddress userAddress;
+
     // helper method to make it cleaner to get the role enum
     @JsonProperty("role")
     public UserRoleEnum getRoleEnum() {
