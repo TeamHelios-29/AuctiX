@@ -20,6 +20,8 @@ public class AuctionDetailsDTO {
     private String title;
     private String description;
     private List<String> images;
+    private SellerDTO seller;
+
 //    private double startingPrice;
 //    private double currentBid;
 //    private double bidIncrement;
@@ -30,48 +32,4 @@ public class AuctionDetailsDTO {
     private String startTime;
 //    private List<BidHistoryDTO> bidHistory;
 //    private ProductOwnerDTO productOwner;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class BidderDTO {
-        private String id;
-        private String name;
-        private String avatar;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SellerDTO {
-        private String id;
-        private String name;
-        private String avatar;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProductOwnerDTO {
-        private String id;
-        private String name;
-        private String avatar;
-        private double rating;
-        @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
-        private Instant joinedDate;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class BidHistoryDTO {
-        private BidderDTO bidder;
-        private double amount;
-        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
-        private Instant timestamp;
-    }
 }

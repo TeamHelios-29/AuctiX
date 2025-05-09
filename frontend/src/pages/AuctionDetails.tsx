@@ -6,6 +6,7 @@ import { Share, Flag, Heart } from 'lucide-react';
 import { useParams } from 'react-router-dom'; // if using react-router
 import axios from 'axios'; // for API calls
 import { Client } from '@stomp/stompjs'; // for WebSocket connection
+import AxiosRequest from '@/services/axiosInspector';
 
 // Types
 interface BidHistory {
@@ -97,19 +98,20 @@ const AuctionDetailsPage = () => {
   const [bidAmount, setBidAmount] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [stompClient, setStompClient] = useState<Client | null>(null);
-
+  const axiosInstance = AxiosRequest().axiosInstance;
   useEffect(() => {
     const fetchAuctionDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`/api/auctions/${auctionId}`);
+
+        const response = await axiosInstance.get(`/auctions/${auctionId}`);
         setProduct(response.data);
         // Initialize bid amount to current bid + increment
         setBidAmount(response.data.currentBid + response.data.bidIncrement);
-        setLoading(false);
       } catch (err) {
         console.error('Error fetching auction details:', err);
         setError('Failed to load auction details. Please try again later.');
+      } finally {
         setLoading(false);
       }
     };
@@ -128,7 +130,8 @@ const AuctionDetailsPage = () => {
 
   // Setup WebSocket connection for real-time bid updates
   useEffect(() => {
-    if (!auctionId) return;
+    //!auctionId
+    if (true) return;
 
     // Create STOMP client
     const client = new Client({
