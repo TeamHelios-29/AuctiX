@@ -52,7 +52,7 @@ Seller seller = auction.getSeller();
 
 
 
-        return AuctionDetailsDTO.builder().seller(sellerDto).user
+        return AuctionDetailsDTO.builder().seller(sellerDto)
                 .id(auction.getId().toString())
                 .category(auction.getCategory())
                 .title(auction.getTitle())
