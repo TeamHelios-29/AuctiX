@@ -20,7 +20,7 @@ public class WebSocketNotificationSender implements NotificationSender {
 
     @Override
     public NotificationType getNotificationType() {
-        return NotificationType.WEBSOCKET;
+        return NotificationType.PUSH; // we are not using ws for now
     }
 
     @Override

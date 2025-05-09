@@ -2,15 +2,15 @@ package com.helios.auctix.services.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
 import com.helios.auctix.domain.notification.preferences.NotificationGlobalPreference;
 import com.helios.auctix.domain.user.User;
-import com.helios.auctix.dtos.NotificationPreferencesDTO;
-import com.helios.auctix.mappers.NotificationPreferencesMapper;
+import com.helios.auctix.dtos.notification.NotificationPreferenceUpdateDto;
+import com.helios.auctix.dtos.notification.NotificationPreferencesResponseDto;
+import com.helios.auctix.mappers.NotificationPreferenceResponseDTOMapper;
 import com.helios.auctix.repositories.NotificationEventPreferencesRepository;
 import com.helios.auctix.repositories.NotificationGlobalPreferencesRepository;
 import jakarta.validation.Valid;
@@ -27,10 +27,10 @@ public class NotificationSettingsService {
 
     private final NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository;
     private final NotificationEventPreferencesRepository notificationEventPreferencesRepository;
-    private final NotificationPreferencesMapper preferencesDTOMapper;
+    private final NotificationPreferenceResponseDTOMapper preferencesDTOMapper;
     private final ObjectMapper objectMapper;
 
-    public NotificationSettingsService(NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository, NotificationEventPreferencesRepository notificationEventPreferencesRepository, NotificationPreferencesMapper preferencesDTOMapper, ObjectMapper objectMapper) {
+    public NotificationSettingsService(NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository, NotificationEventPreferencesRepository notificationEventPreferencesRepository, NotificationPreferenceResponseDTOMapper preferencesDTOMapper, ObjectMapper objectMapper) {
         this.notificationGlobalPreferencesRepository = notificationGlobalPreferencesRepository;
         this.notificationEventPreferencesRepository = notificationEventPreferencesRepository;
         this.preferencesDTOMapper = preferencesDTOMapper;
@@ -148,7 +148,7 @@ public class NotificationSettingsService {
         return defaultPreferences;
     }
 
-    public void savePreferences(User user, @Valid NotificationPreferencesDTO dto) {
+    public void savePreferences(User user, @Valid NotificationPreferenceUpdateDto dto) {
         if (dto.getGlobal() != null) {
             String globalSettingsJson = toJson(dto.getGlobal());
 
@@ -196,7 +196,7 @@ public class NotificationSettingsService {
         }
     }
 
-     public NotificationPreferencesDTO getPreferences(User user) {
+     public NotificationPreferencesResponseDto getPreferences(User user) {
 
         Optional<NotificationEventPreference> eventPreferenceOptional = notificationEventPreferencesRepository.findByUserId(user.getId());
         Optional<NotificationGlobalPreference> globalPreferenceOptional = notificationGlobalPreferencesRepository.findByUserId(user.getId());
