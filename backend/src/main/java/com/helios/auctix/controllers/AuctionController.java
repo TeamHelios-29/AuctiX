@@ -1,6 +1,7 @@
 package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.auction.Auction;
+import com.helios.auctix.domain.user.Seller;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.services.AuctionService;
@@ -8,6 +9,7 @@ import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.services.user.UserServiceResponse;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -33,6 +35,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/auctions")
 public class AuctionController {
@@ -40,11 +43,7 @@ public class AuctionController {
     private final Logger log = Logger.getLogger(AuctionController.class.getName());
     private final UserDetailsService userDetailsService;
 
-    @Autowired
-    public AuctionController(AuctionService auctionService, UserDetailsService userDetailsService) {
-        this.auctionService = auctionService;
-        this.userDetailsService = userDetailsService;
-    }
+
 
     @Autowired
     private FileUploadService uploader;
@@ -72,7 +71,9 @@ public class AuctionController {
             User seller = userDetailsService
                     .getAuthenticatedUser(authentication);
 
-            UUID sellerId = seller.getId();
+//            UUID sellerId = seller.getId();
+
+
 
             // Parse dates with timezone support
             Instant startInstant = Instant.parse(startTime);
@@ -86,11 +87,11 @@ public class AuctionController {
                     .endTime(endInstant)
                     .isPublic(isPublic)
                     .category(category)
-                    .sellerId(sellerId)
+                    .seller(seller.getSeller())
                     .build();
 
 
-            List<String> imagePaths = images.stream()
+            List<UUID> imagePaths = images.stream()
                     .map(this::saveImage)
                     .collect(Collectors.toList());
             auction.setImagePaths(imagePaths);
@@ -112,7 +113,7 @@ public class AuctionController {
     }
 
     // Helper method to save an image and return its path
-    private String saveImage(MultipartFile image) {
+    private UUID saveImage(MultipartFile image) {
         try {
             // Authenticate user
 //            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -143,7 +144,7 @@ public class AuctionController {
 //                    log.warning(res.getMessage());
 //                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data saving failed");
 //                }
-                return uploadRes.getUpload().getId().toString();
+                return uploadRes.getUpload().getId();
 
             } else {
                 log.warning(uploadRes.getMessage());

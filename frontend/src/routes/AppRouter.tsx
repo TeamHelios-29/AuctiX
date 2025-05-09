@@ -29,7 +29,10 @@ export default function AppRouter() {
         <Route element={<DefaultLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/seller" element={<SellerProfile />} />
-          <Route path="/auction-details" element={<AuctionDetailsPage />} />
+          <Route
+            path="/auction-details/:auctionId"
+            element={<AuctionDetailsPage />}
+          />
           <Route path="/create-auction" element={<CreateAuction />} />
           <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>

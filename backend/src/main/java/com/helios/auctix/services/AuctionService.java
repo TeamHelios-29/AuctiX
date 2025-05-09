@@ -2,10 +2,16 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.AuctionImagePath;
+import com.helios.auctix.domain.user.Seller;
+import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.SellerDTO;
+import com.helios.auctix.mappers.impl.SellerMapperImpl;
 import com.helios.auctix.repositories.AuctionImagePathsRepository;
 
 import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.repositories.AuctionRepository; // Updated repository
+import com.helios.auctix.repositories.UserRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,17 +26,15 @@ import java.util.stream.Collectors;
 import java.util.Optional;
 import java.util.UUID;
 
+@AllArgsConstructor
 @Service
 public class AuctionService {
 
     private final AuctionRepository auctionRepository; // Updated repository
     private final AuctionImagePathsRepository auctionImagePathsRepository; // <-- Add this
+    private final SellerMapperImpl sellerMapper;
 
-    @Autowired
-    public AuctionService(AuctionRepository auctionRepository, AuctionImagePathsRepository auctionImagePathsRepository) { // Updated repository
-        this.auctionRepository = auctionRepository;
-        this.auctionImagePathsRepository = auctionImagePathsRepository;
-    }
+
 
     public AuctionDetailsDTO getAuctionDetails(UUID id) {
         Auction auction = auctionRepository.findById(id).orElse(null);
@@ -38,10 +42,17 @@ public class AuctionService {
 
         List<String> imageIds = auctionImagePathsRepository.findByAuctionId(id)
                 .stream()
-                .map(AuctionImagePath::getImageId)
+                .map((AuctionImagePath::getImageId))
+                .map(UUID::toString)
                 .collect(Collectors.toList());
 
-        return AuctionDetailsDTO.builder()
+Seller seller = auction.getSeller();
+
+       SellerDTO sellerDto = sellerMapper.mapTo(seller);
+
+
+
+        return AuctionDetailsDTO.builder().seller(sellerDto)
                 .id(auction.getId().toString())
                 .category(auction.getCategory())
                 .title(auction.getTitle())

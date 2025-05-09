@@ -21,8 +21,9 @@ import java.util.UUID;
 public class Auction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
     private UUID id;
+
 
     private String title;
     private String description;
@@ -31,11 +32,11 @@ public class Auction {
     private Instant endTime;        // For precise event timing (UTC)
     private Boolean isPublic;
     private String category;
-    private UUID sellerId;
+//    private UUID sellerId;
 
 
     @ElementCollection
-    private List<String> imageIds; // Change from imagePaths to imageIds
+    private List<UUID> imageIds; // Change from imagePaths to imageIds
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;      // Changed to Instant for consistency
@@ -53,9 +54,9 @@ public class Auction {
     }
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
-    @PrimaryKeyJoinColumn(name = "seller_id")
+    @JoinColumn(name = "seller_id", referencedColumnName = "id")
     private Seller seller;
+
 
 
     @PrePersist
@@ -74,8 +75,9 @@ public class Auction {
             name = "auction_image_paths",
             joinColumns = @JoinColumn(name = "auction_id")
     )
-    @Column(name = "image_paths")
-    private List<String> imagePaths;
+
+    @Column(name = "image_id")
+    private List<UUID> imagePaths;
 
 }
 
