@@ -114,18 +114,17 @@ public class UserController {
         }
     }
 
-    @Profile("dev")
     @PostMapping("/createAdmin")
-    public String createAdmin(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) throws AuthenticationException {
+    public ResponseEntity<String> createAdmin(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) throws AuthenticationException {
         log.info("Admin creation request: " + username);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
 
         UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.ADMIN,currentUser);
         if (res.isSuccess()) {
-            return "Success: Admin Created";
+            return ResponseEntity.ok("Success: Admin Created");
         } else {
-            return res.getMessage();
+            return ResponseEntity.badRequest().body(res.getMessage());
         }
     }
 
