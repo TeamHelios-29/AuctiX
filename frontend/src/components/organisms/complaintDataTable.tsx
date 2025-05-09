@@ -151,9 +151,23 @@ export default function ComplaintDataTable() {
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div>{new Date(row.getValue('dateReported')).toLocaleDateString()}</div>
-      ),
+      cell: ({ row }) => {
+        const dateReported = new Date(row.getValue('dateReported'));
+        const formattedDate = dateReported.toLocaleDateString('en-GB');
+        const formattedTime = dateReported.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        return (
+          <div>
+            <div>
+              {formattedDate}{' '}
+              <span className="text-gray-500 text-sm">{formattedTime}</span>
+            </div>
+          </div>
+        );
+      },
       enableHiding: true,
       enableSorting: true,
     },
@@ -186,7 +200,30 @@ export default function ComplaintDataTable() {
       id: 'actions',
       enableHiding: false,
       cell: ({ row }) => {
-        const user = row.original;
+        const complaint = row.original;
+        const [status, setStatus] = useState(complaint.status);
+
+        const statusStyles = {
+          PENDING: 'bg-yellow-100 text-yellow-600',
+          UNDER_REVIEW: 'bg-blue-100 text-blue-600',
+          RESOLVED: 'bg-green-100 text-green-600',
+          REJECTED: 'bg-red-100 text-red-600',
+        };
+
+        const handleStatusChange = (newStatus: string) => {
+          setStatus(newStatus);
+
+          axiosInstance
+            .put(`/complaints/${complaint.id}/${newStatus}`, {
+              status: newStatus,
+            })
+            .then(() => {
+              console.log('Status updated successfully');
+            })
+            .catch((error) => {
+              console.error('Error updating status:', error);
+            });
+        };
 
         return (
           <DropdownMenu>
@@ -199,13 +236,20 @@ export default function ComplaintDataTable() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(user.id)}
+                onClick={() => navigator.clipboard.writeText(complaint.id)}
               >
-                Copy Username
+                Copy Complaint ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Sample Menu Item 1</DropdownMenuItem>
-              <DropdownMenuItem>Sample Menu Item 2</DropdownMenuItem>
+              <DropdownMenuLabel>Edit Status</DropdownMenuLabel>
+              {Object.keys(statusStyles).map((statusOption) => (
+                <DropdownMenuItem
+                  key={statusOption}
+                  onClick={() => handleStatusChange(statusOption)}
+                >
+                  {statusOption}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         );
