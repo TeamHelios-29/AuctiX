@@ -2,6 +2,7 @@ package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.services.AuctionService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
@@ -179,11 +180,13 @@ public class AuctionController {
 
     // Get auction by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Auction> getAuctionById(@PathVariable UUID id) {
+    public ResponseEntity<AuctionDetailsDTO> getAuctionById(@PathVariable UUID id) {
         try {
-            Optional<Auction> auction = auctionService.getAuctionById(id);
-            return auction.map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
+            AuctionDetailsDTO dto = auctionService.getAuctionDetails(id);
+            if (dto == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(dto);
         } catch (Exception e) {
             log.warning("Error fetching auction by id " + id + ": " + e.getMessage());
             return ResponseEntity.internalServerError().build();
