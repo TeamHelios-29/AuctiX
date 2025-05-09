@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import React, { useEffect } from 'react';
 import { Command } from 'lucide-react';
 import { CollapsibleNavItem } from '../molecules/collapsible-navitem';
 
@@ -18,63 +18,88 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-
-  navMain: [
-    {
-      title: 'Dashboard',
-      items: [
-        {
-          title: 'Overview',
-          url: '/dashboard',
-          isActive: true,
-        },
-        {
-          title: 'Auctions',
-          items: [
-            {
-              title: 'Ongoing',
-              url: '/auctions/ongoing',
-            },
-            {
-              title: 'Upcoming',
-              url: '/auctions/upcoming',
-            },
-            {
-              title: 'Closed',
-              url: '/auctions/closed',
-            },
-          ],
-        },
-        {
-          title: 'Management',
-          items: [
-            {
-              title: 'Delivery',
-              url: '/delivery',
-            },
-            {
-              title: 'Reports',
-              url: '/Reports',
-            },
-          ],
-        },
-        {
-          title: 'Settings',
-          url: '/settings',
-        },
-      ],
-    },
-  ],
-};
+import { IUser } from '@/types/IUser';
+import { useAppSelector } from '@/hooks/hooks';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const userData = useAppSelector((state) => state.user as IUser);
+  const [data, setData] = React.useState({
+    user: {
+      name: '',
+      email: '',
+      avatar: '/defaultProfilePhoto.jpg',
+    },
+
+    navMain: [
+      {
+        title: 'Dashboard',
+        items: [
+          {
+            title: 'Overview',
+            url: '/dashboard',
+            isActive: true,
+          },
+          {
+            title: 'Auctions',
+            items: [
+              {
+                title: 'Ongoing',
+                url: '/auctions/ongoing',
+              },
+              {
+                title: 'Upcoming',
+                url: '/auctions/upcoming',
+              },
+              {
+                title: 'Closed',
+                url: '/auctions/closed',
+              },
+            ],
+          },
+          {
+            title: 'Management',
+            items: [
+              {
+                title: 'Delivery',
+                url: '/delivery',
+              },
+              {
+                title: 'Reports',
+                url: '/Reports',
+              },
+              {
+                title: 'Users',
+                url: '/users',
+              },
+            ],
+          },
+          {
+            title: 'Settings',
+            items: [
+              {
+                title: 'Profile Settings',
+                url: '/settings/profile',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  useEffect(() => {
+    setData((prevData) => ({
+      ...prevData,
+      user: {
+        name: userData.username
+          ? `${userData.firstName} ${userData?.lastName}`
+          : '',
+        email: userData.email || '',
+        avatar: userData.profile_photo || '/defaultProfilePhoto.jpg',
+      },
+    }));
+  }, [userData.username]);
+
   return (
     <Sidebar {...props}>
       <SidebarHeader className="pl-4">
