@@ -34,12 +34,23 @@ public class Auction {
     private UUID sellerId;
 
 
+    @ElementCollection
+    private List<String> imageIds; // Change from imagePaths to imageIds
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;      // Changed to Instant for consistency
 
     @Column(name = "updated_at")
     private Instant updatedAt; // Changed to Instant for consistency
+
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id")
