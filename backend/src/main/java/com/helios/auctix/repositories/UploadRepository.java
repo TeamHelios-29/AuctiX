@@ -10,9 +10,9 @@ import java.util.UUID;
 public interface UploadRepository extends JpaRepository<Upload, UUID> {
 
     List<Upload> findByIsDeleted(boolean b, Limit limit);
-    Upload findByFileId(String fileId);
+    Upload findByFileId(UUID fileId);
 
-    boolean findAllByFileId(String fileId);
+    boolean findAllByFileId(UUID fileId);
 
-    Integer countByFileId(String fileId);
+    Integer countByFileId(UUID fileId);
 }

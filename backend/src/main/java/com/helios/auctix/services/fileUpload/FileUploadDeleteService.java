@@ -52,7 +52,7 @@ public class FileUploadDeleteService {
                     log.warning("File is still in another upload, not deleting file:" + file.getFileId());
                 }
                 else{
-                    BlobClient blobClient = containerClient.getBlobClient(file.getFileId());
+                    BlobClient blobClient = containerClient.getBlobClient(file.getFileId().toString());
 
                     if (blobClient.exists()) {
                         blobClient.delete();
