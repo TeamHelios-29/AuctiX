@@ -13,7 +13,7 @@ import SellerProfile from '@/pages/SellerProfile';
 import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/auction-details';
 import Report from '@/pages/Report';
-import Settings from '@/pages/Settings';
+import ProfileSettings from '@/pages/ProfileSettings';
 import { useNotificationRegistration } from '@/hooks/use-notification-registration';
 import UserDeliveryPage from '@/pages/User_Delivery';
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
@@ -54,7 +54,17 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-          <Route path="/settings" element={<Settings />} />
+          <Route
+            path="/settings/profile"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER']}
+                redirectPath="/403"
+              >
+                <ProfileSettings />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/reports" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Route>

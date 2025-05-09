@@ -1,6 +1,6 @@
 import { IAuthUser } from '@/types/IAuthUser';
 import { getStoredAuthUser } from '@/services/authService';
-import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface AuthState {
   token?: string | null;
