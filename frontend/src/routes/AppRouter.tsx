@@ -18,6 +18,7 @@ import { useNotificationRegistration } from '@/hooks/use-notification-registrati
 import UserDeliveryPage from '@/pages/User_Delivery';
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
 import AuctionsPage from '@/pages/ExploreAuctions';
+import AdminManagementPage from '@/pages/AdminManagementPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -42,7 +43,7 @@ export default function AppRouter() {
             path="/dashboard"
             element={
               <ProtectedRoute
-                allowedUsers={['SELLER', 'BIDDER']}
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
               >
                 <Dashboard />
@@ -50,10 +51,10 @@ export default function AppRouter() {
             }
           />
           <Route
-            path="/user"
+            path="/users"
             element={
               <ProtectedRoute
-                allowedUsers={['ADMIN', 'SUPPER_ADMIN', 'BIDDER', 'SELLER']}
+                allowedUsers={['ADMIN', 'SUPER_ADMIN', 'BIDDER', 'SELLER']}
                 redirectPath="/403"
               >
                 <User />
@@ -64,13 +65,26 @@ export default function AppRouter() {
             path="/settings/profile"
             element={
               <ProtectedRoute
-                allowedUsers={['SELLER', 'BIDDER']}
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
               >
                 <ProfileSettings />
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/admin-management"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <AdminManagementPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/reports" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Route>
