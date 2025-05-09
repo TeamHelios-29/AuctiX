@@ -1,13 +1,17 @@
 package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.auction.Auction;
+import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.services.AuctionService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
+import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.services.user.UserServiceResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.nio.file.Path;
@@ -24,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
@@ -32,11 +37,13 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/auctions")
 public class AuctionController {
     private final AuctionService auctionService;
-    private final Logger log = Logger.getLogger(UserController.class.getName());
+    private final Logger log = Logger.getLogger(AuctionController.class.getName());
+    private final UserDetailsService userDetailsService;
 
     @Autowired
-    public AuctionController(AuctionService auctionService) {
+    public AuctionController(AuctionService auctionService, UserDetailsService userDetailsService) {
         this.auctionService = auctionService;
+        this.userDetailsService = userDetailsService;
     }
 
     @Autowired
@@ -57,6 +64,16 @@ public class AuctionController {
 
         // Create an Auction object using the domain model
         try {
+            //get seller id
+            Authentication authentication = SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            User seller = userDetailsService
+                    .getAuthenticatedUser(authentication);
+
+            UUID sellerId = seller.getId();
+
             // Parse dates with timezone support
             Instant startInstant = Instant.parse(startTime);
             Instant endInstant = Instant.parse(endTime);
@@ -69,7 +86,9 @@ public class AuctionController {
                     .endTime(endInstant)
                     .isPublic(isPublic)
                     .category(category)
+                    .sellerId(sellerId)
                     .build();
+
 
             List<String> imagePaths = images.stream()
                     .map(this::saveImage)
@@ -78,8 +97,13 @@ public class AuctionController {
 
             Auction createdAuction = auctionService.createAuction(auction);
             return ResponseEntity.ok(createdAuction);
+
+
         } catch (DateTimeParseException e) {
             log.warning("Invalid date format");
+            return ResponseEntity.badRequest().build();
+        } catch (AuthenticationException e) {
+            // handle AuthenticationException gives when user is not authenticated
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.warning("Error creating auction");
@@ -130,17 +154,44 @@ public class AuctionController {
         }
     }
 
-//    // Retrieve all auctions
-//    @GetMapping
-//    public List<Auction> getAllAuctions() {
-//        return auctionService.getAllAuctions();
-//    }
-//
-//    // Retrieve an auction by ID
-//    @GetMapping("/{id}")
-//    public Optional<Auction> getAuctionById(@PathVariable Long id) {
-//        return auctionService.getAuctionById(id);
-//    }
+    // Retrieve all auctions
+    @GetMapping
+    public ResponseEntity<List<Auction>> getAllAuctions() {
+        try {
+            List<Auction> auctions = auctionService.getAllAuctions();
+            return ResponseEntity.ok(auctions);
+        } catch (Exception e) {
+            log.warning("Error fetching all auctions: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Retrieve active auctions for displaying on the main page
+    @GetMapping("/active")
+    public ResponseEntity<List<Auction>> getActiveAuctions() {
+        try {
+            List<Auction> activeAuctions = auctionService.getActiveAuctions();
+            return ResponseEntity.ok(activeAuctions);
+        } catch (Exception e) {
+            log.warning("Error fetching active auctions: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Get auction by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<AuctionDetailsDTO> getAuctionById(@PathVariable UUID id) {
+        try {
+            AuctionDetailsDTO dto = auctionService.getAuctionDetails(id);
+            if (dto == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            log.warning("Error fetching auction by id " + id + ": " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 //
 //    // Update an auction
 //    @PutMapping("/{id}")

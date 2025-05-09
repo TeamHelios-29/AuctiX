@@ -1,23 +1,57 @@
 package com.helios.auctix.services;
 
 import com.helios.auctix.domain.auction.Auction;
+import com.helios.auctix.domain.auction.AuctionImagePath;
+import com.helios.auctix.repositories.AuctionImagePathsRepository;
+
+import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.repositories.AuctionRepository; // Updated repository
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuctionService {
 
     private final AuctionRepository auctionRepository; // Updated repository
+    private final AuctionImagePathsRepository auctionImagePathsRepository; // <-- Add this
 
     @Autowired
-    public AuctionService(AuctionRepository auctionRepository) { // Updated repository
+    public AuctionService(AuctionRepository auctionRepository, AuctionImagePathsRepository auctionImagePathsRepository) { // Updated repository
         this.auctionRepository = auctionRepository;
+        this.auctionImagePathsRepository = auctionImagePathsRepository;
     }
+
+    public AuctionDetailsDTO getAuctionDetails(UUID id) {
+        Auction auction = auctionRepository.findById(id).orElse(null);
+        if (auction == null) return null;
+
+        List<String> imageIds = auctionImagePathsRepository.findByAuctionId(id)
+                .stream()
+                .map(AuctionImagePath::getImageId)
+                .collect(Collectors.toList());
+
+        return AuctionDetailsDTO.builder()
+                .id(auction.getId().toString())
+                .category(auction.getCategory())
+                .title(auction.getTitle())
+                .description(auction.getDescription())
+                .images(imageIds) // <-- Only image IDs
+                .endTime(auction.getEndTime().toString())
+                .startTime(auction.getEndTime().toString())
+                .build();
+    }
+
 
     public Auction createAuction(Auction auction) {
         // Validate required fields
@@ -37,6 +71,7 @@ public class AuctionService {
 
         return auctionRepository.save(auction);
 
+
 //        try {
 //            // Validate and save the auction
 //            return auctionRepository.save(auction);
@@ -45,6 +80,47 @@ public class AuctionService {
 //        } catch (Exception e) {
 //            throw new RuntimeException("Failed to create auction: " + e.getMessage());
 //        }
+    }
+
+    public List<Auction> getAllAuctions() {
+        return auctionRepository.findAll();
+    }
+
+//    @Service
+//    public class ImageService {
+//
+//        private final BlobServiceClient blobServiceClient;
+//        private final String containerName;
+//        private final String endpoint;
+//
+//        public ImageService(
+//                @Value("${azure.storage.connection-string}") String connectionString,
+//                @Value("${spring.cloud.azure.storage.blob.container-name}") String containerName,
+//                @Value("${azure.storage.endpoint}") String endpoint) {
+//
+//            this.blobServiceClient = new BlobServiceClientBuilder()
+//                    .connectionString(connectionString)
+//                    .buildClient();
+//            this.containerName = containerName;
+//            this.endpoint = endpoint;
+//        }
+//
+//        public String getImageUrl(String imageId) {
+//            return String.format("%s/%s/%s", endpoint, containerName, imageId);
+//        }
+//
+//        public List<String> getImageUrls(List<String> imageIds) {
+//            return imageIds.stream()
+//                    .map(this::getImageUrl)
+//                    .collect(Collectors.toList());
+//        }
+//    }
+
+
+    // Add methods for fetching active auctions
+    public List<Auction> getActiveAuctions() {
+        Instant now = Instant.now();
+        return auctionRepository.findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(now, now);
     }
 
 //    public Auction createAuction(Auction auction, List<MultipartFile> images) {
