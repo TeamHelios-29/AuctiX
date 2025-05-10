@@ -20,7 +20,7 @@ public class AuctionDetailsDTO {
     private String title;
     private String description;
     private List<String> images;
-    private SellerDTO seller;
+    private UserDTO seller;
 
 //    private double startingPrice;
 //    private double currentBid;

@@ -5,7 +5,9 @@ import com.helios.auctix.domain.auction.AuctionImagePath;
 import com.helios.auctix.domain.user.Seller;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.SellerDTO;
+import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
+import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.AuctionImagePathsRepository;
 
 import com.helios.auctix.dtos.AuctionDetailsDTO;
@@ -33,6 +35,7 @@ public class AuctionService {
     private final AuctionRepository auctionRepository; // Updated repository
     private final AuctionImagePathsRepository auctionImagePathsRepository; // <-- Add this
     private final SellerMapperImpl sellerMapper;
+    private final UserMapperImpl userMapperImpl;
 
 
 
@@ -48,7 +51,7 @@ public class AuctionService {
 
 Seller seller = auction.getSeller();
 
-       SellerDTO sellerDto = sellerMapper.mapTo(seller);
+       UserDTO sellerDto = userMapperImpl.mapTo(auction.getSeller().getUser());
 
 
 
