@@ -15,6 +15,7 @@ import { Checkbox } from '@radix-ui/react-checkbox';
 import { AxiosInstance } from 'axios';
 import AxiosReqest from '@/services/axiosInspector';
 import { Skeleton } from '../ui/skeleton';
+import { BanUserModal, IBanUser } from '../molecules/BanUserModal';
 
 interface IProfilePhoto {
   category: string;
@@ -30,7 +31,7 @@ interface ITableUser {
   lastName: string;
   email: string;
   role: string;
-  profile_photo: IProfilePhoto;
+  profilePicture: IProfilePhoto;
 }
 
 export default function UserDataTable() {
@@ -47,6 +48,9 @@ export default function UserDataTable() {
   const [pageSize, setPageSize] = useState<number>(10);
   const [isInSearchDelay, setIsInSearchDelay] = useState<boolean>(false);
 
+  const [isBanUserModalOpen, setIsBanUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<IBanUser | null>(null);
+
   useEffect(() => {
     setIsLoading(true);
     if (!isInSearchDelay) {
@@ -61,7 +65,20 @@ export default function UserDataTable() {
           },
         })
         .then((usersData) => {
-          setUsers(usersData?.data?.content);
+          const data: Array<ITableUser> = usersData.data.content.map(
+            (user: any, index: number): ITableUser => {
+              return {
+                id: index,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.userRole?.userRole,
+                profilePicture: user.profilePicture,
+              };
+            },
+          );
+          setUsers(data);
           setCurrentPage(usersData?.data?.pageable?.pageNumber);
           setPageCount(usersData?.data?.totalPages);
           setPageSize(usersData?.data?.size);
@@ -178,12 +195,12 @@ export default function UserDataTable() {
       enableHiding: false,
     },
     {
-      accessorKey: 'profile_photo',
+      accessorKey: 'profilePicture',
       header: '',
       enableSorting: false,
       enableHiding: true,
       cell: ({ row }) =>
-        ProfilePhoto((row.getValue('profile_photo') as IProfilePhoto)?.id),
+        ProfilePhoto((row.getValue('profilePicture') as IProfilePhoto)?.id),
     },
     {
       accessorKey: 'username',
@@ -309,7 +326,11 @@ export default function UserDataTable() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Sample Menu Item 1</DropdownMenuItem>
-              <DropdownMenuItem>Sample Menu Item 2</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleBanUser(row.getValue('username'))}
+              >
+                Ban User
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -341,6 +362,28 @@ export default function UserDataTable() {
     [setSearch],
   );
 
+  const handleBanUser = useCallback(
+    async (userName: string) => {
+      const user = users?.find((user) => user.username === userName);
+      if (!user) {
+        console.error('User not found');
+        return;
+      }
+      const banUser: IBanUser = {
+        username: user?.username,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        email: user?.email,
+        role: user?.role as 'BIDDER' | 'SELLER' | 'ADMIN',
+        profilePicture: user?.profilePicture?.id,
+      };
+      setSelectedUser(banUser);
+      setIsBanUserModalOpen(true);
+      console.log('Banning user with ID:', userName);
+    },
+    [axiosInstance],
+  );
+
   return (
     <>
       <h1 className="text-center text-5xl mt-5">User Data Table</h1>
@@ -355,6 +398,14 @@ export default function UserDataTable() {
         setSearchText={searchHandler}
         searchText={search}
       />
+      {selectedUser && (
+        <BanUserModal
+          isOpen={isBanUserModalOpen}
+          onClose={() => setIsBanUserModalOpen(false)}
+          onConfirm={handleBanUser}
+          user={selectedUser}
+        />
+      )}
     </>
   );
 }

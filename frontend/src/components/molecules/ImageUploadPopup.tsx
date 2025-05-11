@@ -6,7 +6,7 @@ import {
   ZoomOut,
   BanIcon,
   RefreshCcwDot,
-  LucideDelete,
+  Trash2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -35,6 +35,7 @@ export interface ImageResult {
 
 interface ImageUploadPopupProps {
   onConfirm?: (result: ImageResult) => void;
+  onDelete?: () => void;
   minWidth?: number;
   minHeight?: number;
   shape?: 'square' | 'circle';
@@ -44,6 +45,7 @@ interface ImageUploadPopupProps {
 
 export default function ImageUploadPopup({
   onConfirm,
+  onDelete,
   minWidth = 200,
   minHeight = 200,
   shape = 'square',
@@ -452,6 +454,13 @@ export default function ImageUploadPopup({
     handleCloseDialog();
   };
 
+  const handleDeleteImage = (): void => {
+    if (onDelete) {
+      onDelete();
+    }
+    handleRemoveImage();
+  };
+
   // Fix: Update the global scale on dialog open and when container ref is available
   useEffect(() => {
     if (isOpen && imgContainerRef.current) {
@@ -481,7 +490,15 @@ export default function ImageUploadPopup({
     <div className="flex flex-col items-center">
       <Button onClick={handleOpenDialog} className="flex items-center gap-2">
         <Upload size={16} />
-        Upload Image
+        Upload Profile Photo
+      </Button>
+
+      <Button
+        className="flex items-center gap-2 mt-2"
+        onClick={handleDeleteImage}
+      >
+        <Trash2 size={16} />
+        Remove Profile Photo
       </Button>
 
       <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
@@ -610,7 +627,7 @@ export default function ImageUploadPopup({
                     onClick={handleRemoveImage}
                     title="Reset View"
                   >
-                    <LucideDelete size={16} />
+                    <Trash2 size={16} />
                   </Button>
                 </div>
               </div>

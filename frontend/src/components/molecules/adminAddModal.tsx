@@ -83,14 +83,16 @@ export function AdminAddModal({ isOpen, onConfirm, close }: AdminModalProps) {
   const onSubmit = async (data: AdminRegisterFormValues) => {
     console.log('Form submitted:', data);
     setIsLoading(true);
-    try {
-      await onConfirm(data as IRegisterAdmin);
-      form.reset();
-    } catch (error) {
-      console.error('Error submitting form:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    onConfirm(data as IRegisterAdmin)
+      .then(() => {
+        form.reset();
+      })
+      .catch((error) => {
+        console.error('Error submitting form:', error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
