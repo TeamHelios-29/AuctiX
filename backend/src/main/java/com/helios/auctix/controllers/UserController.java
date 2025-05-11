@@ -16,6 +16,7 @@ import lombok.AllArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.PermissionDeniedDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -137,7 +138,7 @@ public class UserController {
     }
 
     @GetMapping("/getUsers")
-    public ResponseEntity<?> getUsers(
+    public ResponseEntity<Page<UserDTO>> getUsers(
             @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
             @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
             @RequestParam(value = "sortby", required = false, defaultValue = "id") String sortBy,
@@ -150,9 +151,9 @@ public class UserController {
             String userRole = user.getRole().getName().toString();
             log.info("user data requested by "+user.getEmail()+","+userRole);
             if(!(UserRoleEnum.valueOf(userRole)==UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole)==UserRoleEnum.SUPER_ADMIN)){
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("FORBIDDEN");
+                throw new PermissionDeniedDataAccessException("You don't have permission to access this resource", new Throwable("Permission Denied"));
             }
-            Page userPage = userDetailsService.getAllUsers(limit,offset,order,sortBy,search);
+            Page<UserDTO> userPage = userDetailsService.getAllUsers(limit,offset,order,sortBy,search);
             return ResponseEntity.ok(userPage);
     }
 

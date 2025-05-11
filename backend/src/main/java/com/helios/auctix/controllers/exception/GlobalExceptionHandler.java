@@ -2,6 +2,7 @@ package com.helios.auctix.controllers.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
+import org.springframework.dao.PermissionDeniedDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
@@ -50,6 +51,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException e) {
         log.error("Illegal argument: {}", e.getMessage());
         return buildErrorResponse("Illegal argument", HttpStatus.BAD_REQUEST);
+    }
+
+    // handle PermissionDeniedDataAccessException
+    @ExceptionHandler(PermissionDeniedDataAccessException.class)
+    public ResponseEntity<Map<String, Object>> handlePermissionDenied(PermissionDeniedDataAccessException e) {
+        log.error("Permission denied: {}", e.getMessage());
+        return buildErrorResponse("Permission denied", HttpStatus.FORBIDDEN);
     }
 
 
