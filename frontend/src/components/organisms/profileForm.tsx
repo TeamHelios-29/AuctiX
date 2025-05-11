@@ -23,11 +23,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { AlertBox } from './AlertBox';
 import { Card, CardContent } from '@/components/ui/card';
 import ImageUploadPopup, { ImageResult } from '../molecules/ImageUploadPopup';
-import { updateProfilePhoto } from '@/services/userService';
+import { deleteProfilePhoto, updateProfilePhoto } from '@/services/userService';
 import { AxiosInstance } from 'axios';
 import AxiosRequest from '@/services/axiosInspector';
 import { fetchCurrentUser } from '@/store/slices/userSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
+import { useToast } from '@/hooks/use-toast';
 
 const profileFormSchema = z.object({
   username: z
@@ -105,6 +106,7 @@ export function ProfileForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isProfilePictureLoading, setIsProfilePictureLoading] = useState(false);
+  const { toast } = useToast();
 
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const dispatch = useAppDispatch();
@@ -158,15 +160,50 @@ export function ProfileForm() {
       setIsProfilePictureLoading(true);
       updateProfilePhoto(e.croppedImageFile, axiosInstance)
         .then(() => {
-          dispatch(fetchCurrentUser);
+          console.log('Profile picture uploaded successfully.');
+          toast({
+            title: 'Profile picture uploaded successfully.',
+            description: 'Your profile picture has been updated.',
+          });
+          dispatch(fetchCurrentUser());
         })
         .finally(() => {
           setIsProfilePictureLoading(false);
         })
         .catch(() => {
           console.error('Profile picture not uploaded.');
+          toast({
+            variant: 'destructive',
+            title: 'Profile picture not uploaded.',
+            description: 'There was an error uploading your profile picture.',
+          });
         });
     }
+  }, []);
+
+  const onProfilePhotoDelete = useCallback(() => {
+    setCroppedImg(null);
+    setIsProfilePictureLoading(false);
+    deleteProfilePhoto(
+      userData.username ? userData.username : '',
+      axiosInstance,
+    )
+      .then(() => {
+        console.log('Profile picture deleted successfully.');
+        toast({
+          title: 'Profile picture deleted successfully.',
+          description: 'Your profile picture has been removed.',
+        });
+        dispatch(fetchCurrentUser());
+      })
+      .catch(() => {
+        toast({
+          variant: 'destructive',
+          title: 'Profile picture not deleted.',
+          description: 'There was an error deleting your profile picture.',
+        });
+        console.error('Profile picture not deleted.');
+      });
   }, []);
 
   const handleSubmit = () => {
@@ -329,6 +366,7 @@ export function ProfileForm() {
                   acceptingWidth={500}
                   shape="circle"
                   onConfirm={onProfilePhotoSet}
+                  onDelete={onProfilePhotoDelete}
                 />
               </motion.div>
 

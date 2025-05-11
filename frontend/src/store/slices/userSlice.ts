@@ -45,7 +45,7 @@ export const fetchCurrentUser = createAsyncThunk(
         ...response.data,
         profile_photo_link: response.data.profilePicture?.id
           ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.profilePicture.id}`
-          : '/defaultProfilePhoto.jpg',
+          : null,
         fcmTokens: response.data.fcmTokens || [],
       };
       delete userData.profilePicture;

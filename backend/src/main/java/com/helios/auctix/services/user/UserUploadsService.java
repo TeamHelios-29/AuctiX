@@ -60,11 +60,21 @@ public class UserUploadsService {
                 return new UserServiceResponse(false, "User not found");
             }
 
+            // Delete the previous profile picture if it exists
+            Upload previousProfilePicture = user.getUpload();
+            if(previousProfilePicture != null) {
+                FileUploadResponse res = fileUploadService.deleteFile(previousProfilePicture, user);
+                if(!res.isSuccess()){
+                    return new UserServiceResponse(false, res.getMessage());
+                }
+            }
+
+            // Save the new profile picture
             uploadRepository.save(upload);
-            log.info("UserProfilePhotoUpdate successfully");
+            log.info("UserProfilePhotoUpdate successful onUploads");
             user.setUpload(upload);
             userRepository.save(user);
-            log.info("UserProfilePhotoUpdate successfully");
+            log.info("UserProfilePhotoUpdate successful onUser");
 
             return new UserServiceResponse(true, "Upload saved",user);
     }
@@ -103,7 +113,13 @@ public class UserUploadsService {
             return new UserServiceResponse(false, "User not found");
         }
 
+        // mark as deleted
         FileUploadResponse res = fileUploadService.deleteFile(user.getUpload(), user);
+        // set profile photo to null
+        user.setUpload(null);
+
+        userRepository.save(user);
+
         if(!res.isSuccess()){
             return new UserServiceResponse(false, res.getMessage());
         }

@@ -45,3 +45,18 @@ export const updateProfilePhoto = async (
   );
   return response.data;
 };
+
+export const deleteProfilePhoto = async (
+  username: string,
+  axiosInstance: AxiosInstance,
+) => {
+  const response = await axiosInstance.delete(
+    `${baseURL}/user/deleteUserProfilePhoto`,
+    {
+      params: {
+        username,
+      },
+    },
+  );
+  return response.data;
+};
