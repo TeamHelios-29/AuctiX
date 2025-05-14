@@ -7,7 +7,7 @@ const DashboardLayout = () => {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="p-4 w-full">
+      <main className="w-full p-4">
         <Outlet />
       </main>
     </SidebarProvider>

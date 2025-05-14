@@ -28,6 +28,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception e) {
         e.printStackTrace();
         log.error("Error occurred: {}", e.getMessage());
+        e.printStackTrace();
         return buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
