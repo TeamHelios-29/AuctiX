@@ -139,6 +139,32 @@ public class HelloController {
 
     }
 
+    @GetMapping("/send-notification")
+    public String sendNotifTest(
+            @Valid @RequestParam(required = true) String email,
+            @Valid @RequestParam(required = false) String category,
+            @RequestParam(required = false) String message) {
 
+//        return " e " + email + " " + category + " msg " + message;
 
+        if (message == null) {
+            message = "hello from springboot";
+        }
+
+        User user = userRepository.findByEmail(email);
+
+        if (category == null) {
+            category = "DEFAULT";
+        }
+        NotificationCategory notificationCategory = NotificationCategory.valueOf(category);
+
+        notificationEventPublisher.publishNotificationEvent(
+                "Hi from AuctiX",
+                message,
+                notificationCategory,
+                user
+        );
+
+        return "sent";
+    }
 }

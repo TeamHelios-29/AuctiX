@@ -3,7 +3,7 @@ import { ValidityIndicator } from '../atoms/validityIndicator';
 import { AxiosInstance } from 'axios';
 import AxiosReqest from '@/services/axiosInspector';
 
-export default function ValidateUsernameOrEmail({
+export default function UserValidityIndicator({
   usernameOrEmail,
   offset,
   type,

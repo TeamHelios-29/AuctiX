@@ -2,17 +2,15 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChangeEvent, useEffect, useState, JSX, HTMLAttributes } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import AxiosRequest from '@/services/axiosInspector';
 import { AxiosInstance } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { IAuthUser } from '@/types/IAuthUser';
-import { jwtDecode } from 'jwt-decode';
-import { IJwtData } from '@/types/IJwtData';
-import { BanIcon, Octagon, OctagonAlert } from 'lucide-react';
+import { BanIcon } from 'lucide-react';
 import { AlertBox } from './AlertBox';
-import { login } from '@/store/slices/authSlice';
+import { loginUser, ILoginCredentials } from '@/services/authService';
 
 export function LoginForm({
   className,
@@ -31,37 +29,20 @@ export function LoginForm({
   const user = useAppSelector((state) => state.auth);
   const [isLoading, setIsLoading] = useState(false);
 
-  const loginHandler = (email: string, password: string) => {
+  const handleLogin = async (email: string, password: string) => {
     setIsLoading(true);
-    axiosInstance
-      .post('/auth/login', {
-        email: email,
-        password: password,
-      })
-      .then((response) => {
-        const token = response.data;
-        console.log('token:', token);
-        const decoded = jwtDecode(token) as IJwtData;
-        console.log('decoded token:', decoded);
-        setLoginSuccess(true);
-        dispatch(
-          login({
-            token: token,
-            username: decoded.username,
-            role: decoded.role,
-          } as IAuthUser),
-        );
-      })
-      .catch((error) => {
-        showErrorAlert(
-          'Error: ' +
-            (error?.response?.data || error.message || 'Unknown error'),
-        );
-        console.error(error);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    try {
+      const credentials: ILoginCredentials = { email, password };
+      await loginUser(credentials, axiosInstance, dispatch);
+      setLoginSuccess(true);
+    } catch (error) {
+      showErrorAlert(
+        'Error: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      );
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -77,7 +58,7 @@ export function LoginForm({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    loginHandler(email, password);
+    handleLogin(email, password);
   };
 
   const handleInputType = (e: ChangeEvent<HTMLInputElement>): void => {

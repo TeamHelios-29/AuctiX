@@ -1,5 +1,7 @@
 package com.helios.auctix.domain.auction;
 
+import com.helios.auctix.domain.user.Bidder;
+import com.helios.auctix.domain.user.Seller;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import java.util.List;
 import java.time.Instant;  // You need to add this import
+import java.util.UUID;
 
 
 @Data
@@ -18,8 +21,9 @@ import java.time.Instant;  // You need to add this import
 public class Auction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    private UUID id;
+
 
     private String title;
     private String description;
@@ -28,13 +32,32 @@ public class Auction {
     private Instant endTime;        // For precise event timing (UTC)
     private Boolean isPublic;
     private String category;
+//    private UUID sellerId;
 
+
+    @ElementCollection
+    private List<UUID> imageIds; // Change from imagePaths to imageIds
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;      // Changed to Instant for consistency
 
     @Column(name = "updated_at")
-    private Instant updatedAt;      // Changed to Instant for consistency
+    private Instant updatedAt; // Changed to Instant for consistency
+
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", referencedColumnName = "id")
+    private Seller seller;
+
+
 
     @PrePersist
     protected void onCreate() {
@@ -52,8 +75,9 @@ public class Auction {
             name = "auction_image_paths",
             joinColumns = @JoinColumn(name = "auction_id")
     )
-    @Column(name = "image_paths")
-    private List<String> imagePaths;
+
+    @Column(name = "image_id")
+    private List<UUID> imagePaths;
 
 }
 

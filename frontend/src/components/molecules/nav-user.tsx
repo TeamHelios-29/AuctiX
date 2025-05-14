@@ -25,6 +25,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { useAppDispatch } from '@/hooks/hooks';
+import { logout } from '@/store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 export function NavUser({
   user,
@@ -36,6 +39,13 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   return (
     <SidebarMenu>
@@ -77,21 +87,21 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
                 <User />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/wallet')}>
                 <CreditCard />
                 Wallet
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/notifications')}>
                 <Bell />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleLogout()}>
               <LogOut />
               Log out
             </DropdownMenuItem>

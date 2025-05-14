@@ -41,6 +41,7 @@ public class FirebaseCloudMessageService {
 
             // if the FCM token expires or the client unregisters
             if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED) {
+                log.info("FCM token " + token + " is expired removing the token");
                 // Remove the token from the users fcm tokens
                 removeToken(token);
             } else {

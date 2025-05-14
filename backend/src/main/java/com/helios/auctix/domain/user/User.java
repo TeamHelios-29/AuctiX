@@ -1,12 +1,11 @@
 package com.helios.auctix.domain.user;
 
 import com.fasterxml.jackson.annotation.*;
+import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
+import com.helios.auctix.domain.notification.preferences.NotificationGlobalPreference;
 import com.helios.auctix.domain.upload.Upload;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serial;
 import java.util.List;
@@ -43,7 +42,7 @@ public class User {
     @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JsonProperty("profile_photo")
     @JoinColumn(name = "profile_photo_id", nullable = true , referencedColumnName = "id")
     private Upload upload;
@@ -53,17 +52,21 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id")
     private Seller seller;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id")
     private Admin admin;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id")
     private Bidder bidder;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id")
+    private UserAddress userAddress;
 
     // helper method to make it cleaner to get the role enum
     @JsonProperty("role")
@@ -74,4 +77,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserFCMToken> fcmTokens;
 
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private NotificationEventPreference notificationEventPreference;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private NotificationGlobalPreference notificationGlobalPreference;
 }

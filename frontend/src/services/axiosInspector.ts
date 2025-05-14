@@ -1,13 +1,11 @@
 import { IAuthUser } from '@/types/IAuthUser';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
 import { logout } from '@/store/slices/authSlice';
 import { useDispatch } from 'react-redux';
 
 const AxiosRequest = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const baseURL = import.meta.env.VITE_API_URL;
 
   // Axios instance with default configurations

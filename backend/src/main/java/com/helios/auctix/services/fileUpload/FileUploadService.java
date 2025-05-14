@@ -110,7 +110,7 @@ public class FileUploadService {
             String sha256 = byteArrayToHex(digestMsg);
             log.info("File sha-256: "+sha256);
 
-            String fileName = UUID.nameUUIDFromBytes(digestMsg).toString();
+            UUID fileId = UUID.nameUUIDFromBytes(digestMsg);
 
             Long filesize = file.getSize();
 //            TODO: Rate limit mechanism
@@ -125,7 +125,7 @@ public class FileUploadService {
 
             containerClient.createIfNotExists();
 
-            BlobClient blobClient = containerClient.getBlobClient(fileName);
+            BlobClient blobClient = containerClient.getBlobClient(fileId.toString());
 
             try (InputStream inputStream = file.getInputStream()) {
                 blobClient.upload(inputStream, filesize, true);
@@ -138,7 +138,7 @@ public class FileUploadService {
                     .fileSize(filesize)
                     .fileType(filetype)
                     .hash256(sha256)
-                    .fileId(fileName)
+                    .fileId(fileId)
                     .ownerId(ownerUserId)
                     .isPublic(isPublic)
                     .category(category)
@@ -235,7 +235,7 @@ public class FileUploadService {
                         .credential(new StorageSharedKeyCredential(azureStorageConfig.getAccountName(), azureStorageConfig.getAccountKey()))
                         .buildClient();
 
-                BlobClient blobClient = containerClient.getBlobClient(uploadedFileInfo.getFileId());
+                BlobClient blobClient = containerClient.getBlobClient(uploadedFileInfo.getFileId().toString());
                 if(!blobClient.exists()) {
                     log.warning("File not found in blob storage: " + blobClient.getBlobUrl());
                     return new FileUploadResponse(false,"File not found");
@@ -321,6 +321,15 @@ public class FileUploadService {
         log.info("File marked as deleted");
         return new FileUploadResponse(true,"File deleted successfully");
 
+    }
+
+
+    public Boolean isFilePublic(UUID fileId) {
+        Upload file = uploadRepository.findById(fileId).orElse(null);
+        if(file == null) {
+            return false;
+        }
+        return file.getIsPublic();
     }
 
 
