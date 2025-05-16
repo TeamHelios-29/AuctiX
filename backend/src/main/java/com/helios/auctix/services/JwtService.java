@@ -2,21 +2,22 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.user.UserRoleEnum;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
-import lombok.extern.java.Log;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
 import java.util.function.Function;
-import java.util.logging.Level;
 
-@Log
+@Slf4j
 @Service
 public class JwtService {
 
@@ -24,10 +25,13 @@ public class JwtService {
 
     public JwtService() {
         try {
-            SecretKey key = Jwts.SIG.HS256.key().build();
-            base64EncodedSecretKey = Base64.getEncoder().encodeToString(key.getEncoded());
+//            SecretKey key = Jwts.SIG.HS256.key().build();
+//            base64EncodedSecretKey = Base64.getEncoder().encodeToString(key.getEncoded());
+
+            String SECRET_KEY = "SecretKeyForTestingOnly123_NOT_FOR_PROD!";
+            base64EncodedSecretKey = Base64.getEncoder().encodeToString(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
-            log.severe("Error while generating secret key" + e.getMessage());
+            log.error("Error while generating secret key{}", e.getMessage());
             throw new RuntimeException();
         }
     }
@@ -74,11 +78,14 @@ public class JwtService {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (SignatureException e) {
-            log.warning("Error while parsing claims: " + e.getMessage());
-            throw new RuntimeException();
+            log.warn("Error while parsing claims: {}", e.getMessage());
+            throw e;
+        } catch (ExpiredJwtException e) {
+            // no need to log, rethrow so filter can handle
+            throw e;
         } catch (Exception e) {
-            log.log(Level.SEVERE,"Error while parsing jwt claims: " + e.getMessage());
-            throw new RuntimeException();
+            log.error("Error while parsing jwt claims: {}", e.getMessage());
+            throw e;
         }
 
         return claims;
@@ -91,7 +98,7 @@ public class JwtService {
 
     public boolean isValidToken(String token) {
         final String userName = extractEmail(token);
-        System.out.println("Username: " + userName + " isTokenExpired: " + isTokenExpired(token));
+        log.info("Username: {} isTokenExpired: {}", userName, isTokenExpired(token));
         return !isTokenExpired(token);
     }
     private boolean isTokenExpired(String token) {

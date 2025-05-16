@@ -1,5 +1,9 @@
 package com.helios.auctix.controllers;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,4 +26,20 @@ public class TempRoleOnlyTestController {
         return "This is a bidder only route";
     }
 
+    @GetMapping("/test-auth")
+    public String testAuth(@AuthenticationPrincipal UserDetails userDetails) {
+
+        System.out.println("Auth Principal Gives" + userDetails.getUsername()); // works! : Auth Principal Givestom4@test.com
+
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        System.out.println("Security Context gives" + authentication.getName()); // works! Security Context givestom4@test.com
+
+
+        return "This is what we have" + userDetails.getUsername() + "and in context" + authentication.getName();
+
+
+
+    }
 }

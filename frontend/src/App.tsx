@@ -1,41 +1,33 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-
-import LoginPage from './pages/Login';
-import CreateBidPage from './pages/create-bid';
-import Home from './pages/Home';
-import Register from './pages/Register';
-import WalletPage from './pages/Wallet';
-import SellerProfile from './pages/SellerProfile';
+import React, { useEffect } from 'react';
+import AppRouter from '@/routes/AppRouter';
+import {
+  listenForForegroundMessages,
+  registerSWAndRequestNotificationPermission,
+} from './firebase/firebase';
+import { restoreUser } from './store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from './hooks/hooks';
+import { fetchCurrentUser } from './store/slices/userSlice';
+import { IAuthUser } from './types/IAuthUser';
+import { Toaster } from '@/components/ui/toaster';
 
 const App: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const auth: IAuthUser = useAppSelector((state) => state.auth as IAuthUser);
+
+  useEffect(() => {
+    dispatch(restoreUser()); // Get the user auth data from local storage and set it in the redux store
+  }, []);
+
+  useEffect(() => {
+    dispatch(fetchCurrentUser()); // Fetch the current user data from the server and set it in the redux store
+  }, [auth.isUserLoggedIn]);
+
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/create-bid" element={<CreateBidPage />} />{' '}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/login">
-                {' '}
-                <Dashboard />{' '}
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/wallet" element={<WalletPage />} />
-          <Route path="/seller" element={<SellerProfile />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <>
+      <AppRouter />
+      <Toaster />
+    </>
   );
 };
-
-const Dashboard: React.FC = () => <h2>Dashboard</h2>;
 
 export default App;
