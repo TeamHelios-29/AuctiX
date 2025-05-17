@@ -20,7 +20,7 @@ public class WebSocketNotificationSender implements NotificationSender {
 
     @Override
     public NotificationType getNotificationType() {
-        return NotificationType.PUSH; // we are not using ws for now
+        return null;  // TODO decide if we are going to have both WebSocket Push and FCM Push, currently prioritizing FCM
     }
 
     @Override
