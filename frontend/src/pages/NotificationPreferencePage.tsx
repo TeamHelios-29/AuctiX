@@ -11,10 +11,15 @@ import {
   saveNotificationPreferences,
   extractEditableSettings,
 } from '@/services/NotificationService';
-import type {
-  NotificationSettingsResponse,
-  NotificationSettingsUpdateRequest,
+import {
+  type NotificationSettingsResponse,
+  type NotificationSettingsUpdateRequest,
+  type NotificationGroupCategoryLabel,
+  NOTIFICATION_CATEGORY_GROUP_LABELS,
 } from '@/types/notification';
+import AxiosRequest from '@/services/axiosInspector';
+import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 export default function NotificationPreferencesPage() {
   const [preferences, setPreferences] =
@@ -23,21 +28,34 @@ export default function NotificationPreferencesPage() {
     useState<NotificationSettingsUpdateRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const axiosInstance = AxiosRequest().axiosInstance;
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        const data = await getNotificationPreferences();
+        const data = await getNotificationPreferences(axiosInstance);
         setPreferences(data);
         setEditableSettings(extractEditableSettings(data));
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to fetch notification preferences:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Failed to fetch notification preferences!',
+          description:
+            error instanceof Error
+              ? error.message
+              : 'An error occurred when fetching notification preferences.',
+          action: <ToastAction altText="Try again">Try again</ToastAction>,
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchPreferences();
+    // No need to add axiosInstance to the dependancy array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGlobalToggle = (channelType: string, enabled: boolean) => {
@@ -109,14 +127,42 @@ export default function NotificationPreferencesPage() {
 
     try {
       setSaving(true);
-      await saveNotificationPreferences(editableSettings);
-      // Show success message or handle success case
+      await saveNotificationPreferences(editableSettings, axiosInstance);
+      toast({
+        title: 'Notification Preferences Saved!',
+        description: 'Your notification preferences saved successfully.',
+      });
     } catch (error) {
       console.error('Failed to save notification preferences:', error);
-      // Show error message
+      toast({
+        variant: 'destructive',
+        title: 'Failed to save notification preferences!',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred when saving notification preferences.',
+        action: <ToastAction altText="Try again">Try again</ToastAction>,
+      });
     } finally {
       setSaving(false);
     }
+  };
+
+  const renderEventsForCategory = (categoryGroup: string) => {
+    if (!preferences || !preferences.events[categoryGroup]) {
+      return;
+    }
+
+    return Object.keys(preferences.events[categoryGroup]).map((eventType) => (
+      <NotificationSettingsCategorySection
+        key={`${categoryGroup}-${eventType}`}
+        eventData={preferences.events[categoryGroup][eventType]}
+        globalData={preferences.global}
+        onToggle={(channel, enabled) =>
+          handleEventToggle(categoryGroup, eventType, channel, enabled)
+        }
+      />
+    ));
   };
 
   if (loading) {
@@ -127,25 +173,16 @@ export default function NotificationPreferencesPage() {
     );
   }
 
-  if (!preferences || !editableSettings) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Failed to load preferences
-      </div>
-    );
-  }
-
   // Get unique category groups for tabs
-  const categoryGroups = Object.keys(preferences.events);
+  const categoryGroups = preferences ? Object.keys(preferences.events) : [];
 
-  // Map category group IDs to display names
-  const getCategoryDisplayName = (categoryGroup: string) => {
-    const displayNames: Record<string, string> = {
-      PROMO: 'Promotional',
-      AUCTION: 'Auction',
-      DEFAULT: 'General',
-    };
-    return displayNames[categoryGroup] || categoryGroup;
+  const getCategoryDisplayName = (category: string) => {
+    if (category in NOTIFICATION_CATEGORY_GROUP_LABELS) {
+      return NOTIFICATION_CATEGORY_GROUP_LABELS[
+        category as NotificationGroupCategoryLabel
+      ];
+    }
+    return category;
   };
 
   return (
@@ -163,14 +200,31 @@ export default function NotificationPreferencesPage() {
         </div>
 
         <div className="p-6">
-          <h2 className="mb-4 text-xl font-semibold">Global Settings</h2>
-          <GlobalNotificationSettingsSection
-            globalSettings={preferences.global}
-            onToggle={handleGlobalToggle}
-          />
+          <h2 className="mb-1 text-xl font-semibold">Global Settings</h2>
+          <p className="mb-3">
+            This controls enabling or disabling notifications globally for all
+            methods of delivery
+          </p>
+
+          {preferences ? (
+            <GlobalNotificationSettingsSection
+              globalSettings={preferences.global || {}}
+              onToggle={handleGlobalToggle}
+            />
+          ) : (
+            <p className="text-center text-gray-500">
+              Failed to load notification preferecnes
+            </p>
+          )}
 
           <div className="mb-4 mt-8">
-            <h2 className="mb-4 text-xl font-semibold">Notification Types</h2>
+            <h2 className="mb-1 text-xl font-semibold">
+              Notification for Event Types
+            </h2>
+            <p className="mb-3">
+              Use these settings to choose which specific event types you want
+              to receive notifications from
+            </p>
             <Tabs defaultValue="all" className="w-full">
               <TabsList className="grid w-full max-w-md grid-cols-4">
                 <TabsTrigger value="all">All</TabsTrigger>
@@ -181,57 +235,31 @@ export default function NotificationPreferencesPage() {
                 ))}
               </TabsList>
 
-              <TabsContent value="all" className="mt-4">
-                {categoryGroups.map((categoryGroup) => (
-                  <div key={categoryGroup}>
-                    {Object.keys(preferences.events[categoryGroup]).map(
-                      (eventType) => (
-                        <NotificationSettingsCategorySection
-                          key={`${categoryGroup}-${eventType}`}
-                          eventType={eventType}
-                          eventData={
-                            preferences.events[categoryGroup][eventType]
-                          }
-                          onToggle={(channel, enabled) =>
-                            handleEventToggle(
-                              categoryGroup,
-                              eventType,
-                              channel,
-                              enabled,
-                            )
-                          }
-                        />
-                      ),
-                    )}
-                  </div>
-                ))}
-              </TabsContent>
+              {preferences ? (
+                <>
+                  <TabsContent value="all" className="mt-4">
+                    {categoryGroups.map((categoryGroup) => (
+                      <div key={categoryGroup}>
+                        {renderEventsForCategory(categoryGroup)}
+                      </div>
+                    ))}
+                  </TabsContent>
 
-              {categoryGroups.map((categoryGroup) => (
-                <TabsContent
-                  key={categoryGroup}
-                  value={categoryGroup}
-                  className="mt-4"
-                >
-                  {Object.keys(preferences.events[categoryGroup]).map(
-                    (eventType) => (
-                      <NotificationSettingsCategorySection
-                        key={`${categoryGroup}-${eventType}`}
-                        eventType={eventType}
-                        eventData={preferences.events[categoryGroup][eventType]}
-                        onToggle={(channel, enabled) =>
-                          handleEventToggle(
-                            categoryGroup,
-                            eventType,
-                            channel,
-                            enabled,
-                          )
-                        }
-                      />
-                    ),
-                  )}
-                </TabsContent>
-              ))}
+                  {categoryGroups.map((categoryGroup) => (
+                    <TabsContent
+                      key={categoryGroup}
+                      value={categoryGroup}
+                      className="mt-4"
+                    >
+                      {renderEventsForCategory(categoryGroup)}
+                    </TabsContent>
+                  ))}
+                </>
+              ) : (
+                <p className="text-center mt-3 text-gray-500">
+                  Failed to load notification preferecnes
+                </p>
+              )}
             </Tabs>
           </div>
         </div>

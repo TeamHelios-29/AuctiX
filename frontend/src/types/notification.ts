@@ -1,3 +1,19 @@
+export const NOTIFICATION_CHANNEL_LABELS = {
+  EMAIL: 'Email Notifications',
+  PUSH: 'Push Notifications',
+} as const;
+
+export type NotificationChannelLabel = keyof typeof NOTIFICATION_CHANNEL_LABELS;
+
+export const NOTIFICATION_CATEGORY_GROUP_LABELS = {
+  PROMO: 'Promotional',
+  AUCTION: 'Auction',
+  DEFAULT: 'General',
+} as const;
+
+export type NotificationGroupCategoryLabel =
+  keyof typeof NOTIFICATION_CATEGORY_GROUP_LABELS;
+
 export interface NotificationSettingsResponse {
   global: {
     [channelType: string]: {

@@ -2,6 +2,7 @@ import type {
   NotificationSettingsResponse,
   NotificationSettingsUpdateRequest,
 } from '@/types/notification';
+import { AxiosInstance } from 'axios';
 
 export function extractEditableSettings(
   response: NotificationSettingsResponse,
@@ -36,72 +37,22 @@ export function extractEditableSettings(
   return { global, events };
 }
 
-export async function getNotificationPreferences(): Promise<NotificationSettingsResponse> {
-  // mock until we fix the the axios instance
-
-  return {
-    global: {
-      EMAIL: {
-        enabled: false,
-        title: 'Email Notifications',
-        description: 'Receive notifications via email',
-        uiicon: 'email',
-      },
-      PUSH: {
-        enabled: false,
-        title: 'Push Notifications',
-        description:
-          'Receive notifications on web or device when the browser is open',
-        uiicon: 'bell',
-      },
-    },
-    events: {
-      PROMO: {
-        PROMO: {
-          title: 'Promotional Notifications',
-          description: 'Marketing notifications about promotions, discounts',
-          categoryGroup: 'PROMO',
-          channelTypes: {
-            EMAIL: false,
-            PUSH: false,
-          },
-        },
-        PROMO_NEW: {
-          title: 'Promotional Notifications',
-          description: 'Marketing notifications about promotions, discounts',
-          categoryGroup: 'PROMO',
-          channelTypes: {
-            EMAIL: false,
-            PUSH: false,
-          },
-        },
-      },
-      AUCTION: {
-        AUCTION_START_SOON: {
-          title: 'Auction Start soon',
-          description: 'Get notified 10 minutes before auction starts',
-          categoryGroup: 'AUCTION',
-          channelTypes: {
-            EMAIL: false,
-            PUSH: false,
-          },
-        },
-      },
-      DEFAULT: {
-        DEFAULT: {
-          title: 'Default Notifications',
-          description: 'All other notifications',
-          categoryGroup: 'DEFAULT',
-          channelTypes: {
-            EMAIL: false,
-            PUSH: false,
-          },
-        },
-      },
-    },
-  };
+export async function getNotificationPreferences(
+  axiosInstance: AxiosInstance,
+): Promise<NotificationSettingsResponse> {
+  return axiosInstance
+    .get('/notification/settings/preferences')
+    .then((response) => {
+      return response.data;
+    })
+    .catch((e: Error) => {
+      throw e;
+    });
 }
 
 export async function saveNotificationPreferences(
   data: NotificationSettingsUpdateRequest,
-): Promise<void> {}
+  axiosInstance: AxiosInstance,
+): Promise<void> {
+  await axiosInstance.post('/notification/settings/preferences', data);
+}

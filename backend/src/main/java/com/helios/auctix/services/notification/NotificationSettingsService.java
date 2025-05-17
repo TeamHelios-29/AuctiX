@@ -201,7 +201,8 @@ public class NotificationSettingsService {
         Optional<NotificationEventPreference> eventPreferenceOptional = notificationEventPreferencesRepository.findByUserId(user.getId());
         Optional<NotificationGlobalPreference> globalPreferenceOptional = notificationGlobalPreferencesRepository.findByUserId(user.getId());
 
-         // for now null if preferences don't exist
+         // Set as null if no preference exist, the NotificationPreferencesResponseDtoMapper will handle the null and replace with the default preferences
+         // TODO handle missing default preferences, which can happen when we add a new event preference
          NotificationEventPreference eventPreference = eventPreferenceOptional.orElse(null);
          NotificationGlobalPreference globalPreference = globalPreferenceOptional.orElse(null);
 

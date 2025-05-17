@@ -1,7 +1,10 @@
 import { Switch } from '@/components/ui/switch';
+import {
+  NOTIFICATION_CHANNEL_LABELS,
+  NotificationChannelLabel,
+} from '@/types/notification';
 
 interface NotificationCategorySectionProps {
-  eventType: string;
   eventData: {
     title: string;
     description: string;
@@ -10,16 +13,39 @@ interface NotificationCategorySectionProps {
       [channelType: string]: boolean;
     };
   };
+  globalData: {
+    [channelType: string]: {
+      enabled: boolean;
+      title: string;
+      description: string;
+      uiicon: string;
+    };
+  };
   onToggle: (channelType: string, enabled: boolean) => void;
 }
 
+const getChannelLabel = (channelType: string) => {
+  if (channelType in NOTIFICATION_CHANNEL_LABELS) {
+    return NOTIFICATION_CHANNEL_LABELS[channelType as NotificationChannelLabel];
+  }
+  return `${channelType} Notifications`;
+};
+
 export default function NotificationCategorySection({
-  eventType,
   eventData,
+  globalData,
   onToggle,
 }: NotificationCategorySectionProps) {
-  // Get all available channel types from the event data
   const channelTypes = Object.keys(eventData.channelTypes);
+
+  const getChannelMeta = (channelType: string, index: number) => {
+    const isChannelGloballyEnabled = globalData[channelType].enabled;
+    const checked = eventData.channelTypes[channelType];
+    const label = getChannelLabel(channelType);
+    const showRightBorder = index % 2 === 0 && index < channelTypes.length - 1;
+
+    return { label, isChannelGloballyEnabled, checked, showRightBorder };
+  };
 
   return (
     <div className="mb-6 rounded-lg border">
@@ -31,28 +57,31 @@ export default function NotificationCategorySection({
       </div>
 
       <div className="flex flex-wrap">
-        {channelTypes.map((channelType, index) => (
-          <div
-            key={channelType}
-            className={`flex w-1/2 items-center justify-between p-4 ${
-              index % 2 === 0 && index < channelTypes.length - 1
-                ? 'border-r'
-                : ''
-            }`}
-          >
-            <span className="text-sm">
-              {channelType === 'EMAIL'
-                ? 'Email Notifications'
-                : channelType === 'PUSH'
-                  ? 'Push Notifications'
-                  : `${channelType} Notifications`}
-            </span>
-            <Switch
-              checked={eventData.channelTypes[channelType]}
-              onCheckedChange={(checked) => onToggle(channelType, checked)}
-            />
-          </div>
-        ))}
+        {channelTypes.map((channelType, index) => {
+          const { label, isChannelGloballyEnabled, checked, showRightBorder } =
+            getChannelMeta(channelType, index);
+
+          return (
+            <div
+              key={channelType}
+              className={`flex w-1/2 items-center justify-between p-4 ${
+                showRightBorder ? 'border-r' : ''
+              }`}
+            >
+              <span className="text-sm">{label}</span>
+              {!isChannelGloballyEnabled && (
+                <p className="mt-1 text-xs text-gray-500 italic">
+                  Globally disabled
+                </p>
+              )}
+              <Switch
+                checked={checked}
+                onCheckedChange={(checked) => onToggle(channelType, checked)}
+                disabled={!isChannelGloballyEnabled}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

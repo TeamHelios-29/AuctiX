@@ -1,9 +1,5 @@
 import React, { useEffect } from 'react';
 import AppRouter from '@/routes/AppRouter';
-import {
-  listenForForegroundMessages,
-  registerSWAndRequestNotificationPermission,
-} from './firebase/firebase';
 import { restoreUser } from './store/slices/authSlice';
 import { useAppDispatch, useAppSelector } from './hooks/hooks';
 import { fetchCurrentUser } from './store/slices/userSlice';
