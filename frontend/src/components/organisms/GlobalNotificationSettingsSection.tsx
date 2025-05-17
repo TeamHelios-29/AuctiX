@@ -1,4 +1,4 @@
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Bell, Mail, AlertCircle } from 'lucide-react';
 

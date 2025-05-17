@@ -16,24 +16,15 @@ export function extractEditableSettings(
 
   for (const category in response.events) {
     const eventGroup = response.events[category];
-    const channelStates: Record<string, boolean> = {};
 
     for (const eventKey in eventGroup) {
       const event = eventGroup[eventKey];
-      for (const channelType in event.channelTypes) {
-        if (!(channelType in channelStates)) {
-          channelStates[channelType] = false;
-        }
+      const eventChannelTypePreferences: Record<string, boolean> =
+        event.channelTypes;
 
-        if (event.channelTypes[channelType]) {
-          channelStates[channelType] = true;
-        }
-      }
+      events[eventKey] = eventChannelTypePreferences;
     }
-
-    events[category] = channelStates;
   }
-
   return { global, events };
 }
 

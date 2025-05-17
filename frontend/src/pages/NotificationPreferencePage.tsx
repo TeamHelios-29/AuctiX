@@ -114,8 +114,8 @@ export default function NotificationPreferencesPage() {
       ...editableSettings,
       events: {
         ...editableSettings.events,
-        [categoryGroup]: {
-          ...editableSettings.events[categoryGroup],
+        [eventType]: {
+          ...editableSettings.events[eventType],
           [channelType]: enabled,
         },
       },

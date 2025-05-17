@@ -42,7 +42,7 @@ export interface NotificationSettingsUpdateRequest {
     [channelType: string]: boolean;
   };
   events: {
-    [category: string]: {
+    [eventKey: string]: {
       [channelType: string]: boolean;
     };
   };
