@@ -24,36 +24,6 @@ public class NotificationPreferenceResponseDTOMapper {
         this.defaultProperties = defaultProperties;
     }
 
-//    public NotificationGlobalPreference toGlobalPreference(User user, NotificationPreferencesResponseDto dto) {
-//        if (dto == null || dto.getGlobal() == null) return null;
-//
-//        try {
-//            return NotificationGlobalPreference.builder()
-//                    .user(user)
-//                    .settings(objectMapper.writeValueAsString(dto.getGlobal()))
-//                    .build();
-//
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException("Failed to serialize global preferences", e);
-//        }
-//    }
-//
-//    public NotificationEventPreference toEventPreference(User user, NotificationPreferencesResponseDto dto) {
-//        if (dto == null || dto.getEvents() == null) return null;
-//
-//        try {
-//            return NotificationEventPreference.builder()
-//                    .user(user)
-//                    .settings(objectMapper.writeValueAsString(dto.getEvents()))
-//                    .build();
-//
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException("Failed to serialize event preferences", e);
-//        }
-//    }
-
-
-
     public NotificationPreferencesResponseDto toDTO(NotificationGlobalPreference global, NotificationEventPreference event) {
         Map<String, Boolean> globalRaw;
         Map<String, Map<String, Boolean>> eventsRaw;
