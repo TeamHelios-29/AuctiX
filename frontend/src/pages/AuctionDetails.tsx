@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom'; // if using react-router
 import axios from 'axios'; // for API calls
 import { Client } from '@stomp/stompjs'; // for WebSocket connection
 import AxiosRequest from '@/services/axiosInspector';
+import type { BidDTO, BidderDTO } from 'src/types/BidDTO';
 
 // Types
 interface BidHistory {
@@ -99,6 +100,18 @@ const AuctionDetailsPage = () => {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const axiosInstance = AxiosRequest().axiosInstance;
+
+  const [currentBid, setCurrentBid] = useState<number>(0);
+  const [currentBidder, setCurrentBidder] = useState<BidderDTO | null>(null);
+
+  function bidDTOToBidHistory(bid: BidDTO): BidHistory {
+    return {
+      bidder: bid.bidder,
+      amount: bid.amount,
+      timestamp: bid.bidTime, // Assuming bidTime is ISO string
+    };
+  }
+
   useEffect(() => {
     const fetchAuctionDetails = async () => {
       try {
@@ -128,78 +141,64 @@ const AuctionDetailsPage = () => {
   //   setLoading(false);
   // }, [auctionId]);
 
-  // Setup WebSocket connection for real-time bid updates
   useEffect(() => {
-    //!auctionId
-    if (true) return;
+    if (!auctionId) return;
 
-    // Create STOMP client
     const client = new Client({
-      brokerURL: 'ws://localhost:8080/ws', // Adjust to your WebSocket endpoint
-      debug: function (str) {
-        console.log(str);
-      },
+      brokerURL: 'ws://localhost:8080/ws-auction', // Changed to match backend endpoint
+      debug: (str) => console.log(str),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
     });
 
-    client.activate();
-
-    // Cleanup function to disconnect the client
-    return () => {
-      if (client.connected) {
-        client.deactivate();
-      }
-    };
-
-    // Connect and subscribe to auction updates
+    // Configure handlers BEFORE activation
     client.onConnect = () => {
       console.log('Connected to WebSocket');
 
-      // Subscribe to auction updates
-      client.subscribe(`/topic/auction/${auctionId}`, (message) => {
-        const updatedAuction = JSON.parse(message.body);
-        setProduct((prevProduct) => {
-          if (!prevProduct) return updatedAuction;
-
-          // Update with new data
-          const newProduct = { ...prevProduct, ...updatedAuction };
-
-          // Adjust bid amount if needed
-          setBidAmount(newProduct.currentBid + newProduct.bidIncrement);
-
-          return newProduct;
+      client.subscribe(`/topic/bids/${auctionId}`, (message) => {
+        const bidUpdate: BidDTO = JSON.parse(message.body);
+        setCurrentBid(bidUpdate.amount);
+        setCurrentBidder({
+          name: bidUpdate.bidder.name, // Now nested
+          avatar: bidUpdate.bidder.avatar,
+          id: bidUpdate.bidder.id, // Now nested
         });
+
+        setProduct((prev) =>
+          prev
+            ? {
+                ...prev,
+                bidHistory: [bidDTOToBidHistory(bidUpdate), ...prev.bidHistory],
+                currentBid: bidUpdate.amount,
+                currentBidder: bidUpdate.bidder,
+              }
+            : null,
+        );
       });
 
-      // Subscribe to bid history updates
-      client.subscribe(`/topic/auction/${auctionId}/bids`, (message) => {
-        const newBid = JSON.parse(message.body);
-        setProduct((prevProduct) => {
-          if (!prevProduct) return null;
-          return {
-            ...prevProduct,
-            currentBid: newBid.amount,
-            currentBidder: newBid.bidder,
-            bidHistory: [newBid, ...prevProduct.bidHistory],
-          };
-        });
-      });
+      // Single error handler
+      client.onStompError = (frame: any) => {
+        console.error('STOMP error:', frame.headers.message);
+        setError('Connection error - please refresh the page');
+      };
+
+      client.activate();
+      setStompClient(client);
     };
 
-    client.onStompError = (frame) => {
-      console.error('STOMP error', frame);
-      setError('Lost connection to the auction. Please refresh the page.');
+    // Activate client and cleanup
+    client.onDisconnect = () => {
+      console.log('WebSocket disconnected');
     };
 
     client.activate();
     setStompClient(client);
 
-    // Cleanup on unmount
     return () => {
-      if (client && client.active) {
+      if (client.active) {
         client.deactivate();
+        console.log('WebSocket disconnected');
       }
     };
   }, [auctionId]);
@@ -302,6 +301,7 @@ const AuctionDetailsPage = () => {
     );
   }
 
+  // Move the return statement and JSX inside the component function
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

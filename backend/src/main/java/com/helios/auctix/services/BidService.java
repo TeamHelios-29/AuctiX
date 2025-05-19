@@ -13,11 +13,15 @@ import com.helios.auctix.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.helios.auctix.dtos.BidderDTO;
+
 
 
 @AllArgsConstructor
@@ -28,6 +32,7 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final UserMapperImpl userMapperImpl;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
 
     // Get bid history for an auction
@@ -52,12 +57,14 @@ public class BidService {
 
         return BidDTO.builder()
                 .id(bid.getId())
-                .auctionId(bid.getAuction().getId())  // Get auction ID from relationship
+                .auctionId(bid.getAuction().getId())
                 .amount(bid.getAmount())
                 .bidTime(bid.getBidTime())
-                .bidderId(bid.getBidderId())
-                .bidderName(bid.getBidderName())
-                .bidderAvatar(bid.getBidderAvatar())
+                .bidder(BidderDTO.builder()
+                        .id(bid.getBidderId())
+                        .name(bid.getBidderName())
+                        .avatar(bid.getBidderAvatar())
+                        .build())
                 .build();
     }
 
@@ -71,6 +78,7 @@ public class BidService {
         String bidderName = request.getBidderName();
         String bidderAvatar = request.getBidderAvatar();
         Double amount = request.getAmount();
+
 
         // Find the auction
         Auction auction = auctionRepository.findById(auctionId)
@@ -115,7 +123,12 @@ public class BidService {
 //        bid.setBidderName(bidder.getFullName());
 //        bid.setBidderAvatar(bidder.getAvatarUrl());
 
+
+
         Bid savedBid = bidRepository.save(bid);
+
+        // Send real-time update
+        messagingTemplate.convertAndSend("/topic/bids/" + savedBid.getAuction().getId(), convertToDTO(savedBid));
         return convertToDTO(savedBid);
 
     }
