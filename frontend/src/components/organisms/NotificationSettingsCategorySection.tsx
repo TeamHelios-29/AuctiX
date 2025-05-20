@@ -35,7 +35,7 @@ export default function NotificationCategorySection({
   };
 
   return (
-    <div className="mb-6 rounded-lg border">
+    <div className="mb-6 mx-2 rounded-lg border">
       <div className="border-b p-4">
         <h3 className="text-lg font-medium">{eventData.title}</h3>
         {eventData.description && (
@@ -43,24 +43,26 @@ export default function NotificationCategorySection({
         )}
       </div>
 
-      <div className="flex flex-wrap">
+      <div className="grid grid-cols-1 md:grid-cols-2">
         {channelTypes.map((channelType, index) => {
-          const { isChannelGloballyEnabled, checked, showRightBorder } =
-            getChannelMeta(channelType, index);
+          const { isChannelGloballyEnabled, checked } = getChannelMeta(
+            channelType,
+            index,
+          );
 
           return (
             <div
               key={channelType}
-              className={`flex w-1/2 items-center justify-between p-4 ${
-                showRightBorder ? 'border-r' : ''
-              }`}
+              className="flex items-center justify-between p-4 border-b md:border-b-0 md:border-r last:border-r-0"
             >
-              <span className="text-sm">{globalData[channelType].title}</span>
-              {!isChannelGloballyEnabled && (
-                <p className="mt-1 text-xs text-gray-500 italic">
-                  Globally disabled
-                </p>
-              )}
+              <div>
+                <span className="text-sm">{globalData[channelType].title}</span>
+                {!isChannelGloballyEnabled && (
+                  <p className="text-xs text-gray-500 italic">
+                    Globally disabled
+                  </p>
+                )}
+              </div>
               <Switch
                 checked={checked}
                 onCheckedChange={(checked) => onToggle(channelType, checked)}

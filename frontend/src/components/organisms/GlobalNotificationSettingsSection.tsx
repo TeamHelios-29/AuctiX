@@ -30,7 +30,7 @@ export default function GlobalNotificationSettingsSection({
   };
 
   return (
-    <Card className="mb-8">
+    <Card className="mb-8 grid grid-cols-1 lg:grid-cols-2">
       {Object.entries(globalSettings).map(([channelType, setting], index) => (
         <div
           key={channelType}

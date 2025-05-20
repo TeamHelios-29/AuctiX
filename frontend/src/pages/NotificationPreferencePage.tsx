@@ -1,8 +1,5 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GlobalNotificationSettingsSection from '@/components/organisms/GlobalNotificationSettingsSection';
 import NotificationSettingsCategorySection from '@/components/organisms/NotificationSettingsCategorySection';
@@ -186,12 +183,12 @@ export default function NotificationPreferencesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <Card className="mx-auto max-w-4xl bg-white">
-        <div className="flex items-center justify-between border-b p-6">
-          <h1 className="text-2xl font-bold">Notification Preferences</h1>
+    <div className="min-h-screen p-4 px-12 mb-3">
+      <div className="mx-auto max-w-4x">
+        <div className="flex items-center justify-between border-b py-6">
+          <h1 className="text-2xl font-semibold">Notification Preferences</h1>
           <Button
-            className="bg-gray-900 text-white hover:bg-gray-800"
+            className="bg-brandGoldYellow text-gray-800 hover:bg-brandGoldYellow/80"
             onClick={handleSave}
             disabled={saving}
           >
@@ -199,8 +196,8 @@ export default function NotificationPreferencesPage() {
           </Button>
         </div>
 
-        <div className="p-6">
-          <h2 className="mb-1 text-xl font-semibold">Global Settings</h2>
+        <div className="py-6">
+          <h2 className="mb-1 text-xl font-medium">Global Settings</h2>
           <p className="mb-3">
             This controls enabling or disabling notifications globally for all
             methods of delivery
@@ -218,7 +215,7 @@ export default function NotificationPreferencesPage() {
           )}
 
           <div className="mb-4 mt-8">
-            <h2 className="mb-1 text-xl font-semibold">
+            <h2 className="mb-1 text-xl font-medium">
               Notification for Event Types
             </h2>
             <p className="mb-3">
@@ -226,22 +223,39 @@ export default function NotificationPreferencesPage() {
               to receive notifications from
             </p>
             <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                {categoryGroups.map((group) => (
-                  <TabsTrigger key={group} value={group}>
-                    {getCategoryDisplayName(group)}
+              <div className="overflow-x-auto pb-3">
+                <TabsList className="inline-flex min-w-max gap-1 px-2">
+                  <TabsTrigger
+                    value="all"
+                    className="data-[state=active]:bg-brandGoldYellow data-[state=active]:text-black"
+                  >
+                    All
                   </TabsTrigger>
-                ))}
-              </TabsList>
+
+                  {categoryGroups.map((group) => (
+                    <TabsTrigger
+                      key={group}
+                      value={group}
+                      className="data-[state=active]:bg-brandGoldYellow data-[state=active]:text-black"
+                    >
+                      {getCategoryDisplayName(group)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
 
               {preferences ? (
                 <>
                   <TabsContent value="all" className="mt-4">
                     {categoryGroups.map((categoryGroup) => (
-                      <div key={categoryGroup}>
-                        {renderEventsForCategory(categoryGroup)}
-                      </div>
+                      <React.Fragment key={categoryGroup}>
+                        <div className="mx-3 my-2 text-xl font-medium">
+                          {getCategoryDisplayName(categoryGroup)}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3">
+                          {renderEventsForCategory(categoryGroup)}
+                        </div>
+                      </React.Fragment>
                     ))}
                   </TabsContent>
 
@@ -249,7 +263,7 @@ export default function NotificationPreferencesPage() {
                     <TabsContent
                       key={categoryGroup}
                       value={categoryGroup}
-                      className="mt-4"
+                      className="mt-4 grid  grid-cols-1 md:grid-cols-3"
                     >
                       {renderEventsForCategory(categoryGroup)}
                     </TabsContent>
@@ -257,13 +271,22 @@ export default function NotificationPreferencesPage() {
                 </>
               ) : (
                 <p className="text-center mt-3 text-gray-500">
-                  Failed to load notification preferecnes
+                  Failed to load notification preferences
                 </p>
               )}
             </Tabs>
           </div>
+          <div className="w-full sm:w-auto flex float-end">
+            <Button
+              className="w-full sm:w-auto bg-brandGoldYellow text-black hover:bg-brandGoldYellow/80 text-center whitespace-normal break-words"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
