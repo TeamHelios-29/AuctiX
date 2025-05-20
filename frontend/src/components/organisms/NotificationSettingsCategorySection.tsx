@@ -1,9 +1,4 @@
 import { Switch } from '@/components/ui/switch';
-import {
-  NOTIFICATION_CHANNEL_LABELS,
-  NotificationChannelLabel,
-} from '@/types/notification';
-
 interface NotificationCategorySectionProps {
   eventData: {
     title: string;
@@ -24,13 +19,6 @@ interface NotificationCategorySectionProps {
   onToggle: (channelType: string, enabled: boolean) => void;
 }
 
-const getChannelLabel = (channelType: string) => {
-  if (channelType in NOTIFICATION_CHANNEL_LABELS) {
-    return NOTIFICATION_CHANNEL_LABELS[channelType as NotificationChannelLabel];
-  }
-  return `${channelType} Notifications`;
-};
-
 export default function NotificationCategorySection({
   eventData,
   globalData,
@@ -41,10 +29,9 @@ export default function NotificationCategorySection({
   const getChannelMeta = (channelType: string, index: number) => {
     const isChannelGloballyEnabled = globalData[channelType].enabled;
     const checked = eventData.channelTypes[channelType];
-    const label = getChannelLabel(channelType);
     const showRightBorder = index % 2 === 0 && index < channelTypes.length - 1;
 
-    return { label, isChannelGloballyEnabled, checked, showRightBorder };
+    return { isChannelGloballyEnabled, checked, showRightBorder };
   };
 
   return (
@@ -58,7 +45,7 @@ export default function NotificationCategorySection({
 
       <div className="flex flex-wrap">
         {channelTypes.map((channelType, index) => {
-          const { label, isChannelGloballyEnabled, checked, showRightBorder } =
+          const { isChannelGloballyEnabled, checked, showRightBorder } =
             getChannelMeta(channelType, index);
 
           return (
@@ -68,7 +55,7 @@ export default function NotificationCategorySection({
                 showRightBorder ? 'border-r' : ''
               }`}
             >
-              <span className="text-sm">{label}</span>
+              <span className="text-sm">{globalData[channelType].title}</span>
               {!isChannelGloballyEnabled && (
                 <p className="mt-1 text-xs text-gray-500 italic">
                   Globally disabled
