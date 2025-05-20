@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Bell, Users, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -15,8 +14,18 @@ import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
+import { IUser } from '@/types/IUser';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
+import { logout } from '@/store/slices/authSlice';
+
 export function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const userData = useAppSelector((state) => state.user as IUser);
+  const authState = useAppSelector((state) => state.auth);
+
+  const dispatch = useAppDispatch();
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   return (
     <div className="fixed top-0 left-0 right-0 w-full border-b bg-background z-50">
@@ -93,7 +102,7 @@ export function Navbar() {
 
         {/* Auth buttons or user controls */}
         <div className="flex items-center gap-4">
-          {isLoggedIn ? (
+          {authState.isUserLoggedIn ? (
             <>
               <Button
                 variant="ghost"
@@ -102,17 +111,24 @@ export function Navbar() {
               >
                 <Bell className="h-5 w-5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden md:inline-flex"
-              >
-                <Users className="h-5 w-5" />
+              <Link to="/dashboard" className="flex items-center gap-2">
+                <Avatar className="hidden md:inline-flex h-8 w-8">
+                  <AvatarImage
+                    src={userData.profile_photo ?? '/default-avatar.png'}
+                    alt="User"
+                  />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium">
+                  {(userData?.firstName ?? '') +
+                    ' ' +
+                    (userData?.lastName ?? '')}
+                </span>
+              </Link>
+
+              <Button variant="secondary" onClick={() => handleLogout()}>
+                Log out
               </Button>
-              <Avatar className="hidden md:inline-flex h-8 w-8">
-                <AvatarImage src="/api/placeholder/32/32" alt="User" />
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
             </>
           ) : (
             <>
@@ -172,30 +188,32 @@ export function Navbar() {
                   </Link>
                 </nav>
                 <div className="mt-auto flex flex-col gap-2">
-                  {isLoggedIn ? (
+                  {authState.isUserLoggedIn ? (
                     <>
                       <div className="flex items-center gap-2 p-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage
-                            src="/api/placeholder/32/32"
-                            alt="User"
-                          />
-                          <AvatarFallback>U</AvatarFallback>
-                        </Avatar>
-                        <span>User Account</span>
+                        <Link to="/dashboard">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage
+                              src={
+                                userData.profile_photo ?? '/default-avatar.png'
+                              }
+                              alt="User"
+                            />
+                            <AvatarFallback>U</AvatarFallback>
+                          </Avatar>
+                          <span>
+                            {(userData?.firstName ?? '') +
+                              ' ' +
+                              (userData?.lastName ?? '')}
+                          </span>
+                        </Link>
                       </div>
                       <Button variant="ghost" className="flex gap-2">
                         <Bell className="h-5 w-5" />
                         Notifications
                       </Button>
-                      <Button variant="ghost" className="flex gap-2">
-                        <Users className="h-5 w-5" />
-                        Friends
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsLoggedIn(false)}
-                      >
+
+                      <Button variant="outline" onClick={() => handleLogout()}>
                         Log out
                       </Button>
                     </>
@@ -207,12 +225,7 @@ export function Navbar() {
                         </Button>
                       </Link>
                       <Link to="/register" className="w-full">
-                        <Button
-                          onClick={() => setIsLoggedIn(true)}
-                          className="w-full"
-                        >
-                          Sign up
-                        </Button>
+                        <Button className="w-full">Sign up</Button>
                       </Link>
                     </>
                   )}
