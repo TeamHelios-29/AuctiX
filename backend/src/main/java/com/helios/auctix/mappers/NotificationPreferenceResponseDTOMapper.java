@@ -3,7 +3,7 @@ package com.helios.auctix.mappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.helios.auctix.config.defaults.NotificationPreferenceProperties;
+import com.helios.auctix.config.defaults.NotificationPreferenceDefaultsProperties;
 import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
@@ -18,9 +18,9 @@ import java.util.Map;
 public class NotificationPreferenceResponseDTOMapper {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final NotificationPreferenceProperties defaultProperties;
+    private final NotificationPreferenceDefaultsProperties defaultProperties;
 
-    public NotificationPreferenceResponseDTOMapper(NotificationPreferenceProperties defaultProperties) {
+    public NotificationPreferenceResponseDTOMapper(NotificationPreferenceDefaultsProperties defaultProperties) {
         this.defaultProperties = defaultProperties;
     }
 

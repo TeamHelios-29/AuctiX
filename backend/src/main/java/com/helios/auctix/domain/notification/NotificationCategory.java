@@ -9,7 +9,8 @@ public enum NotificationCategory {
      */
     DEFAULT("Default Notifications", "All other notifications", NotificationCategoryGroup.DEFAULT),
     PROMO("Promotional Notifications", "Marketing notifications about promotions, discounts", NotificationCategoryGroup.PROMO),
-    AUCTION_START_SOON("Auction Start soon", "Get notified 10 minutes before auction starts", NotificationCategoryGroup.AUCTION);
+    AUCTION_START_SOON("Auction Start soon", "Get notified 10 minutes before auction starts", NotificationCategoryGroup.AUCTION),
+    AUCTION_END_SOON("Auction Ends soon", "Get notified 10 minutes before auction ends", NotificationCategoryGroup.AUCTION);
 
     private final String title;
     private final String description;
