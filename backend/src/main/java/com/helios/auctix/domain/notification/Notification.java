@@ -13,6 +13,7 @@ import com.helios.auctix.domain.user.User;
 @Builder
 @Entity
 @Table(name = "notifications")
+@ToString(exclude = "user") // or else we get cyclic dependency
 public class Notification {
 
     @Id
