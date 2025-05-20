@@ -26,6 +26,7 @@ public class Notification {
 
     private String notificationEvent; // TODO: Decide if we are gonna store the events separately in the db
 
+    @Deprecated
     @Enumerated(EnumType.STRING)
     private NotificationType notificationType;
 

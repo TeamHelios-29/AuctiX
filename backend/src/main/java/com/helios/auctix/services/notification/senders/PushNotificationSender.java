@@ -19,11 +19,9 @@ public class PushNotificationSender implements NotificationSender {
      */
 
     private final FirebaseCloudMessageService firebaseCloudMessageService;
-    private final NotificationPersistenceHelper notificationPersistenceHelper;
 
-    public PushNotificationSender(FirebaseCloudMessageService firebaseCloudMessageService, NotificationPersistenceHelper notificationPersistenceHelper) {
+    public PushNotificationSender(FirebaseCloudMessageService firebaseCloudMessageService) {
         this.firebaseCloudMessageService = firebaseCloudMessageService;
-        this.notificationPersistenceHelper = notificationPersistenceHelper;
     }
 
 
@@ -47,6 +45,6 @@ public class PushNotificationSender implements NotificationSender {
             );
         }
 
-        notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
+        // TODO optionally we could save delivery status
     }
 }
