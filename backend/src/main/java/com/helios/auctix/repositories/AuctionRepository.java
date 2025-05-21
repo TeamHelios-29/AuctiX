@@ -10,9 +10,21 @@ import java.util.UUID;
 
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, UUID> {
-    // Find active auctions (started but not ended) that are public
-    List<Auction> findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(Instant now, Instant now2);
 
-    // Find auctions by category
-    List<Auction> findByCategory(String category);
+    // Find active auctions
+    List<Auction> findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(Instant now, Instant now1);
+
+    // Shortened version with better method name
+    default List<Auction> findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(Instant now) {
+        return findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(now, now);
+    }
+
+    // Find auctions that have ended and not been marked as completed yet
+    List<Auction> findByEndTimeBeforeAndCompletedFalse(Instant now);
+
+    // Method used in service to get active auctions
+    default List<Auction> findActiveAuctions() {
+        Instant now = Instant.now();
+        return findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(now, now);
+    }
 }

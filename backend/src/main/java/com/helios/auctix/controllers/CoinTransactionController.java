@@ -1,12 +1,17 @@
 package com.helios.auctix.controllers;
 
+import com.helios.auctix.dtos.RechargeRequestDTO;
 import com.helios.auctix.dtos.TransactionResponseDTO;
+import com.helios.auctix.dtos.WithdrawRequestDTO;
 import com.helios.auctix.services.CoinTransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,9 +27,9 @@ public class CoinTransactionController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createWallet(@RequestParam("userId") UUID userId) {
+    public ResponseEntity<?> createWallet() {
         try {
-            TransactionResponseDTO walletResponse = transactionService.createWallet(userId);
+            TransactionResponseDTO walletResponse = transactionService.createWallet();
             return ResponseEntity.ok(walletResponse);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -34,12 +39,45 @@ public class CoinTransactionController {
         }
     }
 
+    @PostMapping("/recharge")
+    public ResponseEntity<?> rechargeWallet(@Valid @RequestBody RechargeRequestDTO request) {
+        try {
+            TransactionResponseDTO response = transactionService.rechargeWallet(
+                    BigDecimal.valueOf(request.getAmount())
+            );
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing recharge: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<?> withdrawFunds(@Valid @RequestBody WithdrawRequestDTO request) {
+        try {
+            TransactionResponseDTO response = transactionService.withdrawFunds(
+                    BigDecimal.valueOf(request.getAmount()),
+                    request.getBankName(),
+                    request.getAccountNumber(),
+                    request.getAccountHolderName()
+            );
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing withdrawal: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/freeze-amount")
     public ResponseEntity<?> freezeAmount(
-            @RequestParam("userId") UUID userId,
-            @RequestParam("freezeAmount") double freezeAmount) {
+            @RequestParam("amount") double freezeAmount,
+            @RequestParam("auctionId") UUID auctionId) {
         try {
-            TransactionResponseDTO response = transactionService.freezeAmount(userId, freezeAmount);
+            TransactionResponseDTO response = transactionService.freezeAmount(freezeAmount, auctionId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -49,6 +87,44 @@ public class CoinTransactionController {
         }
     }
 
+    // Admin endpoint - requires ADMIN role
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    @PostMapping("/unfreeze-amount")
+    public ResponseEntity<?> unfreezeAmount(
+            @RequestParam("userId") UUID userId,
+            @RequestParam("unfreezeAmount") double unfreezeAmount,
+            @RequestParam("reason") String reason) {
+        try {
+            TransactionResponseDTO response = transactionService.unfreezeAmount(userId, unfreezeAmount, reason);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error unfreezing amount: " + e.getMessage());
+        }
+    }
+
+    // Admin endpoint - requires ADMIN role
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    @PostMapping("/complete-transaction")
+    public ResponseEntity<?> completeBidTransaction(
+            @RequestParam("userId") UUID userId,
+            @RequestParam("auctionId") UUID auctionId,
+            @RequestParam("amount") double amount) {
+        try {
+            TransactionResponseDTO response = transactionService.completeBidTransaction(userId, auctionId, amount);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error completing transaction: " + e.getMessage());
+        }
+    }
+
+    // Admin endpoint - requires ADMIN role
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
     @PostMapping("/process-transaction/{transactionId}")
     public ResponseEntity<?> processTransaction(@PathVariable UUID transactionId) {
         try {
@@ -61,13 +137,24 @@ public class CoinTransactionController {
     }
 
     @GetMapping("/transaction-history")
-    public ResponseEntity<?> getTransactionHistory(@RequestParam("userId") UUID userId) {
+    public ResponseEntity<?> getTransactionHistory() {
         try {
-            List<TransactionResponseDTO> transactions = transactionService.getTransactionHistory(userId);
+            List<TransactionResponseDTO> transactions = transactionService.getTransactionHistory();
             return ResponseEntity.ok(transactions);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching transaction history: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/wallet-info")
+    public ResponseEntity<?> getWalletInfo() {
+        try {
+            TransactionResponseDTO walletInfo = transactionService.getWalletInfo();
+            return ResponseEntity.ok(walletInfo);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching wallet information: " + e.getMessage());
         }
     }
 }

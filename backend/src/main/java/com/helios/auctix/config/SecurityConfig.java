@@ -55,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/roletest/**").authenticated()
                         .requestMatchers("/api/notification/settings").authenticated()
 
-                        .requestMatchers("/api/coins/**").permitAll()
+                        .requestMatchers("/api/coins/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

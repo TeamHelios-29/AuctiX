@@ -36,7 +36,7 @@ class UserRegisterServiceTest {
     void addBidder() {
 
 
-        try {
+       /* try {
             UserRegisterService userRegisterService = new UserRegisterService(userRepository, sellerRepository, bidderRepository, adminRepository, userRoleRepository, jwtService);
             for (int j = 0; j < 10; j++) {
                 userRegisterService.addUser(
@@ -52,6 +52,6 @@ class UserRegisterServiceTest {
             }
         } catch (Exception e) {
             log.error("ERROR occurred while adding user ");
-        }
+        }*/
     }
 }

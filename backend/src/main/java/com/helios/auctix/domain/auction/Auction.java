@@ -1,6 +1,6 @@
 package com.helios.auctix.domain.auction;
 
-import com.helios.auctix.domain.user.Bidder;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.helios.auctix.domain.user.Seller;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -8,9 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import java.util.List;
-import java.time.Instant;  // You need to add this import
+import java.time.Instant;
 import java.util.UUID;
-
 
 @Data
 @NoArgsConstructor
@@ -24,60 +23,59 @@ public class Auction {
     @GeneratedValue
     private UUID id;
 
-
     private String title;
     private String description;
     private Double startingPrice;
-    private Instant startTime;      // For precise event timing (UTC)
-    private Instant endTime;        // For precise event timing (UTC)
+    private Instant startTime;
+    private Instant endTime;
     private Boolean isPublic;
     private String category;
-//    private UUID sellerId;
 
+    @Column(name = "completed", nullable = false)
+    private Boolean completed = false;
 
-    @ElementCollection
-    private List<UUID> imageIds; // Change from imagePaths to imageIds
+    @Column(name = "winning_bid_id")
+    private UUID winningBidId;
 
     @Column(name = "created_at", updatable = false)
-    private Instant createdAt;      // Changed to Instant for consistency
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    private Instant updatedAt; // Changed to Instant for consistency
-
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    private Instant updatedAt;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", referencedColumnName = "id")
     private Seller seller;
 
+    // Use only one collection for image IDs - using ElementCollection with proper table name
+    @ElementCollection
+    @CollectionTable(
+            name = "auction_image_paths",
+            joinColumns = @JoinColumn(name = "auction_id")
+    )
+    @Column(name = "image_id")
+    private List<UUID> imagePaths;
 
+    // Don't use this field - it's causing database issues
+    @Transient
+    @JsonIgnore
+    private List<UUID> imageIds;
+
+    public UUID getSellerId() {
+        return (seller != null) ? seller.getId() : null;
+    }
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+        if (this.completed == null) {
+            this.completed = false;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
-
-    @ElementCollection
-    @CollectionTable(
-            name = "auction_image_paths",
-            joinColumns = @JoinColumn(name = "auction_id")
-    )
-
-    @Column(name = "image_id")
-    private List<UUID> imagePaths;
-
 }
-

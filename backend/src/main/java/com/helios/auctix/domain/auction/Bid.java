@@ -18,7 +18,7 @@ import java.util.UUID;
 public class Bid {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(columnDefinition = "uuid", updatable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -48,6 +48,9 @@ public class Bid {
 
     @PrePersist
     protected void onCreate() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
         if (this.bidTime == null) {
