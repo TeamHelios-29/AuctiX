@@ -1,0 +1,4 @@
+package com.helios.auctix.dtos;
+
+public class BidDTO {
+}
