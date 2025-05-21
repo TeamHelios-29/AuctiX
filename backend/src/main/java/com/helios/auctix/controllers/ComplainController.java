@@ -3,27 +3,23 @@ package com.helios.auctix.controllers;
 import com.helios.auctix.domain.complaint.Complaint;
 import com.helios.auctix.domain.complaint.ComplaintActivity;
 import com.helios.auctix.domain.complaint.ComplaintStatus;
-import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.ComplaintActivityDTO;
 import com.helios.auctix.dtos.ComplaintDTO;
 import com.helios.auctix.services.ComplaintService;
-import com.helios.auctix.services.user.UserDetailsService;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.security.Principal;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/complaints")  // Changed to plural form as per REST conventions
+@RequestMapping("/api/complaints")
 public class ComplainController {
 
     private final ComplaintService complaintService;
@@ -97,11 +93,10 @@ public class ComplainController {
     @PostMapping("/{id}/comments")
     public ResponseEntity<ComplaintActivityDTO> addComment(
             @PathVariable UUID id,
-            @RequestBody String comment,
-            Principal principal
-    ) {
-        String username = principal.getName();
-        ComplaintActivity activity = complaintService.addComment(id, comment, username);
+            @RequestBody String comment
+    ) throws AuthenticationException {
+
+        ComplaintActivity activity = complaintService.addComment(id, comment);
 
         ComplaintActivityDTO dto = ComplaintActivityDTO.builder()
                 .id(activity.getId().toString())
@@ -114,13 +109,5 @@ public class ComplainController {
         return ResponseEntity.ok(dto);
     }
 
-    @PutMapping("/{id}/timelineStatus")
-    public ResponseEntity<Complaint> updateComplaintStatus(
-            @PathVariable UUID id,
-            @RequestBody ComplaintStatus status,
-            Principal principal
-    ) {
-        String username = principal.getName();
-        return ResponseEntity.ok(complaintService.updateComplaintStatus(id, status, username));
-    }
+
 }

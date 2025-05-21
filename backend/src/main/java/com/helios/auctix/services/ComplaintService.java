@@ -9,7 +9,6 @@ import com.helios.auctix.dtos.ComplaintDTO;
 import com.helios.auctix.repositories.ComplaintActivityRepository;
 import com.helios.auctix.repositories.ComplaintRepository;
 import com.helios.auctix.repositories.UserRepository;
-//import com.helios.auctix.exceptions.ResourceNotFoundException;
 import com.helios.auctix.services.user.UserDetailsService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -93,15 +92,22 @@ public class ComplaintService {
     public Complaint updateComplaintStatus(UUID id, ComplaintStatus newStatus) throws AuthenticationException {
         Complaint complaint = getComplaintById(id);
 
-        Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
 
         logActivity(complaint, ActivityType.STATUS_CHANGE, "changed status from " + complaint.getStatus() + " to " + newStatus, currentUser.getUsername());
         complaint.setStatus(newStatus);
         return complaintRepository.save(complaint);
+    }
+
+    public ComplaintActivity addComment(UUID complaintId, String comment) throws AuthenticationException {
+        Complaint complaint = getComplaintById(complaintId);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        return logActivity(complaint, ActivityType.COMMENT, comment, currentUser.getUsername());
     }
 
     @Autowired
@@ -117,50 +123,9 @@ public class ComplaintService {
         return activityRepository.save(activity);
     }
 
-
-    // Log status change
-    private void logStatusChange(Complaint complaint, ComplaintStatus oldStatus, ComplaintStatus newStatus, String performedBy) {
-        ComplaintActivity activity = new ComplaintActivity();
-        activity.setComplaint(complaint);
-        activity.setType(ActivityType.STATUS_CHANGE);
-        activity.setMessage("changed status from " + oldStatus + " to " + newStatus);
-        activity.setPerformedBy(performedBy);
-        activity.setTimestamp(LocalDateTime.now());
-        activityRepository.save(activity);
-    }
-
-    // Log comment
-    public ComplaintActivity addComment(UUID complaintId, String comment, String performedBy) {
-        Complaint complaint = getComplaintById(complaintId);
-
-        ComplaintActivity activity = new ComplaintActivity();
-        activity.setComplaint(complaint);
-        activity.setType(ActivityType.COMMENT);
-        activity.setMessage(comment);
-        activity.setPerformedBy(performedBy);
-        activity.setTimestamp(LocalDateTime.now());
-
-        return activityRepository.save(activity);
-    }
-
-    // Get activity timeline
     public List<ComplaintActivity> getComplaintTimeline(UUID complaintId) {
         Complaint complaint = getComplaintById(complaintId);
         return activityRepository.findByComplaintOrderByTimestampDesc(complaint);
     }
-
-    // Update your existing updateComplaintStatus method
-    public Complaint updateComplaintStatus(UUID id, ComplaintStatus newStatus, String performedBy) {
-        Complaint complaint = getComplaintById(id);
-        ComplaintStatus oldStatus = complaint.getStatus();
-        complaint.setStatus(newStatus);
-        Complaint updatedComplaint = complaintRepository.save(complaint);
-
-        // Log the status change
-        logStatusChange(complaint, oldStatus, newStatus, performedBy);
-
-        return updatedComplaint;
-    }
-
 
 }
