@@ -4,6 +4,7 @@ import com.google.api.gax.rpc.NotFoundException;
 import com.helios.auctix.domain.notification.Notification;
 import com.helios.auctix.dtos.NotificationResponseDto;
 import com.helios.auctix.repositories.NotificationRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,16 +22,13 @@ public class UserNotificationService {
     public UserNotificationService(NotificationRepository notificationRepository) {
         this.notificationRepository = notificationRepository;
     }
-
-    public List<NotificationResponseDto> getUserNotifications(UUID userId, boolean onlyUnread, int page, int size) {
+    public Page<NotificationResponseDto> getUserNotifications(UUID userId, boolean onlyUnread, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<Notification> notifications = onlyUnread
+        Page<Notification> notificationsPage = onlyUnread
                 ? notificationRepository.findByUserIdAndReadFalse(userId, pageable)
                 : notificationRepository.findByUserId(userId, pageable);
 
-        return notifications.stream()
-                .map(this::toDto)
-                .toList();
+        return notificationsPage.map(this::toDto);
     }
 
     public long getUnreadNotificationCount(UUID userId) {
@@ -70,6 +68,7 @@ public class UserNotificationService {
                 .content(n.getContent())
                 .read(n.isRead())
                 .notificationCategory(n.getNotificationCategory().getTitle())
+                .notificationCategoryGroup(n.getNotificationCategory().getCategoryGroup().name())
                 .createdAt(n.getCreatedAt())
                 .build();
     }

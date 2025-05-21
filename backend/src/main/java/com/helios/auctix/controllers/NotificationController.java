@@ -6,8 +6,8 @@ import com.helios.auctix.services.notification.UserNotificationService;
 import com.helios.auctix.services.user.UserDetailsService;
 import jakarta.validation.constraints.Min;
 import org.apache.tomcat.websocket.AuthenticationException;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +27,7 @@ public class NotificationController {
     }
 
     @GetMapping("/")
-    public List<NotificationResponseDto> getNotifications(
+    public Page<NotificationResponseDto> getNotifications(
             @RequestParam(defaultValue = "false") boolean onlyUnread,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) int size

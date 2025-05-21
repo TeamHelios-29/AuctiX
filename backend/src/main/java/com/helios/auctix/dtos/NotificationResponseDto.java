@@ -13,6 +13,7 @@ public record NotificationResponseDto(
         String content,
         boolean read,
         String notificationCategory,
+        String notificationCategoryGroup,
         LocalDateTime createdAt
 ) {
 }

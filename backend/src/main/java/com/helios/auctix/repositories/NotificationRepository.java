@@ -1,6 +1,7 @@
 package com.helios.auctix.repositories;
 
 import com.helios.auctix.domain.notification.Notification;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -11,9 +12,9 @@ import java.util.*;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
-    List<Notification> findByUserId(UUID userId, Pageable pageable);
+    Page<Notification> findByUserId(UUID userId, Pageable pageable);
 
-    List<Notification> findByUserIdAndReadFalse(UUID userId, Pageable pageable);
+    Page<Notification> findByUserIdAndReadFalse(UUID userId, Pageable pageable);
 
     Optional<Notification> findByIdAndUserId(UUID notificationId, UUID userId);
 
