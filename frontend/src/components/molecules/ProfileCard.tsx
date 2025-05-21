@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import type { ImageResult } from '../molecules/ImageUploadPopup';
 import ImageUploadPopup from '../molecules/ImageUploadPopup';
 import { Card, CardContent } from '@/components/ui/card';
-import { Camera, Trash2, ImagePlus } from 'lucide-react';
+import { Trash2, Mail, AtSign } from 'lucide-react';
 import { TooltipBtn } from '../atoms/TooltipBtn';
 
 interface ProfileCardProps {
@@ -55,7 +55,7 @@ export default function ProfileCard({
             className="w-full h-full"
           >
             <img
-              src={bannerPhoto || '/placeholder.svg'}
+              src={bannerPhoto || '/defaultBanner.jpg'}
               alt="Profile Banner"
               className="w-full h-full object-cover"
             />
@@ -87,7 +87,7 @@ export default function ProfileCard({
                 </div>
               ) : (
                 <img
-                  src={profilePhoto || '/placeholder.svg'}
+                  src={profilePhoto || '/defaultProfilePhoto.jpg'}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -114,8 +114,12 @@ export default function ProfileCard({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold">{username}</h2>
-          <p className="text-gray-500">{email}</p>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <AtSign className="w-5 h-5 text-xl text-gray-500" /> {username}
+          </h2>
+          <p className="text-gray-500 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-xl text-gray-500" /> {email}
+          </p>
           <div className="mt-2">
             <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">
               {formatRole(role)}

@@ -45,3 +45,21 @@ export const updateProfilePhoto = async (
   );
   return response.data;
 };
+
+export const updateBannerPhoto = async (
+  file: File,
+  axiosInstance: AxiosInstance,
+) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await axiosInstance.post(
+    `${baseURL}/user/uploadUserBannerPhoto`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    },
+  );
+  return response.data;
+};

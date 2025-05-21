@@ -7,20 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ImageResult } from '../molecules/ImageUploadPopup';
-import { updateProfilePhoto } from '@/services/userService';
+import { updateProfilePhoto, updateBannerPhoto } from '@/services/userService';
 import type { AxiosInstance } from 'axios';
 import AxiosRequest from '@/services/axiosInspector';
 import { fetchCurrentUser } from '@/store/slices/userSlice';
@@ -29,16 +19,9 @@ import { AlertBox } from './AlertBox';
 import ProfileCard from '../molecules/ProfileCard';
 import { ProfileUrlsSection } from '../molecules/ProfileURLsSection';
 import { AddressSection } from '../molecules/ProfileAddressSection';
+import { PersonalBasicInfoSection } from '../molecules/ProfileBasicInfoSection';
 
 const profileFormSchema = z.object({
-  username: z
-    .string()
-    .min(2, {
-      message: 'Username must be at least 2 characters.',
-    })
-    .max(30, {
-      message: 'Username must not be longer than 30 characters.',
-    }),
   firstName: z
     .string()
     .min(3, {
@@ -56,11 +39,6 @@ const profileFormSchema = z.object({
       message: 'Last name must not be longer than 30 characters.',
     })
     .optional(),
-  email: z
-    .string({
-      required_error: 'Please provide an email address.',
-    })
-    .email(),
   bio: z
     .string()
     .max(160, {
@@ -78,19 +56,41 @@ const profileFormSchema = z.object({
   urls: z
     .array(
       z.object({
-        value: z.string().url({ message: 'Please enter a valid URL.' }),
+        value: z
+          .string()
+          .min(1, { message: 'URL cannot be empty.' })
+          .url({
+            message: 'Please enter a valid URL including http:// or https://.',
+          }),
+        timestamp: z.number().optional(),
       }),
     )
-    .optional(),
+    .min(0)
+    .optional()
+    .superRefine((urls, ctx) => {
+      if (urls) {
+        // Check for duplicate URLs
+        const urlValues = urls.map((u) => u.value.toLowerCase());
+        const duplicates = urlValues.filter(
+          (item, index) => urlValues.indexOf(item) !== index,
+        );
+
+        if (duplicates.length > 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Duplicate URLs are not allowed',
+            path: [],
+          });
+        }
+      }
+    }),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const defaultValues: Partial<ProfileFormValues> = {
-  username: '',
   firstName: '',
   lastName: '',
-  email: '',
   bio: '',
   address: {
     number: '',
@@ -128,26 +128,47 @@ export function ProfileForm() {
   }, [form]);
 
   useEffect(() => {
-    const values = {
-      username: userData.username || '',
+    // default values for the form
+    const values: ProfileFormValues = {
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
-      email: userData.email || '',
-      // bio: userData.bio || "",   // add bio from backend
-      // address: {
-      //   number: userData.address?.number || "",
-      //   addressLine1: userData.address?.addressLine1 || "",
-      //   addressLine2: userData.address?.addressLine2 || "",
-      //   country: userData.address?.country || "",
-      // },                         // add address from backend
-      // urls: userData.urls || [], // add urls from backend
+      bio: '',
+      address: {
+        number: '',
+        addressLine1: '',
+        addressLine2: '',
+        country: '',
+      },
+      urls: [],
     };
+
+    if ('bio' in userData && typeof userData.bio === 'string') {
+      values.bio = userData.bio;
+    }
+
+    if ('address' in userData && userData.address) {
+      const address = userData.address as any;
+      if (address.number) values.address.number = address.number;
+      if (address.addressLine1)
+        values.address.addressLine1 = address.addressLine1;
+      if (address.addressLine2)
+        values.address.addressLine2 = address.addressLine2;
+      if (address.country) values.address.country = address.country;
+    }
+
+    if ('urls' in userData && Array.isArray(userData.urls)) {
+      values.urls = (userData.urls as any[]).map((url) => ({
+        value: url.value || '',
+        timestamp: url.timestamp || Date.now(),
+      }));
+    }
+
     form.reset(values);
     setCroppedImg(userData.profile_photo || null);
     setBannerImg('/defaultBanner.jpg'); // get the banner image from backend
   }, [userData, form]);
 
-  function onSubmit(data: ProfileFormValues) {
+  function onSubmit(_data: ProfileFormValues) {
     setIsAlertOpen(true);
   }
 
@@ -179,8 +200,7 @@ export function ProfileForm() {
       if (e.croppedImageBase64 != undefined && e.croppedImageFile) {
         setBannerImg(e.croppedImageBase64);
         setIsBannerLoading(true);
-        // Assuming there's a similar function for banner upload
-        updateProfilePhoto(e.croppedImageFile, axiosInstance)
+        updateBannerPhoto(e.croppedImageFile, axiosInstance)
           .then(() => {
             dispatch(fetchCurrentUser);
           })
@@ -204,7 +224,17 @@ export function ProfileForm() {
   const handleSubmit = () => {
     setIsSubmitting(true);
     setTimeout(() => {
-      console.log('Submitting form data:', form.getValues());
+      const formData = form.getValues();
+      console.log('Submitting form data:', formData);
+      if (formData.urls && formData.urls.length > 0) {
+        const validUrls = formData.urls.filter(
+          (url) => url.value.trim() !== '',
+        );
+        console.log('URLs to submit:', validUrls);
+      }
+
+      // TODO: Add actual API call to update profile with axiosInstance
+
       setIsSubmitting(false);
       setIsAlertOpen(false);
     }, 1500);
@@ -297,118 +327,55 @@ export function ProfileForm() {
               initial="hidden"
               animate="visible"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Username field - disabled */}
+              {/* PersonalInfoSection */}
+              <div className="space-y-6">
                 <motion.div variants={itemVariants}>
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input placeholder="shadcn" {...field} disabled />
-                        </FormControl>
-                        <FormDescription>
-                          Username cannot be changed after registration.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <h3 className="text-lg font-medium">Personal Information</h3>
+                  <div className="h-0.5 w-full bg-gray-100 my-2"></div>
                 </motion.div>
 
-                {/* Email field - disabled */}
+                <PersonalBasicInfoSection form={form} />
+              </div>
+
+              {/* Address section */}
+              <div className="space-y-6 pt-4">
                 <motion.div variants={itemVariants}>
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled />
-                        </FormControl>
-                        <FormDescription>
-                          Contact support to update your email address.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <h3 className="text-lg font-medium">Address Information</h3>
+                  <div className="h-0.5 w-full bg-gray-100 my-2"></div>
                 </motion.div>
 
-                {/* First Name field */}
                 <motion.div variants={itemVariants}>
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <AddressSection form={form} />
+                </motion.div>
+              </div>
+
+              {/* URLs section */}
+              <div className="space-y-6 pt-4">
+                <motion.div variants={itemVariants}>
+                  <h3 className="text-lg font-medium">Online Presence</h3>
+                  <div className="h-0.5 w-full bg-gray-100 my-2"></div>
                 </motion.div>
 
-                {/* Last Name field */}
                 <motion.div variants={itemVariants}>
                   <FormField
                     control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
+                    name="urls"
+                    render={({ fieldState }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                        <ProfileUrlsSection form={form} name="urls" />
+                        {fieldState.error && (
+                          <FormMessage>
+                            {fieldState.error.message ||
+                              'Please check your URLs for errors.'}
+                          </FormMessage>
+                        )}
                       </FormItem>
                     )}
                   />
                 </motion.div>
               </div>
 
-              {/* Bio field */}
-              <motion.div variants={itemVariants}>
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Tell us a little bit about yourself"
-                          className="resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        You can <span className="font-medium">@mention</span>{' '}
-                        other users and organizations to link to them.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </motion.div>
-
-              {/* Address section */}
-              <motion.div variants={itemVariants}>
-                <AddressSection form={form} />
-              </motion.div>
-
-              {/* URLs section */}
-              <motion.div variants={itemVariants}>
-                <ProfileUrlsSection form={form} name="SocialMediaUrls" />
-              </motion.div>
-
-              <motion.div className="pt-4" variants={itemVariants}>
+              <motion.div className="pt-6" variants={itemVariants}>
                 <Button
                   type="submit"
                   className="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white"

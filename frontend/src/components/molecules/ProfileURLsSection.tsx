@@ -6,12 +6,12 @@ import { Plus, X, LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   FormDescription,
-  FormField,
   FormItem,
   FormControl,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import type { UseFormReturn } from 'react-hook-form';
 
 interface UrlEntry {
   id: number;
@@ -21,13 +21,36 @@ interface UrlEntry {
 
 interface ProfileUrlsSectionProps {
   onChange?: (urls: { value: string; timestamp: number }[]) => void;
+  form?: UseFormReturn<any>;
+  name?: string;
 }
 
-export function ProfileUrlsSection({ onChange }: ProfileUrlsSectionProps) {
+export function ProfileUrlsSection({
+  onChange,
+  form,
+  name,
+}: ProfileUrlsSectionProps) {
   const [urls, setUrls] = useState<UrlEntry[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const idCounter = useRef(0);
   const urlContainerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize URLs from form value if available
+  useEffect(() => {
+    if (form && name) {
+      const formUrls = form.getValues(name) || [];
+      if (formUrls.length > 0 && urls.length === 0) {
+        setUrls(
+          formUrls.map((url: any, idx: number) => ({
+            id: idx,
+            value: url.value || '',
+            timestamp: url.timestamp || Date.now(),
+          })),
+        );
+        idCounter.current = formUrls.length;
+      }
+    }
+  }, [form, name, urls.length]);
 
   const handleAppend = () => {
     if (isAdding) return;
@@ -58,11 +81,29 @@ export function ProfileUrlsSection({ onChange }: ProfileUrlsSectionProps) {
     );
   };
 
+  // Helper function to validate a URL
+  const isValidUrl = (urlString: string): boolean => {
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  // Update form value when URLs change
   useEffect(() => {
+    if (form && name) {
+      const formattedUrls = urls
+        .filter((url) => url.value.trim() !== '')
+        .map(({ value, timestamp }) => ({ value, timestamp }));
+      form.setValue(name, formattedUrls, { shouldValidate: true });
+    }
+
     if (onChange) {
       onChange(urls.map(({ value, timestamp }) => ({ value, timestamp })));
     }
-  }, [urls, onChange]);
+  }, [urls, onChange, form, name]);
 
   return (
     <motion.div
@@ -91,7 +132,7 @@ export function ProfileUrlsSection({ onChange }: ProfileUrlsSectionProps) {
 
       <div ref={urlContainerRef} className="space-y-3">
         <AnimatePresence initial={false}>
-          {urls.map((url, index) => (
+          {urls.map((url) => (
             <motion.div
               key={url.id}
               className="flex items-start gap-2 group"
@@ -125,10 +166,30 @@ export function ProfileUrlsSection({ onChange }: ProfileUrlsSectionProps) {
                     value={url.value}
                     onChange={(e) => handleChange(url.id, e.target.value)}
                     placeholder="https://example.com"
-                    className="transition-all focus-within:border-yellow-500 focus-within:ring-yellow-500/20"
+                    className={`transition-all focus-within:border-yellow-500 focus-within:ring-yellow-500/20 ${
+                      url.value && !isValidUrl(url.value)
+                        ? 'border-red-300'
+                        : ''
+                    }`}
                   />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                {form &&
+                  name &&
+                  form.formState.errors.urls &&
+                  Array.isArray(form.formState.errors.urls) &&
+                  form.formState.errors.urls[url.id] && (
+                    <FormMessage className="text-xs">
+                      {
+                        (form.formState.errors.urls[url.id] as any)?.value
+                          ?.message
+                      }
+                    </FormMessage>
+                  )}
+                {url.value && !isValidUrl(url.value) && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Please enter a valid URL including http:// or https://
+                  </p>
+                )}
               </FormItem>
               <Button
                 type="button"
