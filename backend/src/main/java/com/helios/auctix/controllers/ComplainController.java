@@ -5,6 +5,7 @@ import com.helios.auctix.domain.complaint.ComplaintStatus;
 import com.helios.auctix.dtos.ComplaintDTO;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.ComplaintService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -36,9 +37,23 @@ public class ComplainController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Complaint>> getAllComplaints() {
-        return ResponseEntity.ok(complaintService.getAllComplaints());
-    }
+    public ResponseEntity<?> getAllComplaints(
+        @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+        @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
+        @RequestParam(value = "sortby", required = false, defaultValue = "id") String sortBy,
+        @RequestParam(value = "order", required = false, defaultValue = "asc") String order,
+        @RequestParam(value = "search", required = false) String search) {
+
+            try{
+                Page complaintPage = complaintService.getAllComplaints(limit,offset,sortBy,order,search);
+                return ResponseEntity.ok(complaintPage);
+            }
+            catch (IllegalArgumentException e){
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }
+        //return ResponseEntity.ok(complaintService.getAllComplaints());
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Complaint> getComplaint(@PathVariable UUID id) {

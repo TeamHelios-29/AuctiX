@@ -49,7 +49,7 @@ public class AuctionService {
                 .map(UUID::toString)
                 .collect(Collectors.toList());
 
-Seller seller = auction.getSeller();
+//Seller seller = auction.getSeller();
 
        UserDTO sellerDto = userMapperImpl.mapTo(auction.getSeller().getUser());
 

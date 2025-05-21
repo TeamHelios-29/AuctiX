@@ -6,7 +6,8 @@ import {
   ZoomOut,
   BanIcon,
   RefreshCcwDot,
-  Trash2,
+  LucideDelete,
+  Camera,
 } from 'lucide-react';
 import {
   Dialog,
@@ -19,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AlertBox } from '../organisms/AlertBox';
 import { error } from 'console';
+import { TooltipBtn } from '../atoms/TooltipBtn';
 
 interface Position {
   x: number;
@@ -35,22 +37,22 @@ export interface ImageResult {
 
 interface ImageUploadPopupProps {
   onConfirm?: (result: ImageResult) => void;
-  onDelete?: () => void;
   minWidth?: number;
   minHeight?: number;
   shape?: 'square' | 'circle';
   acceptingWidth?: number;
   acceptingHeight?: number;
+  buttonClassName?: string;
 }
 
 export default function ImageUploadPopup({
   onConfirm,
-  onDelete,
   minWidth = 200,
   minHeight = 200,
   shape = 'square',
   acceptingWidth = 200,
   acceptingHeight = 200,
+  buttonClassName = '',
 }: ImageUploadPopupProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [image, setImage] = useState<string | null>(null);
@@ -454,13 +456,6 @@ export default function ImageUploadPopup({
     handleCloseDialog();
   };
 
-  const handleDeleteImage = (): void => {
-    if (onDelete) {
-      onDelete();
-    }
-    handleRemoveImage();
-  };
-
   // Fix: Update the global scale on dialog open and when container ref is available
   useEffect(() => {
     if (isOpen && imgContainerRef.current) {
@@ -488,18 +483,12 @@ export default function ImageUploadPopup({
 
   return (
     <div className="flex flex-col items-center">
-      <Button onClick={handleOpenDialog} className="flex items-center gap-2">
-        <Upload size={16} />
-        Upload Profile Photo
-      </Button>
-
-      <Button
-        className="flex items-center gap-2 mt-2"
-        onClick={handleDeleteImage}
-      >
-        <Trash2 size={16} />
-        Remove Profile Photo
-      </Button>
+      <TooltipBtn
+        icon={Camera}
+        text="Change Photo"
+        onClick={handleOpenDialog}
+        className={`${buttonClassName}`}
+      />
 
       <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
         <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl">
@@ -627,7 +616,7 @@ export default function ImageUploadPopup({
                     onClick={handleRemoveImage}
                     title="Reset View"
                   >
-                    <Trash2 size={16} />
+                    <LucideDelete size={16} />
                   </Button>
                 </div>
               </div>

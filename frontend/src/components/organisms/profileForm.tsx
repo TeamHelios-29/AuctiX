@@ -1,44 +1,32 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Plus, X } from 'lucide-react';
-
-import { cn } from '@/lib/utils';
+import { CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { AlertBox } from './AlertBox';
+import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
-import ImageUploadPopup, { ImageResult } from '../molecules/ImageUploadPopup';
-import { deleteProfilePhoto, updateProfilePhoto } from '@/services/userService';
+import { ImageResult } from '../molecules/ImageUploadPopup';
+import {
+  deleteProfilePhoto,
+  updateBannerPhoto,
+  updateProfilePhoto,
+} from '@/services/userService';
 import { AxiosInstance } from 'axios';
 import AxiosRequest from '@/services/axiosInspector';
 import { fetchCurrentUser } from '@/store/slices/userSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { useToast } from '@/hooks/use-toast';
+import { AlertBox } from './AlertBox';
+import ProfileCard from '../molecules/ProfileCard';
+import { ProfileUrlsSection } from '../molecules/ProfileURLsSection';
+import { AddressSection } from '../molecules/ProfileAddressSection';
+import { PersonalBasicInfoSection } from '../molecules/ProfileBasicInfoSection';
 
 const profileFormSchema = z.object({
-  username: z
-    .string()
-    .min(2, {
-      message: 'Username must be at least 2 characters.',
-    })
-    .max(30, {
-      message: 'Username must not be longer than 30 characters.',
-    }),
   firstName: z
     .string()
     .min(3, {
@@ -56,11 +44,6 @@ const profileFormSchema = z.object({
       message: 'Last name must not be longer than 30 characters.',
     })
     .optional(),
-  email: z
-    .string({
-      required_error: 'Please provide an email address.',
-    })
-    .email(),
   bio: z
     .string()
     .max(160, {
@@ -73,24 +56,43 @@ const profileFormSchema = z.object({
     number: z.string().optional(),
     addressLine1: z.string().optional(),
     addressLine2: z.string().optional(),
-    country: z.string(),
+    country: z.string().optional(),
   }),
   urls: z
     .array(
       z.object({
-        value: z.string().url({ message: 'Please enter a valid URL.' }),
+        value: z.string().min(1, { message: 'URL cannot be empty.' }).url({
+          message: 'Please enter a valid URL including http:// or https://.',
+        }),
+        timestamp: z.number().optional(),
       }),
     )
-    .optional(),
+    .min(0)
+    .optional()
+    .superRefine((urls, ctx) => {
+      if (urls) {
+        // Check for duplicate URLs
+        const urlValues = urls.map((u) => u.value.toLowerCase());
+        const duplicates = urlValues.filter(
+          (item, index) => urlValues.indexOf(item) !== index,
+        );
+
+        if (duplicates.length > 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Duplicate URLs are not allowed',
+            path: [],
+          });
+        }
+      }
+    }),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const defaultValues: Partial<ProfileFormValues> = {
-  username: '',
   firstName: '',
   lastName: '',
-  email: '',
   bio: '',
   address: {
     number: '',
@@ -103,10 +105,13 @@ const defaultValues: Partial<ProfileFormValues> = {
 
 export function ProfileForm() {
   const [croppedImg, setCroppedImg] = useState<string | null>(null);
+  const [bannerImg, setBannerImg] = useState<string>('/defaultBanner.jpg');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isProfilePictureLoading, setIsProfilePictureLoading] = useState(false);
   const { toast } = useToast();
+  const [isBannerLoading, setIsBannerLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const dispatch = useAppDispatch();
@@ -118,11 +123,6 @@ export function ProfileForm() {
     mode: 'onChange',
   });
 
-  const { fields, append, remove } = useFieldArray({
-    name: 'urls',
-    control: form.control,
-  });
-
   useEffect(() => {
     const values = {
       ...defaultValues,
@@ -131,11 +131,10 @@ export function ProfileForm() {
   }, [form]);
 
   useEffect(() => {
-    const values = {
-      username: userData.username || '',
+    // default values for the form
+    const values: ProfileFormValues = {
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
-      email: userData.email || '',
       bio: '',
       address: {
         number: '',
@@ -145,11 +144,34 @@ export function ProfileForm() {
       },
       urls: [],
     };
+
+    if ('bio' in userData && typeof userData.bio === 'string') {
+      values.bio = userData.bio;
+    }
+
+    if ('address' in userData && userData.address) {
+      const address = userData.address as any;
+      if (address.number) values.address.number = address.number;
+      if (address.addressLine1)
+        values.address.addressLine1 = address.addressLine1;
+      if (address.addressLine2)
+        values.address.addressLine2 = address.addressLine2;
+      if (address.country) values.address.country = address.country;
+    }
+
+    if ('urls' in userData && Array.isArray(userData.urls)) {
+      values.urls = (userData.urls as any[]).map((url) => ({
+        value: url.value || '',
+        timestamp: url.timestamp || Date.now(),
+      }));
+    }
+
     form.reset(values);
     setCroppedImg(userData.profile_photo || null);
-  }, [userData]);
+    setBannerImg('/defaultBanner.jpg'); // get the banner image from backend
+  }, [userData, form]);
 
-  function onSubmit(data: ProfileFormValues) {
+  function onSubmit(_data: ProfileFormValues) {
     setIsAlertOpen(true);
   }
 
@@ -181,6 +203,32 @@ export function ProfileForm() {
     }
   }, []);
 
+  const onBannerPhotoSet = useCallback(
+    (e: ImageResult) => {
+      if (e.croppedImageBase64 != undefined && e.croppedImageFile) {
+        setBannerImg(e.croppedImageBase64);
+        setIsBannerLoading(true);
+        updateBannerPhoto(e.croppedImageFile, axiosInstance)
+          .then(() => {
+            dispatch(fetchCurrentUser);
+          })
+          .finally(() => {
+            setIsBannerLoading(false);
+          })
+          .catch((error) => {
+            setErrorMessage('Failed to upload banner image. Please try again.');
+            console.error('Banner image not uploaded.', error);
+          });
+      }
+    },
+    [axiosInstance, dispatch],
+  );
+
+  const removeBanner = () => {
+    setBannerImg('/defaultbanner.jpg');
+    // TODO: API call to remove banner
+  };
+
   const onProfilePhotoDelete = useCallback(() => {
     setCroppedImg(null);
     setIsProfilePictureLoading(false);
@@ -208,9 +256,18 @@ export function ProfileForm() {
 
   const handleSubmit = () => {
     setIsSubmitting(true);
-    // Simulate API call
     setTimeout(() => {
-      console.log('Submitting form data:', form.getValues());
+      const formData = form.getValues();
+      console.log('Submitting form data:', formData);
+      if (formData.urls && formData.urls.length > 0) {
+        const validUrls = formData.urls.filter(
+          (url) => url.value.trim() !== '',
+        );
+        console.log('URLs to submit:', validUrls);
+      }
+
+      // TODO: Add actual API call to update profile with axiosInstance
+
       setIsSubmitting(false);
       setIsAlertOpen(false);
     }, 1500);
@@ -253,7 +310,47 @@ export function ProfileForm() {
         cancelBtn="Cancel"
       />
 
-      <Card>
+      {/* Profile Card Component */}
+      <ProfileCard
+        username={userData.username || ''}
+        email={userData.email || ''}
+        role={userData.role || ''}
+        profilePhoto={croppedImg || '/defaultProfilePhoto.jpg'}
+        bannerPhoto={bannerImg}
+        isProfileLoading={isProfilePictureLoading}
+        isBannerLoading={isBannerLoading}
+        onProfilePhotoSet={onProfilePhotoSet}
+        onBannerPhotoSet={onBannerPhotoSet}
+        onRemoveBanner={removeBanner}
+      />
+
+      {/* Error Message */}
+      <AnimatePresence>
+        {errorMessage && (
+          <motion.div
+            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center">
+              <X className="h-5 w-5 mr-2" />
+              <p>{errorMessage}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto mt-1 text-red-700 hover:text-red-800 p-0"
+              onClick={() => setErrorMessage(null)}
+            >
+              Dismiss
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Card className="mt-6">
         <CardContent className="pt-6">
           <Form {...form}>
             <motion.form
@@ -263,265 +360,58 @@ export function ProfileForm() {
               initial="hidden"
               animate="visible"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Username field - disabled */}
+              {/* PersonalInfoSection */}
+              <div className="space-y-6">
                 <motion.div variants={itemVariants}>
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input placeholder="shadcn" {...field} disabled />
-                        </FormControl>
-                        <FormDescription>
-                          Username cannot be changed after registration.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <h3 className="text-lg font-medium">Personal Information</h3>
+                  <div className="h-0.5 w-full bg-gray-100 my-2"></div>
                 </motion.div>
 
-                {/* Email field - disabled */}
+                <PersonalBasicInfoSection form={form} />
+              </div>
+
+              {/* Address section */}
+              <div className="space-y-6 pt-4">
                 <motion.div variants={itemVariants}>
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled />
-                        </FormControl>
-                        <FormDescription>
-                          Contact support to update your email address.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <h3 className="text-lg font-medium">Address Information</h3>
+                  <div className="h-0.5 w-full bg-gray-100 my-2"></div>
                 </motion.div>
 
-                {/* First Name field */}
                 <motion.div variants={itemVariants}>
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <AddressSection form={form} />
+                </motion.div>
+              </div>
+
+              {/* URLs section */}
+              <div className="space-y-6 pt-4">
+                <motion.div variants={itemVariants}>
+                  <h3 className="text-lg font-medium">Online Presence</h3>
+                  <div className="h-0.5 w-full bg-gray-100 my-2"></div>
                 </motion.div>
 
-                {/* Last Name field */}
                 <motion.div variants={itemVariants}>
                   <FormField
                     control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
+                    name="urls"
+                    render={({ fieldState }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                        <ProfileUrlsSection form={form} name="urls" />
+                        {fieldState.error && (
+                          <FormMessage>
+                            {fieldState.error.message ||
+                              'Please check your URLs for errors.'}
+                          </FormMessage>
+                        )}
                       </FormItem>
                     )}
                   />
                 </motion.div>
               </div>
 
-              {/* Profile Photo Upload */}
-              <motion.div
-                className="flex flex-col items-center space-y-4"
-                variants={itemVariants}
-              >
-                <div className="w-32 h-32 overflow-hidden rounded-full border border-gray-200">
-                  {!isProfilePictureLoading ? (
-                    <img
-                      className="w-full h-full object-cover"
-                      src={croppedImg ? croppedImg : '/defaultProfilePhoto.jpg'}
-                      alt="Profile"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 overflow-hidden rounded-full border border-gray-200">
-                      <div className="flex items-center justify-center w-full h-full">
-                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <ImageUploadPopup
-                  minHeight={100}
-                  minWidth={100}
-                  acceptingHeight={500}
-                  acceptingWidth={500}
-                  shape="circle"
-                  onConfirm={onProfilePhotoSet}
-                  onDelete={onProfilePhotoDelete}
-                />
-              </motion.div>
-
-              {/* Bio field */}
-              <motion.div variants={itemVariants}>
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Tell us a little bit about yourself"
-                          className="resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        You can <span className="font-medium">@mention</span>{' '}
-                        other users and organizations to link to them.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </motion.div>
-
-              {/* Address fields */}
-              <motion.div className="space-y-4" variants={itemVariants}>
-                <h3 className="text-lg font-medium">Address Information</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="address.number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>House/Building Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="address.country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl>
-                          <Input placeholder="United States" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="address.addressLine1"
-                    render={({ field }) => (
-                      <FormItem className="col-span-1 md:col-span-2">
-                        <FormLabel>Address Line 1</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Street address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="address.addressLine2"
-                    render={({ field }) => (
-                      <FormItem className="col-span-1 md:col-span-2">
-                        <FormLabel>Address Line 2 (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Apartment, suite, unit, etc."
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </motion.div>
-
-              {/* URLs section */}
-              <motion.div className="space-y-4" variants={itemVariants}>
-                <h3 className="text-lg font-medium">Social Media & Websites</h3>
-
-                {fields.map((field, index) => (
-                  <motion.div
-                    key={field.id}
-                    className="flex items-center gap-2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <FormField
-                      control={form.control}
-                      name={`urls.${index}.value`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel className={cn(index !== 0 && 'sr-only')}>
-                            URLs
-                          </FormLabel>
-                          <FormDescription
-                            className={cn(index !== 0 && 'sr-only')}
-                          >
-                            Add links to your website, blog, or social media
-                            profiles.
-                          </FormDescription>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="mt-8"
-                      onClick={() => remove(index)}
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="sr-only">Remove URL</span>
-                    </Button>
-                  </motion.div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => append({ value: '' })}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add URL
-                </Button>
-              </motion.div>
-
-              <motion.div className="pt-4" variants={itemVariants}>
+              <motion.div className="pt-6" variants={itemVariants}>
                 <Button
                   type="submit"
-                  className="w-full md:w-auto"
+                  className="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? 'Updating...' : 'Update profile'}

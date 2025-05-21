@@ -9,6 +9,11 @@ import com.helios.auctix.repositories.UserRepository;
 //import com.helios.auctix.exceptions.ResourceNotFoundException;
 import com.helios.auctix.services.user.UserDetailsService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional
 public class ComplaintService {
@@ -43,8 +49,17 @@ public class ComplaintService {
         return complaintRepository.save(complaint);
     }
 
-    public List<Complaint> getAllComplaints() {
-        return complaintRepository.findAll();
+    public Page<Complaint> getAllComplaints(Integer limit, Integer offset, String sortBy, String order, String search) {
+        Sort.Direction direction = order.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(offset, limit, Sort.by(direction, sortBy));
+
+        log.info("limit: {}, offset: {}, sortBy: {}, order: {}, search: {}", limit, offset, sortBy, order, search);
+        if (search != null && !search.trim().isEmpty()) {
+            log.info("search: {}", search);
+            return complaintRepository.findByReportedUser_UsernameContainingIgnoreCaseOrReportedBy_UsernameContainingIgnoreCaseOrReasonContainingIgnoreCase(search,search,search, pageable);
+        } else {
+            return complaintRepository.findAll(pageable);
+        }
     }
 
     public Complaint getComplaintById(UUID id) {
