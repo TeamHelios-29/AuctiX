@@ -1,13 +1,11 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Plus, X } from 'lucide-react';
-
-import { cn } from '@/lib/utils';
+import { CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -20,14 +18,17 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertBox } from './AlertBox';
 import { Card, CardContent } from '@/components/ui/card';
-import ImageUploadPopup, { ImageResult } from '../molecules/ImageUploadPopup';
+import type { ImageResult } from '../molecules/ImageUploadPopup';
 import { updateProfilePhoto } from '@/services/userService';
-import { AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
 import AxiosRequest from '@/services/axiosInspector';
 import { fetchCurrentUser } from '@/store/slices/userSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
+import { AlertBox } from './AlertBox';
+import ProfileCard from '../molecules/ProfileCard';
+import { ProfileUrlsSection } from '../molecules/ProfileURLsSection';
+import { AddressSection } from '../molecules/ProfileAddressSection';
 
 const profileFormSchema = z.object({
   username: z
@@ -72,7 +73,7 @@ const profileFormSchema = z.object({
     number: z.string().optional(),
     addressLine1: z.string().optional(),
     addressLine2: z.string().optional(),
-    country: z.string(),
+    country: z.string().optional(),
   }),
   urls: z
     .array(
@@ -102,9 +103,12 @@ const defaultValues: Partial<ProfileFormValues> = {
 
 export function ProfileForm() {
   const [croppedImg, setCroppedImg] = useState<string | null>(null);
+  const [bannerImg, setBannerImg] = useState<string>('/defaultBanner.jpg');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isProfilePictureLoading, setIsProfilePictureLoading] = useState(false);
+  const [isBannerLoading, setIsBannerLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const dispatch = useAppDispatch();
@@ -114,11 +118,6 @@ export function ProfileForm() {
     resolver: zodResolver(profileFormSchema),
     defaultValues,
     mode: 'onChange',
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    name: 'urls',
-    control: form.control,
   });
 
   useEffect(() => {
@@ -134,44 +133,76 @@ export function ProfileForm() {
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
       email: userData.email || '',
-      bio: '',
-      address: {
-        number: '',
-        addressLine1: '',
-        addressLine2: '',
-        country: '',
-      },
-      urls: [],
+      // bio: userData.bio || "",   // add bio from backend
+      // address: {
+      //   number: userData.address?.number || "",
+      //   addressLine1: userData.address?.addressLine1 || "",
+      //   addressLine2: userData.address?.addressLine2 || "",
+      //   country: userData.address?.country || "",
+      // },                         // add address from backend
+      // urls: userData.urls || [], // add urls from backend
     };
     form.reset(values);
     setCroppedImg(userData.profile_photo || null);
-  }, [userData]);
+    setBannerImg('/defaultBanner.jpg'); // get the banner image from backend
+  }, [userData, form]);
 
   function onSubmit(data: ProfileFormValues) {
     setIsAlertOpen(true);
   }
 
-  const onProfilePhotoSet = useCallback((e: ImageResult) => {
-    console.log(e);
-    if (e.croppedImageBase64 != undefined && e.croppedImageFile) {
-      setCroppedImg(e.croppedImageBase64);
-      setIsProfilePictureLoading(true);
-      updateProfilePhoto(e.croppedImageFile, axiosInstance)
-        .then(() => {
-          dispatch(fetchCurrentUser);
-        })
-        .finally(() => {
-          setIsProfilePictureLoading(false);
-        })
-        .catch(() => {
-          console.error('Profile picture not uploaded.');
-        });
-    }
-  }, []);
+  const onProfilePhotoSet = useCallback(
+    (e: ImageResult) => {
+      if (e.croppedImageBase64 != undefined && e.croppedImageFile) {
+        setCroppedImg(e.croppedImageBase64);
+        setIsProfilePictureLoading(true);
+        updateProfilePhoto(e.croppedImageFile, axiosInstance)
+          .then(() => {
+            dispatch(fetchCurrentUser);
+          })
+          .finally(() => {
+            setIsProfilePictureLoading(false);
+          })
+          .catch((error) => {
+            setErrorMessage(
+              'Failed to upload profile picture. Please try again.',
+            );
+            console.error('Profile picture not uploaded.', error);
+          });
+      }
+    },
+    [axiosInstance, dispatch],
+  );
+
+  const onBannerPhotoSet = useCallback(
+    (e: ImageResult) => {
+      if (e.croppedImageBase64 != undefined && e.croppedImageFile) {
+        setBannerImg(e.croppedImageBase64);
+        setIsBannerLoading(true);
+        // Assuming there's a similar function for banner upload
+        updateProfilePhoto(e.croppedImageFile, axiosInstance)
+          .then(() => {
+            dispatch(fetchCurrentUser);
+          })
+          .finally(() => {
+            setIsBannerLoading(false);
+          })
+          .catch((error) => {
+            setErrorMessage('Failed to upload banner image. Please try again.');
+            console.error('Banner image not uploaded.', error);
+          });
+      }
+    },
+    [axiosInstance, dispatch],
+  );
+
+  const removeBanner = () => {
+    setBannerImg('/defaultbanner.jpg');
+    // TODO: API call to remove banner
+  };
 
   const handleSubmit = () => {
     setIsSubmitting(true);
-    // Simulate API call
     setTimeout(() => {
       console.log('Submitting form data:', form.getValues());
       setIsSubmitting(false);
@@ -216,7 +247,47 @@ export function ProfileForm() {
         cancelBtn="Cancel"
       />
 
-      <Card>
+      {/* Profile Card Component */}
+      <ProfileCard
+        username={userData.username || ''}
+        email={userData.email || ''}
+        role={userData.role || ''}
+        profilePhoto={croppedImg || '/defaultProfilePhoto.jpg'}
+        bannerPhoto={bannerImg}
+        isProfileLoading={isProfilePictureLoading}
+        isBannerLoading={isBannerLoading}
+        onProfilePhotoSet={onProfilePhotoSet}
+        onBannerPhotoSet={onBannerPhotoSet}
+        onRemoveBanner={removeBanner}
+      />
+
+      {/* Error Message */}
+      <AnimatePresence>
+        {errorMessage && (
+          <motion.div
+            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center">
+              <X className="h-5 w-5 mr-2" />
+              <p>{errorMessage}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto mt-1 text-red-700 hover:text-red-800 p-0"
+              onClick={() => setErrorMessage(null)}
+            >
+              Dismiss
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Card className="mt-6">
         <CardContent className="pt-6">
           <Form {...form}>
             <motion.form
@@ -302,36 +373,6 @@ export function ProfileForm() {
                 </motion.div>
               </div>
 
-              {/* Profile Photo Upload */}
-              <motion.div
-                className="flex flex-col items-center space-y-4"
-                variants={itemVariants}
-              >
-                <div className="w-32 h-32 overflow-hidden rounded-full border border-gray-200">
-                  {!isProfilePictureLoading ? (
-                    <img
-                      className="w-full h-full object-cover"
-                      src={croppedImg ? croppedImg : '/defaultProfilePhoto.jpg'}
-                      alt="Profile"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 overflow-hidden rounded-full border border-gray-200">
-                      <div className="flex items-center justify-center w-full h-full">
-                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <ImageUploadPopup
-                  minHeight={100}
-                  minWidth={100}
-                  acceptingHeight={500}
-                  acceptingWidth={500}
-                  shape="circle"
-                  onConfirm={onProfilePhotoSet}
-                />
-              </motion.div>
-
               {/* Bio field */}
               <motion.div variants={itemVariants}>
                 <FormField
@@ -357,133 +398,20 @@ export function ProfileForm() {
                 />
               </motion.div>
 
-              {/* Address fields */}
-              <motion.div className="space-y-4" variants={itemVariants}>
-                <h3 className="text-lg font-medium">Address Information</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="address.number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>House/Building Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="address.country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl>
-                          <Input placeholder="United States" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="address.addressLine1"
-                    render={({ field }) => (
-                      <FormItem className="col-span-1 md:col-span-2">
-                        <FormLabel>Address Line 1</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Street address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="address.addressLine2"
-                    render={({ field }) => (
-                      <FormItem className="col-span-1 md:col-span-2">
-                        <FormLabel>Address Line 2 (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Apartment, suite, unit, etc."
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              {/* Address section */}
+              <motion.div variants={itemVariants}>
+                <AddressSection form={form} />
               </motion.div>
 
               {/* URLs section */}
-              <motion.div className="space-y-4" variants={itemVariants}>
-                <h3 className="text-lg font-medium">Social Media & Websites</h3>
-
-                {fields.map((field, index) => (
-                  <motion.div
-                    key={field.id}
-                    className="flex items-center gap-2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <FormField
-                      control={form.control}
-                      name={`urls.${index}.value`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel className={cn(index !== 0 && 'sr-only')}>
-                            URLs
-                          </FormLabel>
-                          <FormDescription
-                            className={cn(index !== 0 && 'sr-only')}
-                          >
-                            Add links to your website, blog, or social media
-                            profiles.
-                          </FormDescription>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="mt-8"
-                      onClick={() => remove(index)}
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="sr-only">Remove URL</span>
-                    </Button>
-                  </motion.div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => append({ value: '' })}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add URL
-                </Button>
+              <motion.div variants={itemVariants}>
+                <ProfileUrlsSection form={form} name="SocialMediaUrls" />
               </motion.div>
 
               <motion.div className="pt-4" variants={itemVariants}>
                 <Button
                   type="submit"
-                  className="w-full md:w-auto"
+                  className="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? 'Updating...' : 'Update profile'}
