@@ -1,4 +1,4 @@
-package com.helios.auctix.dtos;
+package com.helios.auctix.dtos.notification;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,15 +8,16 @@ import lombok.NoArgsConstructor;
 import java.util.Map;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class NotificationPreferencesDTO {
+@NoArgsConstructor
+@AllArgsConstructor
+public class NotificationPreferenceUpdateDto {
     private Map<String, Boolean> global;
     private Map<String, Map<String, Boolean>> events;
 }
 
 /*
+
 {
   "global": {
     "EMAIL": true,
@@ -33,5 +34,4 @@ public class NotificationPreferencesDTO {
     }
   }
 }
-
  */

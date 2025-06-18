@@ -2,15 +2,16 @@ package com.helios.auctix.services.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.helios.auctix.config.defaults.NotificationPreferenceDefaultsProperties;
 import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
 import com.helios.auctix.domain.notification.preferences.NotificationGlobalPreference;
 import com.helios.auctix.domain.user.User;
-import com.helios.auctix.dtos.NotificationPreferencesDTO;
-import com.helios.auctix.mappers.NotificationPreferencesMapper;
+import com.helios.auctix.dtos.notification.NotificationPreferenceUpdateDto;
+import com.helios.auctix.dtos.notification.NotificationPreferencesResponseDto;
+import com.helios.auctix.mappers.NotificationPreferenceResponseDTOMapper;
 import com.helios.auctix.repositories.NotificationEventPreferencesRepository;
 import com.helios.auctix.repositories.NotificationGlobalPreferencesRepository;
 import jakarta.validation.Valid;
@@ -27,24 +28,31 @@ public class NotificationSettingsService {
 
     private final NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository;
     private final NotificationEventPreferencesRepository notificationEventPreferencesRepository;
-    private final NotificationPreferencesMapper preferencesDTOMapper;
+    private final NotificationPreferenceResponseDTOMapper preferencesDTOMapper;
+    private final NotificationPreferenceDefaultsProperties preferenceDefaultsProperties;
     private final ObjectMapper objectMapper;
 
-    public NotificationSettingsService(NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository, NotificationEventPreferencesRepository notificationEventPreferencesRepository, NotificationPreferencesMapper preferencesDTOMapper, ObjectMapper objectMapper) {
+    public NotificationSettingsService(
+            NotificationGlobalPreferencesRepository notificationGlobalPreferencesRepository,
+            NotificationEventPreferencesRepository notificationEventPreferencesRepository,
+            NotificationPreferenceResponseDTOMapper preferencesDTOMapper,
+            ObjectMapper objectMapper,
+            NotificationPreferenceDefaultsProperties preferenceDefaultsProperties) {
         this.notificationGlobalPreferencesRepository = notificationGlobalPreferencesRepository;
         this.notificationEventPreferencesRepository = notificationEventPreferencesRepository;
         this.preferencesDTOMapper = preferencesDTOMapper;
         this.objectMapper = objectMapper;
+        this.preferenceDefaultsProperties = preferenceDefaultsProperties;
     }
 
-
     public Set<NotificationType> resolveNotificationPreference(NotificationCategory category, User user) {
-        Set<NotificationType> enabledNotificationTypes = new HashSet<>();
+        Set<NotificationType> enabledNotificationTypesForEvent = new HashSet<>();
+        Set<NotificationType> globallyEnabledNotificationTypes = new HashSet<>();
+
         try {
 
-            // * 1st check the preferences for event categories
+            // Check the preferences for event categories
             Optional<NotificationEventPreference> eventPreference = notificationEventPreferencesRepository.findByUserId(user.getId());
-//            log.info("Event preferences" + eventPreference.get().getSettings());
             if (eventPreference.isPresent()) {
                 // settings will be a string of   {"PROMO" : { "EMAIL": true, "PUSH": false }, "BID_WIN" : { "EMAIL": true, "PUSH": false } }
                 Map<NotificationCategory, Map<NotificationType, Boolean>> eventPreferenceSettings = getSettingsNotificationTypesForEventCategories(eventPreference.get().getSettings());
@@ -53,46 +61,74 @@ public class NotificationSettingsService {
                 if (categorySettings != null) {
                     for (Map.Entry<NotificationType, Boolean> entry : categorySettings.entrySet()) {
                         if (Boolean.TRUE.equals(entry.getValue())) {
-                            enabledNotificationTypes.add(entry.getKey());
+                            enabledNotificationTypesForEvent.add(entry.getKey());
                         }
                     }
-
-                    log.info( "event specific notification preferences are found");
-                    // Since event-specific preference exists for this notification event category, return it
-                    return enabledNotificationTypes;
                 }
+            } else {
+                // fall back is default notification preferences when there is no event category settings
+                log.info( "Fallback to default preferences for category");
+                enabledNotificationTypesForEvent = preferenceDefaultsProperties.getEnabledDefaultNotificationTypesForCategory(category);
             }
 
-            // 2nd check if there are global notification preferences set for the user
+            // Get the global notification preferences set for the user
             Optional<NotificationGlobalPreference> globalPreference = notificationGlobalPreferencesRepository.findByUserId(user.getId());
             if (globalPreference.isPresent()) {
                 Map<NotificationType, Boolean> globalNotificationPreference = getSettingsGlobalNotificationPreference(globalPreference.get().getSettings());
 
-                enabledNotificationTypes = globalNotificationPreference.entrySet().stream()
+                globallyEnabledNotificationTypes = globalNotificationPreference.entrySet().stream()
                         .filter(entry -> Boolean.TRUE.equals(entry.getValue()))
                         .map(Map.Entry::getKey) // get the NotificationType
                         .collect(Collectors.toSet());
-
-                log.info( "global notification preferences are found");
-                // We return the global settings since we found them
-                return enabledNotificationTypes;
-
-
+            } else {
+                log.info("Fallback to default global preferences");
+                globallyEnabledNotificationTypes = preferenceDefaultsProperties.getEnabledGlobalDefaults();
             }
 
-            // Last fall back is default notification preferences when there is no event category settings
-            Map<NotificationCategory, Set<NotificationType>> defaultPreferences = setDefaultPreferences();
-            log.info( "Fallbacking to default preferencees");
+            // if a NotificationType is missing in the user's settings string we have to handle it by checking if that is enabled in the default preferences
+            for (NotificationType type : NotificationType.values()) {
 
-            enabledNotificationTypes = defaultPreferences.get(category);
+                // Check missing in event preferences
+                if (eventPreference.isPresent()) {
+                    Map<NotificationCategory, Map<NotificationType, Boolean>> eventPreferenceSettings = getSettingsNotificationTypesForEventCategories(eventPreference.get().getSettings());
+                    Map<NotificationType, Boolean> categorySettings = eventPreferenceSettings.get(category);
+                    if (categorySettings == null || !categorySettings.containsKey(type)) {
+                        // Missing: check default for this category and add if enabled
+                        Set<NotificationType> defaultEventTypes = preferenceDefaultsProperties.getEnabledDefaultNotificationTypesForCategory(category);
+                        if (defaultEventTypes.contains(type)) {
+                            enabledNotificationTypesForEvent.add(type);
+                        }
+                    }
+                } else {
+                    // No event preference, already fallback to default earlier
+                }
 
-            return enabledNotificationTypes;
+                // Check missing NotificationType in global preferences
+                if (globalPreference.isPresent()) {
+                    Map<NotificationType, Boolean> globalNotificationPreference = getSettingsGlobalNotificationPreference(globalPreference.get().getSettings());
+                    if (!globalNotificationPreference.containsKey(type)) {
+                        // Missing NotificationType: check default global preferences and add if enabled
+                        Set<NotificationType> defaultGlobalTypes = preferenceDefaultsProperties.getEnabledGlobalDefaults();
+                        if (defaultGlobalTypes.contains(type)) {
+                            globallyEnabledNotificationTypes.add(type);
+                        }
+                    }
+                } else {
+                    // No global preference, fallback to default global preferences already done earlier
+                }
+            }
+
+            // Filter so that global preference overrides, event preference
+            // Only include notification types that are enabled both at event level and globally
+            return enabledNotificationTypesForEvent.stream()
+                    .filter(globallyEnabledNotificationTypes::contains)
+                    .collect(Collectors.toSet());
+
 
         } catch (JsonProcessingException e) {
             log.error("Error resolving notification preferences for user {} for category {}. Falling back to defaults. Error: {}", user.getUsername(), category, e.getMessage());
-            e.printStackTrace();
-            Map<NotificationCategory, Set<NotificationType>> defaultPreferences = setDefaultPreferences();
-            return defaultPreferences.get(category);
+//            e.printStackTrace();
+            return preferenceDefaultsProperties.getEnabledDefaultNotificationTypesForCategory(category);
         }
     }
 
@@ -130,6 +166,7 @@ public class NotificationSettingsService {
         );
     }
 
+    @Deprecated
     private Map<NotificationCategory, Set<NotificationType>> setDefaultPreferences() {
         Map<NotificationCategory, Set<NotificationType>> defaultPreferences = new HashMap<>();
 
@@ -148,7 +185,7 @@ public class NotificationSettingsService {
         return defaultPreferences;
     }
 
-    public void savePreferences(User user, @Valid NotificationPreferencesDTO dto) {
+    public void savePreferences(User user, @Valid NotificationPreferenceUpdateDto dto) {
         if (dto.getGlobal() != null) {
             String globalSettingsJson = toJson(dto.getGlobal());
 
@@ -196,12 +233,12 @@ public class NotificationSettingsService {
         }
     }
 
-     public NotificationPreferencesDTO getPreferences(User user) {
+     public NotificationPreferencesResponseDto getPreferences(User user) {
 
         Optional<NotificationEventPreference> eventPreferenceOptional = notificationEventPreferencesRepository.findByUserId(user.getId());
         Optional<NotificationGlobalPreference> globalPreferenceOptional = notificationGlobalPreferencesRepository.findByUserId(user.getId());
 
-         // for now null if preferences don't exist
+         // Set as null if no preference exist, the NotificationPreferencesResponseDtoMapper will handle the null and replace with the default preferences
          NotificationEventPreference eventPreference = eventPreferenceOptional.orElse(null);
          NotificationGlobalPreference globalPreference = globalPreferenceOptional.orElse(null);
 
