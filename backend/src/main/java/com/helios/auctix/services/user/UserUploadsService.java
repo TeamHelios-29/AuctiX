@@ -2,12 +2,15 @@ package com.helios.auctix.services.user;
 
 import com.helios.auctix.domain.upload.Upload;
 import com.helios.auctix.domain.user.*;
+import com.helios.auctix.repositories.SellerRepository;
 import com.helios.auctix.repositories.UploadRepository;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.PermissionDeniedDataAccessException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -20,6 +23,7 @@ public class UserUploadsService {
     private final UploadRepository uploadRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+    private final SellerRepository sellerRepository;
 
     Logger log = Logger.getLogger(UserRegisterService.class.getName());
 
@@ -125,6 +129,18 @@ public class UserUploadsService {
         }
 
         return new UserServiceResponse(true, "profile photo deleted",user);
+    }
+
+
+    public void UserBannerPhotoUpdate(UUID userId,Upload upload) {
+        Seller seller = sellerRepository.findById(userId).orElse(null);
+        if(seller == null) {
+            throw new PermissionDeniedDataAccessException("User not found", new Exception("User not found"));
+        }
+        if(upload == null) {
+            throw new IllegalArgumentException("Upload cannot be null");
+        }
+        seller.setBannerId(upload.getId());
     }
 }
 

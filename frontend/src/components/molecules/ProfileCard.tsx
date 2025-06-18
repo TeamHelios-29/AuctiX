@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import type { ImageResult } from '../molecules/ImageUploadPopup';
 import ImageUploadPopup from '../molecules/ImageUploadPopup';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trash2, Mail, AtSign } from 'lucide-react';
+import { Trash2, Mail, AtSign, Shield } from 'lucide-react';
 import { TooltipBtn } from '../atoms/TooltipBtn';
 
 interface ProfileCardProps {
@@ -18,6 +18,7 @@ interface ProfileCardProps {
   onProfilePhotoSet: (e: ImageResult) => void;
   onBannerPhotoSet: (e: ImageResult) => void;
   onRemoveBanner: () => void;
+  onProfilePhotoDelete: () => void;
 }
 
 export default function ProfileCard({
@@ -29,6 +30,7 @@ export default function ProfileCard({
   isProfileLoading,
   isBannerLoading,
   onProfilePhotoSet,
+  onProfilePhotoDelete,
   onBannerPhotoSet,
   onRemoveBanner,
 }: ProfileCardProps) {
@@ -62,7 +64,7 @@ export default function ProfileCard({
             <div className="absolute top-4 right-4 flex space-x-2">
               <ImageUploadPopup
                 minHeight={300}
-                minWidth={1000}
+                minWidth={800}
                 acceptingHeight={500}
                 acceptingWidth={1500}
                 shape="square"
@@ -93,7 +95,13 @@ export default function ProfileCard({
                 />
               )}
             </div>
-            <div className="absolute -bottom-2 -right-2">
+            <div className="absolute -bottom-2 -right-2 flex items-center gap-2">
+              <TooltipBtn
+                icon={Trash2}
+                text="Remove Profile Photo"
+                onClick={onProfilePhotoDelete}
+                className="p-2 mr-14"
+              />
               <ImageUploadPopup
                 minHeight={100}
                 minWidth={100}
@@ -115,16 +123,21 @@ export default function ProfileCard({
           transition={{ delay: 0.2 }}
         >
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <AtSign className="w-5 h-5 text-xl text-gray-500" /> {username}
+            <AtSign className="w-5 h-5 text-gray-500" />
+            {username}
           </h2>
-          <p className="text-gray-500 flex items-center gap-2">
-            <Mail className="w-5 h-5 text-xl text-gray-500" /> {email}
+
+          <p className="text-gray-600 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-gray-500" />
+            {email}
           </p>
-          <div className="mt-2">
-            <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+
+          <p className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-gray-500" />
+            <span className="px-2 py-0.5 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">
               {formatRole(role)}
             </span>
-          </div>
+          </p>
         </motion.div>
       </CardContent>
     </Card>

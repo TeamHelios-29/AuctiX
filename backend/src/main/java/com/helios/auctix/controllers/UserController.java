@@ -1,27 +1,22 @@
 package com.helios.auctix.controllers;
 
 import com.azure.core.util.BinaryData;
-import com.helios.auctix.config.ErrorConfig;
-import com.helios.auctix.config.JwtAuthenticationFilter;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
-import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import com.helios.auctix.services.user.*;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.PermissionDeniedDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -82,7 +77,7 @@ public class UserController {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
-        FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENTS.toString() , currentUser.getId(), false);
+        FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENT, currentUser.getId(), false);
         if (res.isSuccess()) {
             return res.getMessage();
         } else {
@@ -212,7 +207,7 @@ public class UserController {
 
         // Upload file
         log.info("Trying to upload file");
-        FileUploadResponse uploadRes = uploader.uploadFile(file, FileUploadUseCaseEnum.PROFILE_PHOTO.toString() , currentUser.getEmail() , true );
+        FileUploadResponse uploadRes = uploader.uploadFile(file, FileUploadUseCaseEnum.PROFILE_PHOTO , currentUser.getEmail() , true );
 
         if (uploadRes.isSuccess()) {
             // save file upload data
@@ -232,6 +227,36 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
         }
 
+    }
+
+    @PostMapping("/uploadUserBannerPhoto")
+    public ResponseEntity<String> uploadBannerPhoto(@RequestParam("file") MultipartFile file) throws AuthenticationException {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // only sellers can upload banner photos
+        if (currentUser != null && currentUser.getRole().getName() != UserRoleEnum.SELLER) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You don't have permission to upload banner photo");
+        }
+
+        log.info("File upload by user " + currentUser.getUsername());
+
+        // Upload file
+        log.info("Trying to upload file");
+        FileUploadResponse uploadRes = uploader.uploadFile(file, FileUploadUseCaseEnum.PROFILE_BANNER_PHOTO, currentUser.getEmail(), true);
+
+        if (uploadRes.isSuccess()) {
+            // save file upload data
+            log.info("Trying to save file upload data");
+            userUploadsService.UserBannerPhotoUpdate(currentUser.getId(), uploadRes.getUpload());
+            log.info("File upload data saved");
+            return ResponseEntity.ok().body("Banner photo uploaded successfully " + uploadRes.getUpload().getId());
+
+        } else {
+            log.warning(uploadRes.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
+        }
     }
 
 

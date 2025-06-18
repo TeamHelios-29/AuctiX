@@ -19,7 +19,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AlertBox } from '../organisms/AlertBox';
-import { error } from 'console';
 import { TooltipBtn } from '../atoms/TooltipBtn';
 
 interface Position {
@@ -177,9 +176,7 @@ export default function ImageUploadPopup({
                   containerWidth,
                   containerHeight,
                 );
-                // console.log('Container size:', containerWidth, containerHeight);
-                // console.log('Image size:', img.naturalWidth, img.naturalHeight);
-                // console.log('Calculated scale:', initialScale);
+
                 setAutoScale(initialScale);
                 setScale(initialScale);
                 // Set initial position to center

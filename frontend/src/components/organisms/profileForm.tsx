@@ -40,6 +40,7 @@ const profileFormSchema = z.object({
     .min(3, {
       message: 'Last name must be at least 3 characters.',
     })
+
     .max(30, {
       message: 'Last name must not be longer than 30 characters.',
     })
@@ -224,7 +225,7 @@ export function ProfileForm() {
     [axiosInstance, dispatch],
   );
 
-  const removeBanner = () => {
+  const onRemoveBanner = () => {
     setBannerImg('/defaultbanner.jpg');
     // TODO: API call to remove banner
   };
@@ -320,8 +321,9 @@ export function ProfileForm() {
         isProfileLoading={isProfilePictureLoading}
         isBannerLoading={isBannerLoading}
         onProfilePhotoSet={onProfilePhotoSet}
+        onProfilePhotoDelete={onProfilePhotoDelete}
         onBannerPhotoSet={onBannerPhotoSet}
-        onRemoveBanner={removeBanner}
+        onRemoveBanner={onRemoveBanner}
       />
 
       {/* Error Message */}
