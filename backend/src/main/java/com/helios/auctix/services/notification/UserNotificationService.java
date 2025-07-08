@@ -2,6 +2,7 @@ package com.helios.auctix.services.notification;
 
 import com.google.api.gax.rpc.NotFoundException;
 import com.helios.auctix.domain.notification.Notification;
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.dtos.NotificationResponseDto;
 import com.helios.auctix.repositories.NotificationRepository;
 import org.springframework.data.domain.Page;
@@ -72,4 +73,9 @@ public class UserNotificationService {
                 .createdAt(n.getCreatedAt())
                 .build();
     }
+
+//    public long getForCategory(UUID id, NotificationCategory notificationCategory) {
+//        Pageable pageable = PageRequest.of(1, 1, Sort.by(Sort.Direction.DESC, "createdAt"));
+//        notificationRepository.findByUserIdAndNotificationCategory(notificationCategory)
+//    }
 }

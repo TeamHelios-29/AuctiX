@@ -1,5 +1,6 @@
 package com.helios.auctix.controllers;
 
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.NotificationResponseDto;
 import com.helios.auctix.services.notification.UserNotificationService;
@@ -51,6 +52,17 @@ public class NotificationController {
             throw new RuntimeException("User not authenticated");
         }
     }
+
+//    @GetMapping("/get/{category}")
+//    public long getUnreadCountForCategory(@PathVariable String notificationCategory) {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        try {
+//            User user = userDetailsService.getAuthenticatedUser(authentication);
+//            return notificationService.getForCategory(user.getId(), NotificationCategory.valueOf(notificationCategory) );
+//        } catch (AuthenticationException e) {
+//            throw new RuntimeException("User not authenticated");
+//        }
+//    }
 
     @PostMapping("/{id}/read")
     public void markAsRead(@PathVariable UUID id) {

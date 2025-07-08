@@ -27,4 +27,5 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Query("UPDATE Notification n SET n.read = true WHERE n.user.id = :userId AND n.read = false")
     void markAllAsReadForUser(@Param("userId") UUID userId);
 
+//    Page<Notification> findByUserIdAndNotificationCategory(UUID userId, Pageable pageable, String notificationCategory);
 }
