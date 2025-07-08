@@ -13,8 +13,7 @@ import java.util.UUID;
 @Data
 @Builder
 public class BidderDTO {
-    @JsonIgnore
-    private UUID id;  // Add this
+    private UUID id;
     private String name;
     private String avatar;
     private Boolean isActive;

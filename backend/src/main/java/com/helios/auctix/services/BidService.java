@@ -20,9 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.helios.auctix.dtos.BidderDTO;
-
-
 
 @AllArgsConstructor
 @Service
@@ -37,15 +34,16 @@ public class BidService {
 
     // Get bid history for an auction
     public List<Bid> getBidHistoryForAuction(UUID auctionId) {
-        return bidRepository.findByAuctionIdOrderByBidTimeDesc(auctionId);
+        return bidRepository.findByAuctionIdOrderByBidTimeDesc(auctionId)
+                .stream()
+                .limit(10)
+                .toList();
     }
 
-    // Get highest bid for an auction
+    // Get the highest bid for an auction
     public Optional<Bid> getHighestBidForAuction(UUID auctionId) {
         return bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
     }
-
-
 
     // Add this method to get bidder details
     public BidDTO convertToDTO(Bid bid) {
@@ -60,27 +58,26 @@ public class BidService {
                 .auctionId(bid.getAuction().getId())
                 .amount(bid.getAmount())
                 .bidTime(bid.getBidTime())
-                .bidder(BidderDTO.builder()
-                        .id(bid.getBidderId())
-                        .name(bid.getBidderName())
-                        .avatar(bid.getBidderAvatar())
-                        .build())
+                .bidder(bidderDto)
                 .build();
     }
 
-
-    // Place a new bid
+    // Method for placing a new bid
     @Transactional
-    public BidDTO placeBid(PlaceBidRequest request) {
-        // Extract fields from the request
+    public BidDTO placeBid(PlaceBidRequest request, User bidder) {
+
         UUID auctionId = request.getAuctionId();
-        UUID bidderId = request.getBidderId();
-        String bidderName = request.getBidderName();
-        String bidderAvatar = request.getBidderAvatar();
         Double amount = request.getAmount();
 
+        UUID bidderId = bidder.getId();
+        String bidderName = bidder.getFirstName() + " " + bidder.getLastName();
+        UUID bidderAvatar = null;
+        if(bidder.getUpload()!=null){
+             bidderAvatar = bidder.getUpload().getId();
+        }
 
-        // Find the auction
+
+        // Find the auction given through request
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
 
@@ -106,29 +103,18 @@ public class BidService {
             }
         }
 
-
-
         // Create and save the bid
         Bid bid = Bid.builder()
                 .auction(auction)
                 .bidderId(bidderId)
                 .bidderName(bidderName)
-                .bidderAvatar(bidderAvatar)
+                .bidderAvatar(String.valueOf(bidderAvatar))
                 .amount(amount)
                 .bidTime(now)
                 .build();
 
-        // Add bidder details from user service
-//        User bidder = userDetailsService.getUserById(request.getBidderId());
-//        bid.setBidderName(bidder.getFullName());
-//        bid.setBidderAvatar(bidder.getAvatarUrl());
-
-
-
         Bid savedBid = bidRepository.save(bid);
 
-        // Send real-time update
-        messagingTemplate.convertAndSend("/topic/bids/" + savedBid.getAuction().getId(), convertToDTO(savedBid));
         return convertToDTO(savedBid);
 
     }

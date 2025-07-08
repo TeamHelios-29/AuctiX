@@ -18,6 +18,7 @@ import { useNotificationRegistration } from '@/hooks/use-notification-registrati
 import UserDeliveryPage from '@/pages/User_Delivery';
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
 import AuctionsPage from '@/pages/ExploreAuctions';
+import ManageAuctions from '@/pages/ManageAuctions';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -36,8 +37,10 @@ export default function AppRouter() {
           <Route path="/create-auction" element={<CreateAuction />} />
           <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>
+
         {/* Routes using DashboardLayout */}
         <Route element={<DashboardLayout />}>
+          <Route path="/manage-auctions" element={<ManageAuctions />} />;
           <Route
             path="/dashboard"
             element={

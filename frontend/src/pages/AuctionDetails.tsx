@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Share, Flag, Heart } from 'lucide-react';
-import { useParams } from 'react-router-dom'; // if using react-router
-import axios from 'axios'; // for API calls
-import { Client } from '@stomp/stompjs'; // for WebSocket connection
+import { useParams } from 'react-router-dom';
+import { Client } from '@stomp/stompjs';
 import AxiosRequest from '@/services/axiosInspector';
-import type { BidDTO, BidderDTO } from 'src/types/BidDTO';
+import { useToast } from '@/hooks/use-toast';
 
-// Types
 interface BidHistory {
   bidder: {
     id: string;
@@ -20,18 +18,10 @@ interface BidHistory {
   timestamp: string;
 }
 
-interface ProductOwner {
-  id: string;
-  name: string;
-  avatar: string;
-  rating: number;
-  joinedDate: string;
-}
-
 interface ProductDetails {
   id: string;
   category: string;
-  name: string;
+  title: string;
   description: string;
   images: string[];
   startingPrice: number;
@@ -43,53 +33,25 @@ interface ProductDetails {
     avatar: string;
   };
   seller: {
-    id: string;
-    name: string;
-    avatar: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string | null;
   };
   endTime: string;
+  startTime: string;
   bidHistory: BidHistory[];
-  productOwner: ProductOwner;
 }
 
-const BID_INCREMENT = 1000;
-
-// const productData: ProductDetails = {
-//   id: '12345',
-//   category: 'Category',
-//   name: 'Product Name',
-//   description:
-//     'Lorem ipsum dolor sit amet consectetur. Augue quis justo amet tristique nibh. Elementum risus sem ultricies sed sit. Quam qelit aenm eu egestas diam ut sector nunc ulteries. In consetetur, urna non molestie. Tincidunt sitsusant et pretium cursus urna sociates et. Quis adipiscing laoreet risus malesuada elementum.',
-//   images: [
-//     '/api/placeholder/400/320',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//   ],
-//   startingPrice: 5000,
-//   currentBid: 7000,
-//   bidIncrement: BID_INCREMENT,
-//   currentBidder: {
-//     id: '67890',
-//     name: 'Tishan Dias',
-//     avatar: '/api/placeholder/32/32',
-//   },
-//   seller: {
-//     id: '54321',
-//     name: 'John Dolly',
-//     avatar: '/api/placeholder/32/32',
-//   },
-//   endTime: '2025-04-20T12:00:00Z', // Example future date
-//   bidHistory: [],
-//   productOwner: {
-//     id: '54321',
-//     name: 'John Dolly',
-//     avatar: '/api/placeholder/32/32',
-//     rating: 4.8,
-//     joinedDate: '2023-01-15',
-//   },
-// };
+function calculateBidIncrement(
+  startingPrice: number,
+  currentBid: number,
+): number {
+  const base = Math.max(startingPrice, currentBid || startingPrice);
+  const increment = base * 0.05;
+  return Math.ceil(increment / 100) * 100;
+}
 
 const AuctionDetailsPage = () => {
   const { auctionId } = useParams<{ auctionId: string }>();
@@ -97,18 +59,60 @@ const AuctionDetailsPage = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [bidAmount, setBidAmount] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<string>('');
-  const [stompClient, setStompClient] = useState<Client | null>(null);
+  const [timeLeft, setTimeLeft] = useState<boolean>(true);
   const axiosInstance = AxiosRequest().axiosInstance;
+  const { toast } = useToast();
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const [currentBid, setCurrentBid] = useState<number>(0);
-  const [currentBidder, setCurrentBidder] = useState<BidderDTO | null>(null);
+  function transformBidData(backendData: any) {
+    const getAvatarUrl = (profilePicture: { id: any }) => {
+      if (profilePicture && profilePicture.id) {
+        return `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${profilePicture.id}`;
+      }
+      return '/default-avatar.png';
+    };
 
-  function bidDTOToBidHistory(bid: BidDTO): BidHistory {
+    const transformUser = (user: {
+      username: any;
+      firstName: any;
+      lastName: any;
+      profilePicture: { id: any };
+    }) => ({
+      id: user.username,
+      name: `${user.firstName} ${user.lastName}`,
+      avatar: getAvatarUrl(user.profilePicture),
+    });
+
     return {
-      bidder: bid.bidder,
-      amount: bid.amount,
-      timestamp: bid.bidTime, // Assuming bidTime is ISO string
+      id: backendData.id,
+      category: backendData.category,
+      title: backendData.title,
+      description: backendData.description,
+      images: backendData.images || [],
+      startingPrice: backendData.startingPrice || 5000,
+      currentBid: backendData.currentHighestBid?.amount || 0,
+      bidIncrement: calculateBidIncrement(
+        backendData.startingPrice,
+        backendData.currentHighestBid?.amount || 0,
+      ),
+      currentBidder: backendData.currentHighestBid?.bidder
+        ? transformUser(backendData.currentHighestBid.bidder)
+        : {
+            id: '',
+            name: 'No bidder yet',
+            avatar: '/default-avatar.png',
+          },
+      seller: {
+        ...backendData.seller,
+        profilePicture: getAvatarUrl(backendData.seller.profilePicture),
+      },
+      endTime: backendData.endTime,
+      startTime: backendData.startTime,
+      bidHistory: backendData.bidHistory.map((bid: any) => ({
+        bidder: transformUser(bid.bidder),
+        amount: bid.amount,
+        timestamp: bid.bidTime,
+      })),
     };
   }
 
@@ -116,11 +120,17 @@ const AuctionDetailsPage = () => {
     const fetchAuctionDetails = async () => {
       try {
         setLoading(true);
-
         const response = await axiosInstance.get(`/auctions/${auctionId}`);
-        setProduct(response.data);
-        // Initialize bid amount to current bid + increment
-        setBidAmount(response.data.currentBid + response.data.bidIncrement);
+        const transformedData = transformBidData(response.data);
+        setProduct(transformedData);
+        // --- MODIFICATION HERE ---
+        const initialBidSuggestion =
+          transformedData.currentBid > 0
+            ? transformedData.currentBid + transformedData.bidIncrement
+            : transformedData.startingPrice; // If no current bid, start from startingPrice
+
+        setBidAmount(initialBidSuggestion);
+        // --- END MODIFICATION ---
       } catch (err) {
         console.error('Error fetching auction details:', err);
         setError('Failed to load auction details. Please try again later.');
@@ -134,76 +144,6 @@ const AuctionDetailsPage = () => {
     }
   }, [auctionId]);
 
-  // useEffect(() => {
-  //   // Directly set mock data for demo
-  //   setProduct(productData);
-  //   setBidAmount(productData.currentBid + productData.bidIncrement);
-  //   setLoading(false);
-  // }, [auctionId]);
-
-  useEffect(() => {
-    if (!auctionId) return;
-
-    const client = new Client({
-      brokerURL: 'ws://localhost:8080/ws-auction', // Changed to match backend endpoint
-      debug: (str) => console.log(str),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-    });
-
-    // Configure handlers BEFORE activation
-    client.onConnect = () => {
-      console.log('Connected to WebSocket');
-
-      client.subscribe(`/topic/bids/${auctionId}`, (message) => {
-        const bidUpdate: BidDTO = JSON.parse(message.body);
-        setCurrentBid(bidUpdate.amount);
-        setCurrentBidder({
-          name: bidUpdate.bidder.name, // Now nested
-          avatar: bidUpdate.bidder.avatar,
-          id: bidUpdate.bidder.id, // Now nested
-        });
-
-        setProduct((prev) =>
-          prev
-            ? {
-                ...prev,
-                bidHistory: [bidDTOToBidHistory(bidUpdate), ...prev.bidHistory],
-                currentBid: bidUpdate.amount,
-                currentBidder: bidUpdate.bidder,
-              }
-            : null,
-        );
-      });
-
-      // Single error handler
-      client.onStompError = (frame: any) => {
-        console.error('STOMP error:', frame.headers.message);
-        setError('Connection error - please refresh the page');
-      };
-
-      client.activate();
-      setStompClient(client);
-    };
-
-    // Activate client and cleanup
-    client.onDisconnect = () => {
-      console.log('WebSocket disconnected');
-    };
-
-    client.activate();
-    setStompClient(client);
-
-    return () => {
-      if (client.active) {
-        client.deactivate();
-        console.log('WebSocket disconnected');
-      }
-    };
-  }, [auctionId]);
-
-  // Calculate time remaining
   useEffect(() => {
     if (!product) return;
 
@@ -240,41 +180,60 @@ const AuctionDetailsPage = () => {
 
   const handleDecrementBid = () => {
     if (!product) return;
-    if (
-      bidAmount - product.bidIncrement >=
-      product.currentBid + product.bidIncrement
-    ) {
+
+    const minAllowedBid =
+      Math.max(product.startingPrice, product.currentBid) +
+      product.bidIncrement;
+
+    // Ensure the bid doesn't go below the minimum allowed bid
+    if (bidAmount - product.bidIncrement >= minAllowedBid) {
       setBidAmount(bidAmount - product.bidIncrement);
+    } else {
+      // Optionally, set it to the minimum allowed bid if they try to go lower
+      // Or, you could disable the decrement button if it would go below minAllowedBid
+      setBidAmount(minAllowedBid);
     }
+
+    // if (
+    //   bidAmount - product.bidIncrement >=
+    //   product.currentBid + product.bidIncrement
+    // ) {
+    //   setBidAmount(bidAmount - product.bidIncrement);
+    // }
   };
 
   const handlePlaceBid = async () => {
     if (!product || !auctionId) return;
 
     try {
-      // Send bid to backend
-      await axios.post(`/api/bids`, {
+      await axiosInstance.post(`/bids/place`, {
         auctionId: auctionId,
-        amount: bidAmount,
-        // You might need to include authentication info or user ID
-        // depending on your backend implementation
+        amount: bidAmount.toString(),
       });
 
-      // No need to update state here as it will be updated via WebSocket
-    } catch (err) {
+      toast({
+        title: 'Bid Placed!',
+        description: `Your bid of LKR ${bidAmount.toLocaleString()} was placed successfully.`,
+        variant: 'success',
+      });
+    } catch (err: any) {
       console.error('Error placing bid:', err);
-      // Handle different error types (e.g., bid too low, auction ended)
       const errorResponse =
-        (err as any)?.response?.data?.message ||
+        err?.response?.data?.message ||
         'Failed to place bid. Please try again.';
+
       setError(errorResponse);
 
-      // Clear error after 5 seconds
+      toast({
+        title: 'Bid Failed',
+        description: errorResponse,
+        variant: 'destructive',
+      });
+
       setTimeout(() => setError(null), 5000);
     }
   };
 
-  // Show loading state
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -283,7 +242,6 @@ const AuctionDetailsPage = () => {
     );
   }
 
-  // Show error state
   if (error && !product) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -292,7 +250,6 @@ const AuctionDetailsPage = () => {
     );
   }
 
-  // If product is null after loading, show not found message
   if (!product) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -301,150 +258,75 @@ const AuctionDetailsPage = () => {
     );
   }
 
-  // Move the return statement and JSX inside the component function
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Section - Product Images */}
         <div className="lg:col-span-2">
           <div className="mb-4">
             <p className="text-sm text-gray-500">{product.category}</p>
-            <h1 className="text-2xl font-bold">{product.name}</h1>
+            <h1 className="text-2xl font-bold">{product.title}</h1>
           </div>
 
           <div className="mb-6">
-            <div className="mb-4">
-              <img
-                src="http://localhost:8080/api/user/getUserProfilePhoto?file_uuid=61163c7a-5d6c-4f2c-b64a-5cfda6b84565"
-                alt={product.name}
-                className="w-full h-96 object-cover rounded-md"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {product.images.slice(1).map((image, index) => (
-                <img
-                  key={index}
-                  src={image}
-                  alt={`${product.name} thumbnail ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-md cursor-pointer"
-                />
-              ))}
-            </div>
-          </div>
-
-          <Tabs defaultValue="information" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="information">Information</TabsTrigger>
-              <TabsTrigger value="bid-history">Bid History</TabsTrigger>
-              <TabsTrigger value="product-owner">Product Owner</TabsTrigger>
-            </TabsList>
-
-            <TabsContent
-              value="information"
-              className="p-4 border rounded-md mt-2"
-            >
-              <h2 className="text-lg font-semibold mb-4">About this product</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                {product.description}
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                {product.description}
-              </p>
-              <p className="text-sm text-gray-600">{product.description}</p>
-            </TabsContent>
-
-            <TabsContent
-              value="bid-history"
-              className="p-4 border rounded-md mt-2"
-            >
-              <h2 className="text-lg font-semibold mb-4">Bid History</h2>
-              {product.bidHistory.length > 0 ? (
-                <ul>
-                  {product.bidHistory.map((bid, index) => (
-                    <li key={index} className="mb-2 pb-2 border-b">
-                      <div className="flex items-center">
-                        <img
-                          src={bid.bidder.avatar}
-                          alt={bid.bidder.name}
-                          className="w-8 h-8 rounded-full mr-2"
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {bid.bidder.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            LKR {bid.amount.toLocaleString()} •{' '}
-                            {new Date(bid.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No bid history available yet.
-                </p>
-              )}
-            </TabsContent>
-
-            <TabsContent
-              value="product-owner"
-              className="p-4 border rounded-md mt-2"
-            >
-              <h2 className="text-lg font-semibold mb-4">Product Owner</h2>
-              <div className="flex items-center mb-4">
-                <img
-                  src={product.productOwner.avatar}
-                  alt={product.productOwner.name}
-                  className="w-12 h-12 rounded-full mr-3"
-                />
-                <div>
-                  <p className="font-medium">{product.productOwner.name}</p>
-                  <div className="flex items-center">
-                    <p className="text-sm text-gray-500 mr-2">
-                      Rating: {product.productOwner.rating}/5
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Joined:{' '}
-                      {new Date(
-                        product.productOwner.joinedDate,
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
+            {product.images && product.images.length > 0 && (
+              <>
+                <div className="mb-4">
+                  <img
+                    src={`${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${product.images[selectedImageIndex]}`}
+                    alt={`Product image ${selectedImageIndex + 1}`}
+                    className="w-full max-h-[500px] object-contain rounded-xl border"
+                  />
                 </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+
+                <div className="flex gap-2 overflow-x-auto">
+                  {product.images.map((imgId, index) => (
+                    <img
+                      key={index}
+                      src={`${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${imgId}`}
+                      alt={`Thumbnail ${index + 1}`}
+                      className={`h-20 w-20 object-cover cursor-pointer border rounded-lg ${
+                        selectedImageIndex === index
+                          ? 'border-blue-500'
+                          : 'border-gray-300'
+                      }`}
+                      onClick={() => setSelectedImageIndex(index)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Right Section - Bidding Information */}
-        <div className="space-y-6">
+        <div>
           <div className="border-b pb-4">
             <p className="text-sm text-gray-500 mb-1">Closes in</p>
             <p className="text-lg font-semibold">{timeLeft}</p>
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-md">
+          <div className="bg-gray-50 p-4 rounded-md mt-4">
             <p className="text-sm text-gray-500 mb-1">Current Highest Bid</p>
             <p className="text-3xl font-bold mb-2">
-              LKR {product.currentBid.toLocaleString()}
+              LKR {product.currentBid?.toLocaleString()}
             </p>
             <div className="flex items-center text-sm">
               <p>By</p>
               <img
-                src={product.currentBidder.avatar}
-                alt={product.currentBidder.name}
+                src={
+                  product.currentBidder?.avatar !== 'NULL'
+                    ? product.currentBidder?.avatar
+                    : '/default-avatar.png'
+                }
+                alt={product.currentBidder?.name}
                 className="w-6 h-6 rounded-full mx-2"
               />
-              <p>{product.currentBidder.name}</p>
+              <p>{product.currentBidder?.name}</p>
             </div>
           </div>
 
-          <div>
+          <div className="mt-4">
             <p className="text-sm text-gray-500 mb-2">
-              Starting Price: LKR {product.startingPrice.toLocaleString()}
+              Starting Price: LKR {product.startingPrice?.toLocaleString()}
             </p>
 
             <div className="flex items-center mb-4">
@@ -510,22 +392,83 @@ const AuctionDetailsPage = () => {
           <div className="flex items-center mt-6">
             <p className="text-sm mr-2">By</p>
             <img
-              src={product.seller.avatar}
-              alt={product.seller.name}
+              src={product.seller.profilePicture || '/default-avatar.png'}
+              alt={`${product.seller.firstName} ${product.seller.lastName}`}
               className="w-6 h-6 rounded-full mr-2"
             />
-            <p className="text-sm">{product.seller.name}</p>
-          </div>
-
-          {/* Live Chat Section Placeholder */}
-          <div className="border rounded-md p-4 mt-6">
-            <h2 className="text-lg font-semibold mb-4">Live Chat</h2>
-            <p className="text-sm text-gray-500">
-              Live chat will be integrated here.
+            <p className="text-sm">
+              {product.seller.firstName} {product.seller.lastName}
             </p>
           </div>
         </div>
       </div>
+
+      <div className="mt-8">
+        <Tabs defaultValue="information" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="information">Information</TabsTrigger>
+            <TabsTrigger value="bid-history">Bid History</TabsTrigger>
+          </TabsList>
+
+          <TabsContent
+            value="information"
+            className="p-4 border rounded-md mt-2"
+          >
+            <h2 className="text-lg font-semibold mb-4">About this product</h2>
+            <p className="text-sm text-gray-600 mb-4">{product.description}</p>
+          </TabsContent>
+
+          <TabsContent
+            value="bid-history"
+            className="p-4 border rounded-md mt-2"
+          >
+            <h2 className="text-lg font-semibold mb-4">Bid History</h2>
+            {product.bidHistory.length > 0 ? (
+              <ul>
+                {product.bidHistory.map((bid, index) => (
+                  <li key={index} className="mb-2 pb-2 border-b">
+                    <div className="flex items-center">
+                      <img
+                        src={
+                          bid.bidder?.avatar !== 'NULL'
+                            ? bid.bidder?.avatar
+                            : '/default-avatar.png'
+                        }
+                        alt={bid.bidder?.name || 'Bidder'}
+                        className="w-8 h-8 rounded-full mr-2"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">{bid.bidder.name}</p>
+                        <p className="text-xs text-gray-500">
+                          LKR {bid.amount.toLocaleString()} •{' '}
+                          {new Date(bid.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">
+                No bid history available yet.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <div className="border rounded-md p-4 mt-6">
+        <h2 className="text-lg font-semibold mb-4">Live Chat</h2>
+        <p className="text-sm text-gray-500">
+          Live chat will be integrated here.
+        </p>
+      </div>
+
+      {error && (
+        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
     </div>
   );
 };

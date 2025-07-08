@@ -1,7 +1,5 @@
 import React from 'react';
-import { Clock } from 'lucide-react';
 
-// Define TypeScript interfaces
 interface Auction {
   id: string;
   productName: string;
@@ -22,7 +20,6 @@ interface Auction {
   isExpired: boolean;
 }
 
-// Sample data for testing
 const sampleAuctions: Auction[] = [
   {
     id: '1',
@@ -140,7 +137,6 @@ const sampleAuctions: Auction[] = [
   },
 ];
 
-// AuctionTimer component for displaying the countdown
 const AuctionTimer: React.FC<{
   timeRemaining: Auction['timeRemaining'];
   isExpired: boolean;
@@ -162,7 +158,6 @@ const AuctionTimer: React.FC<{
   );
 };
 
-// AuctionCard component
 const AuctionCard: React.FC<{ auction: Auction }> = ({ auction }) => {
   return (
     <div className="bg-white rounded-md overflow-hidden shadow-sm border border-gray-200">
@@ -207,9 +202,7 @@ const AuctionCard: React.FC<{ auction: Auction }> = ({ auction }) => {
   );
 };
 
-// Main Auctions Page component
 const AuctionsPage: React.FC = () => {
-  // Filter to only show active auctions by default
   const activeAuctions = sampleAuctions.filter((auction) => !auction.isExpired);
 
   return (

@@ -22,14 +22,11 @@ public class AuctionDetailsDTO {
     private List<String> images;
     private UserDTO seller;
 
-//    private double startingPrice;
-//    private double currentBid;
-//    private double bidIncrement;
-//    private BidderDTO currentBidder;
-//    private SellerDTO seller;
+    private double startingPrice;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private String endTime;
     private String startTime;
-//    private List<BidHistoryDTO> bidHistory;
-//    private ProductOwnerDTO productOwner;
+    private List<BidDTO> bidHistory;
+    private BidDTO currentHighestBid;
 }

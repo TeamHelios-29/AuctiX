@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, UUID> {
-    // Find active auctions (started but not ended) that are public
+    // Find active auctions
     List<Auction> findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(Instant now, Instant now2);
 
     // Find auctions by category

@@ -8,6 +8,9 @@ import { restoreUser } from './store/slices/authSlice';
 import { useAppDispatch, useAppSelector } from './hooks/hooks';
 import { fetchCurrentUser } from './store/slices/userSlice';
 import { IAuthUser } from './types/IAuthUser';
+import { ToastContainer } from 'react-toastify'; // ✅ Add this
+import 'react-toastify/dist/ReactToastify.css'; // ✅ And this
+import { Toaster } from '@/components/ui/toaster';
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -21,7 +24,13 @@ const App: React.FC = () => {
     dispatch(fetchCurrentUser()); // Fetch the current user data from the server and set it in the redux store
   }, [auth.isUserLoggedIn]);
 
-  return <AppRouter />;
+  return (
+    <>
+      <AppRouter />
+      <Toaster />
+      <ToastContainer position="top-right" autoClose={3000} />
+    </>
+  );
 };
 
 export default App;

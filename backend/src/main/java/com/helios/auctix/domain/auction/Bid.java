@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "bids")
-@Data  // Generates getters/setters
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,7 +30,7 @@ public class Bid {
     @Column(nullable = false)
     private UUID bidderId;
 
-    @Column(name = "bidder_name")  // Not stored in DB, populated when needed
+    @Column(name = "bidder_name")
     private String bidderName;
 
     @Column(name = "bidder_avatar")
