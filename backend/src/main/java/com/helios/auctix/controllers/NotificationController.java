@@ -1,6 +1,7 @@
 package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.notification.NotificationCategory;
+import com.helios.auctix.domain.notification.NotificationCategoryGroup;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.NotificationResponseDto;
 import com.helios.auctix.services.notification.UserNotificationService;
@@ -47,9 +48,32 @@ public class NotificationController {
 
     @GetMapping("/categories")
     public List<String> getNotificationCategories() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        try {
+            User user = userDetailsService.getAuthenticatedUser(authentication);
+
         return Arrays.stream(NotificationCategory.values())
+                .filter(notificationCategory -> !notificationCategory.isNotAllowedTo(user.getRoleEnum()))
                 .map(Enum::name)
                 .collect(Collectors.toList());
+        } catch (AuthenticationException e) {
+            throw new RuntimeException("User not authenticated");
+        }
+    }
+
+    @GetMapping("/category-groups")
+    public List<String> getNotificationCategoryGroups() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        try {
+            User user = userDetailsService.getAuthenticatedUser(authentication);
+
+            return Arrays.stream(NotificationCategoryGroup.values())
+                    .filter(notificationCategory -> !notificationCategory.isNotAllowedTo(user.getRoleEnum()))
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
+        } catch (AuthenticationException e) {
+            throw new RuntimeException("User not authenticated");
+        }
     }
 
     @GetMapping("/unread-count")

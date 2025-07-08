@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios, { AxiosError } from 'axios';
 import type {
   Notification,
@@ -14,6 +14,8 @@ interface NotificationState {
   unreadCount: number;
   currentPage: number;
   totalPages: number | null;
+  categoryGroups: string[];
+  readStatusFilter: 'all' | 'unread' | 'read';
 }
 
 const initialState: NotificationState = {
@@ -24,6 +26,8 @@ const initialState: NotificationState = {
   unreadCount: 0,
   currentPage: 1,
   totalPages: null,
+  categoryGroups: [],
+  readStatusFilter: 'all',
 };
 
 // Selectors
@@ -37,13 +41,18 @@ export const selectNotificationLoading = (state: RootState) =>
   state.notifications.loading;
 export const selectUnreadCount = (state: RootState) =>
   state.notifications.unreadCount;
+export const selectCategoryGroups = (state: RootState) =>
+  state.notifications.categoryGroups;
+export const selectReadStatusFilter = (state: RootState) =>
+  state.notifications.readStatusFilter;
 
 const baseURL = import.meta.env.VITE_API_URL;
 
 interface FetchParams {
   page?: number;
   size?: number;
-  onlyUnread?: boolean;
+  readStatus?: string;
+  category?: string;
 }
 
 interface PaginatedResponse {
@@ -60,36 +69,84 @@ export const fetchNotifications = createAsyncThunk<
   PaginatedResponse,
   FetchParams,
   { state: RootState; rejectValue: string }
+>('notification/fetch', async (params = {}, { rejectWithValue, getState }) => {
+  try {
+    const { auth } = getState();
+    const {
+      page = 0,
+      size = 10,
+      readStatus = 'all',
+      category = 'all',
+    } = params;
+
+    const response = await axios.get(`${baseURL}/notification/`, {
+      params: { page, size, readStatus, category },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${auth.token}`,
+      },
+    });
+
+    const data = response.data;
+
+    return {
+      items: data.content,
+      currentPage: data.number + 1, // because page number is zero-based
+      totalPages: data.totalPages,
+    };
+  } catch (err) {
+    const error = err as AxiosError<ErrorResponse>;
+    return rejectWithValue(
+      error.response?.data?.message || 'Failed to fetch notifications',
+    );
+  }
+});
+
+export const fetchCategoryGroups = createAsyncThunk<
+  string[],
+  void,
+  { state: RootState; rejectValue: string }
 >(
-  'notification/fetchAll',
-  async (params = {}, { rejectWithValue, getState }) => {
+  'notification/fetchCategoryGroups',
+  async (_, { getState, rejectWithValue }) => {
     try {
       const { auth } = getState();
-      const { page = 0, size = 10, onlyUnread = false } = params;
 
-      const response = await axios.get(`${baseURL}/notification/`, {
-        params: { page, size, onlyUnread },
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${auth.token}`,
+      const response = await axios.get(
+        `${baseURL}/notification/category-groups`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${auth.token}`,
+          },
         },
-      });
+      );
 
-      const data = response.data;
-
-      return {
-        items: data.content,
-        currentPage: data.number + 1, // because page number is zero-based
-        totalPages: data.totalPages,
-      };
+      return response.data;
     } catch (err) {
       const error = err as AxiosError<ErrorResponse>;
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to fetch notifications',
+        error.response?.data?.message || 'Failed to fetch category groups',
       );
     }
   },
 );
+
+export const refreshNotifications = createAsyncThunk<
+  void,
+  void,
+  { state: RootState }
+>('notification/refresh', async (_, { getState, dispatch }) => {
+  const { notifications } = getState();
+
+  await dispatch(
+    fetchNotifications({
+      page: notifications.currentPage - 1,
+      size: 10,
+      readStatus: notifications.readStatusFilter,
+    }),
+  );
+});
 
 export const fetchUnreadCount = createAsyncThunk<
   number,
@@ -152,7 +209,7 @@ export const markNotificationUnread = createAsyncThunk<
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${auth?.token}`,
+          Authorization: `Bearer ${auth.token}`,
         },
       },
     );
@@ -207,12 +264,11 @@ export const markAllNotificationsRead = createAsyncThunk<
         },
       );
 
-      // Refetch the current page to get updated read status
       await dispatch(
         fetchNotifications({
           page: notifications.currentPage - 1,
           size: 10,
-          onlyUnread: false,
+          readStatus: notifications.readStatusFilter,
         }),
       );
 
@@ -233,6 +289,12 @@ const notificationSlice = createSlice({
   reducers: {
     resetError: (state) => {
       state.error = null;
+    },
+    setReadStatusFilter: (
+      state,
+      action: PayloadAction<'all' | 'read' | 'unread'>,
+    ) => {
+      state.readStatusFilter = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -299,5 +361,5 @@ const notificationSlice = createSlice({
   },
 });
 
-export const { resetError } = notificationSlice.actions;
+export const { resetError, setReadStatusFilter } = notificationSlice.actions;
 export default notificationSlice.reducer;

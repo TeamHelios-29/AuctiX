@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import {
   selectNotifications,
   fetchNotifications,
@@ -11,6 +11,10 @@ import {
   selectNotificationLoading,
   selectUnreadCount,
   fetchUnreadCount,
+  fetchCategoryGroups,
+  selectCategoryGroups,
+  selectReadStatusFilter,
+  setReadStatusFilter,
 } from '@/store/slices/notificationSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { NotificationCard } from '@/components/molecules/NotificationCard';
@@ -47,38 +51,17 @@ import { Link } from 'react-router-dom';
 const NotificationPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const notifications = useAppSelector(selectNotifications);
+  const categoryGroups = useAppSelector(selectCategoryGroups);
   const currentPage = useAppSelector(selectCurrentPage);
   const totalPages = useAppSelector(selectTotalPages) || 1;
   const isLoading = useAppSelector(selectNotificationLoading);
   const unreadCount = useAppSelector(selectUnreadCount);
+  const readStatusFilter = useAppSelector(selectReadStatusFilter);
 
-  const [filter, setFilter] = React.useState<'all' | 'unread' | 'read'>('all');
-  const [categoryFilter, setCategoryFilter] = React.useState<string>('all');
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [markAllSuccess, setMarkAllSuccess] = React.useState(false);
-  const [pageSize, setPageSize] = React.useState(10);
-
-  const categoryGroups = useMemo(
-    () => [
-      'all',
-      ...new Set(notifications.map((n) => n.notificationCategoryGroup)),
-    ],
-    [notifications],
-  );
-
-  const filteredNotifications = useMemo(() => {
-    return notifications.filter((notification) => {
-      if (
-        categoryFilter !== 'all' &&
-        notification.notificationCategoryGroup !== categoryFilter
-      ) {
-        return false;
-      }
-      if (filter === 'unread' && notification.read) return false;
-      if (filter === 'read' && !notification.read) return false;
-      return true;
-    });
-  }, [notifications, categoryFilter, filter]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const [markAllSuccess, setMarkAllSuccess] = useState(false);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchData = useCallback(async () => {
     setRefreshing(true);
@@ -87,13 +70,15 @@ const NotificationPage: React.FC = () => {
         fetchNotifications({
           page: currentPage - 1,
           size: pageSize,
-          onlyUnread: filter === 'unread',
+          readStatus: readStatusFilter,
+          category: categoryFilter,
         }),
       ),
       dispatch(fetchUnreadCount()),
+      dispatch(fetchCategoryGroups()),
     ]);
     setRefreshing(false);
-  }, [dispatch, currentPage, pageSize, filter]);
+  }, [dispatch, currentPage, pageSize, readStatusFilter, categoryFilter]);
 
   useEffect(() => {
     fetchData();
@@ -106,12 +91,13 @@ const NotificationPage: React.FC = () => {
           fetchNotifications({
             page: newPage - 1,
             size: pageSize,
-            onlyUnread: filter === 'unread',
+            readStatus: readStatusFilter,
+            category: categoryFilter,
           }),
         );
       }
     },
-    [dispatch, totalPages, pageSize, filter],
+    [dispatch, totalPages, pageSize, readStatusFilter, categoryFilter],
   );
 
   const handleMarkAsRead = useCallback(
@@ -141,7 +127,8 @@ const NotificationPage: React.FC = () => {
             fetchNotifications({
               page: currentPage - 2,
               size: pageSize,
-              onlyUnread: filter === 'unread',
+              readStatus: readStatusFilter,
+              category: categoryFilter,
             }),
           );
         } else if (notifications.length > 1) {
@@ -149,13 +136,21 @@ const NotificationPage: React.FC = () => {
             fetchNotifications({
               page: currentPage - 1,
               size: pageSize,
-              onlyUnread: filter === 'unread',
+              readStatus: readStatusFilter,
+              category: categoryFilter,
             }),
           );
         }
       });
     },
-    [dispatch, notifications.length, currentPage, pageSize, filter],
+    [
+      dispatch,
+      notifications.length,
+      currentPage,
+      pageSize,
+      readStatusFilter,
+      categoryFilter,
+    ],
   );
 
   const handleMarkAllAsRead = useCallback(async () => {
@@ -173,34 +168,33 @@ const NotificationPage: React.FC = () => {
 
   const handleFilterChange = useCallback(
     (newFilter: 'all' | 'unread' | 'read') => {
-      setFilter(newFilter);
-      if (currentPage !== 1) {
-        dispatch(
-          fetchNotifications({
-            page: 0,
-            size: pageSize,
-            onlyUnread: newFilter === 'unread',
-          }),
-        );
-      }
+      dispatch(setReadStatusFilter(newFilter));
+
+      dispatch(
+        fetchNotifications({
+          page: 0,
+          size: pageSize,
+          readStatus: newFilter,
+          category: categoryFilter,
+        }),
+      );
     },
-    [dispatch, currentPage, pageSize],
+    [dispatch, pageSize, categoryFilter],
   );
 
   const handleCategoryFilterChange = useCallback(
     (newCategory: string) => {
       setCategoryFilter(newCategory);
-      if (currentPage !== 1) {
-        dispatch(
-          fetchNotifications({
-            page: 0,
-            size: pageSize,
-            onlyUnread: filter === 'unread',
-          }),
-        );
-      }
+      dispatch(
+        fetchNotifications({
+          page: 0,
+          size: pageSize,
+          readStatus: readStatusFilter,
+          category: categoryFilter,
+        }),
+      );
     },
-    [dispatch, currentPage, pageSize, filter],
+    [dispatch, pageSize, readStatusFilter, categoryFilter],
   );
 
   const handlePageSizeChange = useCallback(
@@ -211,11 +205,12 @@ const NotificationPage: React.FC = () => {
         fetchNotifications({
           page: 0,
           size,
-          onlyUnread: filter === 'unread',
+          readStatus: readStatusFilter,
+          category: categoryFilter,
         }),
       );
     },
-    [dispatch, filter],
+    [dispatch, readStatusFilter, categoryFilter],
   );
 
   const renderPaginationItems = useCallback(() => {
@@ -350,7 +345,7 @@ const NotificationPage: React.FC = () => {
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="p-4 border-b">
           <Tabs
-            value={filter}
+            value={readStatusFilter}
             className="w-full"
             onValueChange={(value) =>
               handleFilterChange(value as 'all' | 'unread' | 'read')
@@ -437,18 +432,18 @@ const NotificationPage: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : filteredNotifications.length === 0 ? (
+          ) : notifications.length === 0 ? (
             <div className="text-center py-16">
               <Bell className="h-16 w-16 mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-700">
                 No notifications found
               </h3>
               <p className="text-gray-500 mt-2">
-                {filter === 'all' && categoryFilter === 'all'
+                {readStatusFilter === 'all' && categoryFilter === 'all'
                   ? "You don't have any notifications yet."
                   : 'No notifications match your current filters.'}
               </p>
-              {(filter !== 'all' || categoryFilter !== 'all') && (
+              {(readStatusFilter !== 'all' || categoryFilter !== 'all') && (
                 <Button
                   variant="outline"
                   className="mt-4"
@@ -463,7 +458,7 @@ const NotificationPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredNotifications.map((notification) => (
+              {notifications.map((notification) => (
                 <NotificationCard
                   key={notification.id}
                   notification={notification}
@@ -476,7 +471,7 @@ const NotificationPage: React.FC = () => {
           )}
         </div>
 
-        {!isLoading && filteredNotifications.length > 0 && (
+        {!isLoading && notifications.length > 0 && (
           <div className="border-t p-4">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
               {totalPages > 1 && (
