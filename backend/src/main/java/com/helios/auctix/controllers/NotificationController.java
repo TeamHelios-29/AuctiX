@@ -12,8 +12,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/notification")
@@ -31,15 +33,23 @@ public class NotificationController {
     public Page<NotificationResponseDto> getNotifications(
             @RequestParam(defaultValue = "false") boolean onlyUnread,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) int size
+            @RequestParam(defaultValue = "10") @Min(1) int size,
+            @RequestParam(required = false) String notificationCategory
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         try {
             User user = userDetailsService.getAuthenticatedUser(authentication);
-            return notificationService.getUserNotifications(user.getId(), onlyUnread, page, size);
+            return notificationService.getUserNotifications(user.getId(), onlyUnread, page, size, notificationCategory);
         } catch (AuthenticationException e) {
             throw new RuntimeException("User not authenticated");
         }
+    }
+
+    @GetMapping("/categories")
+    public List<String> getNotificationCategories() {
+        return Arrays.stream(NotificationCategory.values())
+                .map(Enum::name)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/unread-count")
@@ -52,17 +62,6 @@ public class NotificationController {
             throw new RuntimeException("User not authenticated");
         }
     }
-
-//    @GetMapping("/get/{category}")
-//    public long getUnreadCountForCategory(@PathVariable String notificationCategory) {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        try {
-//            User user = userDetailsService.getAuthenticatedUser(authentication);
-//            return notificationService.getForCategory(user.getId(), NotificationCategory.valueOf(notificationCategory) );
-//        } catch (AuthenticationException e) {
-//            throw new RuntimeException("User not authenticated");
-//        }
-//    }
 
     @PostMapping("/{id}/read")
     public void markAsRead(@PathVariable UUID id) {

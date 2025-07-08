@@ -23,14 +23,23 @@ public class UserNotificationService {
     public UserNotificationService(NotificationRepository notificationRepository) {
         this.notificationRepository = notificationRepository;
     }
-    public Page<NotificationResponseDto> getUserNotifications(UUID userId, boolean onlyUnread, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Notification> notificationsPage = onlyUnread
-                ? notificationRepository.findByUserIdAndReadFalse(userId, pageable)
-                : notificationRepository.findByUserId(userId, pageable);
 
-        return notificationsPage.map(this::toDto);
+    public Page<NotificationResponseDto> getUserNotifications(UUID userId, boolean onlyUnread, int page, int size, String categoryStr) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        NotificationCategory category = null;
+        if (categoryStr != null && !categoryStr.equalsIgnoreCase("all")) {
+            try {
+                category = NotificationCategory.valueOf(categoryStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid notification category: " + categoryStr);
+            }
+        }
+
+        return notificationRepository.findByFilters(userId, onlyUnread, category, pageable)
+                .map(this::toDto);
     }
+
 
     public long getUnreadNotificationCount(UUID userId) {
         return notificationRepository.countUnreadByUserId(userId);
@@ -74,8 +83,4 @@ public class UserNotificationService {
                 .build();
     }
 
-//    public long getForCategory(UUID id, NotificationCategory notificationCategory) {
-//        Pageable pageable = PageRequest.of(1, 1, Sort.by(Sort.Direction.DESC, "createdAt"));
-//        notificationRepository.findByUserIdAndNotificationCategory(notificationCategory)
-//    }
 }
