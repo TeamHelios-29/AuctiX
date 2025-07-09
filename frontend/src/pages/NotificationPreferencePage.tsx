@@ -17,6 +17,7 @@ import {
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { Bell } from 'lucide-react';
 
 export default function NotificationPreferencesPage() {
   const [preferences, setPreferences] =
@@ -162,14 +163,6 @@ export default function NotificationPreferencesPage() {
     ));
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
   // Get unique category groups for tabs
   const categoryGroups = preferences ? Object.keys(preferences.events) : [];
 
@@ -183,17 +176,36 @@ export default function NotificationPreferencesPage() {
   };
 
   return (
-    <div className="min-h-screen p-4 px-12 mb-3">
+    <div className="min-h-screen max-w-6xl mx-auto mb-3">
       <div className="mx-auto max-w-4x">
         <div className="flex items-center justify-between border-b py-6">
-          <h1 className="text-2xl font-semibold">Notification Preferences</h1>
-          <Button
-            className="bg-brandGoldYellow text-gray-800 hover:bg-brandGoldYellow/80"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <Bell className="h-7 w-7 text-brandGoldYellow" />
+              <h1 className="text-3xl font-bold">Notification Preferences</h1>
+            </div>
+            <p className="text-gray-500 mt-1">
+              Choose how you want to get notified
+            </p>
+          </div>
+
+          <div>
+            <Button
+              className="mx-1"
+              variant={'secondary'}
+              onClick={() => window.history.back()}
+            >
+              Go Back
+            </Button>
+
+            <Button
+              className="bg-brandGoldYellow text-gray-800 hover:bg-brandGoldYellow/80 mx-1"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
 
         <div className="py-6">

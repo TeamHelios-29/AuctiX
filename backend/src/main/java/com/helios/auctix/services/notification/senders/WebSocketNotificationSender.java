@@ -7,6 +7,7 @@ import com.helios.auctix.services.notification.NotificationSender;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+@Deprecated
 @Component
 public class WebSocketNotificationSender implements NotificationSender {
 

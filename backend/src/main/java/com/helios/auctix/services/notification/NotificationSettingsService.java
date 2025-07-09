@@ -9,6 +9,7 @@ import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
 import com.helios.auctix.domain.notification.preferences.NotificationGlobalPreference;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.notification.NotificationPreferenceUpdateDto;
 import com.helios.auctix.dtos.notification.NotificationPreferencesResponseDto;
 import com.helios.auctix.mappers.NotificationPreferenceResponseDTOMapper;
@@ -48,6 +49,11 @@ public class NotificationSettingsService {
     public Set<NotificationType> resolveNotificationPreference(NotificationCategory category, User user) {
         Set<NotificationType> enabledNotificationTypesForEvent = new HashSet<>();
         Set<NotificationType> globallyEnabledNotificationTypes = new HashSet<>();
+
+        // sanity check
+        if (category.isNotAllowedTo(user.getRoleEnum())) {
+            return Collections.emptySet();
+        }
 
         try {
 
@@ -186,42 +192,76 @@ public class NotificationSettingsService {
     }
 
     public void savePreferences(User user, @Valid NotificationPreferenceUpdateDto dto) {
+        UserRoleEnum role = user.getRoleEnum();
+
         if (dto.getGlobal() != null) {
-            String globalSettingsJson = toJson(dto.getGlobal());
+            // Validate global types/channels
+            Map<String, Boolean> validGlobalSettings = dto.getGlobal().entrySet().stream()
+                    .filter(entry -> isValidNotificationType(entry.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            String globalSettingsJson = toJson(validGlobalSettings);
 
             NotificationGlobalPreference existingGlobalPref = notificationGlobalPreferencesRepository
                     .findByUserId(user.getId())
-                    .orElse(null);
+                    .orElse(NotificationGlobalPreference.builder().user(user).build());
 
-            if (existingGlobalPref != null) {
-                existingGlobalPref.setSettings(globalSettingsJson);
-                notificationGlobalPreferencesRepository.save(existingGlobalPref);
-            } else {
-                NotificationGlobalPreference globalPref = NotificationGlobalPreference.builder()
-                        .user(user)
-                        .settings(globalSettingsJson)
-                        .build();
-                notificationGlobalPreferencesRepository.save(globalPref);
-            }
+            existingGlobalPref.setSettings(globalSettingsJson);
+            notificationGlobalPreferencesRepository.save(existingGlobalPref);
         }
 
         if (dto.getEvents() != null) {
-            String eventSettingsJson = toJson(dto.getEvents());
+            Map<String, Map<String, Boolean>> filteredEvents = new HashMap<>();
 
-            NotificationEventPreference existingEventPref = notificationEventPreferencesRepository
-                    .findByUserId(user.getId())
-                    .orElse(null);
+            for (Map.Entry<String, Map<String, Boolean>> eventEntry : dto.getEvents().entrySet()) {
+                String categoryStr = eventEntry.getKey();
+                NotificationCategory category;
 
-            if (existingEventPref != null) {
+                try {
+                    category = NotificationCategory.valueOf(categoryStr);
+                } catch (IllegalArgumentException e) {
+                    // Unknown category - skip
+                    continue;
+                }
+
+                if (category.isNotAllowedTo(role)) {
+                    continue;
+                }
+
+                // Filter valid notification types/channels inside this category
+                Map<String, Boolean> filteredChannels = eventEntry.getValue().entrySet().stream()
+                        .filter(chEntry -> isValidNotificationType(chEntry.getKey()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+                if (!filteredChannels.isEmpty()) {
+                    filteredEvents.put(categoryStr, filteredChannels);
+                }
+            }
+
+            if (!filteredEvents.isEmpty()) {
+                String eventSettingsJson = toJson(filteredEvents);
+
+                NotificationEventPreference existingEventPref = notificationEventPreferencesRepository
+                        .findByUserId(user.getId())
+                        .orElse(NotificationEventPreference.builder().user(user).build());
+
                 existingEventPref.setSettings(eventSettingsJson);
                 notificationEventPreferencesRepository.save(existingEventPref);
-            } else {
-                NotificationEventPreference eventPref = NotificationEventPreference.builder()
-                        .user(user)
-                        .settings(eventSettingsJson)
-                        .build();
-                notificationEventPreferencesRepository.save(eventPref);
             }
+        }
+    }
+
+    /**
+     * Checks if the Notification Delivery Channel Type exists in the application
+     * @param type Notification Delivery Channel Type
+     * @return true if valid channel type
+     */
+    private boolean isValidNotificationType(String type) {
+        try {
+            NotificationType.valueOf(type);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
         }
     }
 
@@ -242,6 +282,9 @@ public class NotificationSettingsService {
          NotificationEventPreference eventPreference = eventPreferenceOptional.orElse(null);
          NotificationGlobalPreference globalPreference = globalPreferenceOptional.orElse(null);
 
-         return preferencesDTOMapper.toDTO(globalPreference, eventPreference);
+         // Sanity check / filter: ensure only categories allowed for this role are passed to mapper
+         UserRoleEnum role = user.getRoleEnum();
+
+         return preferencesDTOMapper.toDTO(globalPreference, eventPreference, role);
      }
 }

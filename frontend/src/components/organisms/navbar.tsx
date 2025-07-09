@@ -17,10 +17,17 @@ import { AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { IUser } from '@/types/IUser';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { logout } from '@/store/slices/authSlice';
+import { Notification } from '@/types/notification';
+import {
+  fetchLatestNotifications,
+  fetchUnreadCount,
+  markNotificationRead,
+} from '@/store/slices/notificationSlice';
 
 export function Navbar() {
   const userData = useAppSelector((state) => state.user as IUser);
   const authState = useAppSelector((state) => state.auth);
+  const notificationState = useAppSelector((state) => state.notifications);
 
   const dispatch = useAppDispatch();
   const handleLogout = () => {
@@ -104,13 +111,80 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {authState.isUserLoggedIn ? (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden md:inline-flex"
+              <NavigationMenu
+                onValueChange={(value) => {
+                  if (value) {
+                    dispatch(fetchUnreadCount());
+                    dispatch(fetchLatestNotifications());
+                  }
+                }}
               >
-                <Bell className="h-5 w-5" />
-              </Button>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="hidden md:inline-flex relative p-0">
+                      <Bell className="h-5 w-5" />
+                      {notificationState.unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] flex items-center justify-center">
+                          {notificationState.unreadCount}
+                        </span>
+                      )}
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent className="w-80 p-0">
+                      <div className="max-h-96 min-w-[320px] overflow-y-auto divide-y">
+                        {notificationState.latestItems &&
+                        notificationState.latestItems.length > 0 ? (
+                          notificationState.latestItems.map(
+                            (notification: Notification, idx: number) => (
+                              <div
+                                key={notification.id || idx}
+                                className={`relative group p-4 border shadow-sm transition-all duration-200 ${
+                                  notification.read
+                                    ? 'bg-muted/50 border-transparent'
+                                    : 'bg-yellow-50 border-yellow-300'
+                                } hover:shadow-md hover:bg-yellow-100`}
+                                onClick={() => {
+                                  if (!notification.read) {
+                                    dispatch(
+                                      markNotificationRead(notification.id),
+                                    );
+                                  }
+                                  // TODO: add navigation to the notification
+                                }}
+                              >
+                                <div className="text-sm font-medium">
+                                  {notification.title || 'Notification'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {notification.content}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground mt-1">
+                                  {new Date(
+                                    notification.createdAt,
+                                  ).toLocaleString(undefined, {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                  })}
+                                </div>
+                              </div>
+                            ),
+                          )
+                        ) : (
+                          <div className="p-4 text-center text-muted-foreground text-sm">
+                            No notifications
+                          </div>
+                        )}
+                      </div>
+                      <div className="border-t p-2 flex justify-center">
+                        <Link to="/notifications" className="w-full">
+                          <Button variant="ghost" className="w-full">
+                            View all notifications
+                          </Button>
+                        </Link>
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
               <Link to="/dashboard" className="flex items-center gap-2">
                 <Avatar className="hidden md:inline-flex h-8 w-8">
                   <AvatarImage
