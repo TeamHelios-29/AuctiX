@@ -71,7 +71,7 @@ const NotificationPage: React.FC = () => {
           page: currentPage - 1,
           size: pageSize,
           readStatus: readStatusFilter,
-          category: categoryFilter,
+          categoryGroup: categoryFilter,
         }),
       ),
       dispatch(fetchUnreadCount()),
@@ -92,7 +92,7 @@ const NotificationPage: React.FC = () => {
             page: newPage - 1,
             size: pageSize,
             readStatus: readStatusFilter,
-            category: categoryFilter,
+            categoryGroup: categoryFilter,
           }),
         );
       }
@@ -128,7 +128,7 @@ const NotificationPage: React.FC = () => {
               page: currentPage - 2,
               size: pageSize,
               readStatus: readStatusFilter,
-              category: categoryFilter,
+              categoryGroup: categoryFilter,
             }),
           );
         } else if (notifications.length > 1) {
@@ -137,7 +137,7 @@ const NotificationPage: React.FC = () => {
               page: currentPage - 1,
               size: pageSize,
               readStatus: readStatusFilter,
-              category: categoryFilter,
+              categoryGroup: categoryFilter,
             }),
           );
         }
@@ -175,7 +175,7 @@ const NotificationPage: React.FC = () => {
           page: 0,
           size: pageSize,
           readStatus: newFilter,
-          category: categoryFilter,
+          categoryGroup: categoryFilter,
         }),
       );
     },
@@ -190,7 +190,7 @@ const NotificationPage: React.FC = () => {
           page: 0,
           size: pageSize,
           readStatus: readStatusFilter,
-          category: categoryFilter,
+          categoryGroup: categoryFilter,
         }),
       );
     },
@@ -206,7 +206,7 @@ const NotificationPage: React.FC = () => {
           page: 0,
           size,
           readStatus: readStatusFilter,
-          category: categoryFilter,
+          categoryGroup: categoryFilter,
         }),
       );
     },

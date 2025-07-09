@@ -32,15 +32,15 @@ public class NotificationController {
 
     @GetMapping("/")
     public Page<NotificationResponseDto> getNotifications(
-            @RequestParam(defaultValue = "false") boolean onlyUnread,
+            @RequestParam(defaultValue = "all") String readStatus,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) int size,
-            @RequestParam(required = false) String notificationCategory
+            @RequestParam(required = false) String categoryGroup
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         try {
             User user = userDetailsService.getAuthenticatedUser(authentication);
-            return notificationService.getUserNotifications(user.getId(), onlyUnread, page, size, notificationCategory);
+            return notificationService.getUserNotifications(user.getId(), readStatus, page, size, categoryGroup);
         } catch (AuthenticationException e) {
             throw new RuntimeException("User not authenticated");
         }

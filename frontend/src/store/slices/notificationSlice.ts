@@ -52,7 +52,7 @@ interface FetchParams {
   page?: number;
   size?: number;
   readStatus?: string;
-  category?: string;
+  categoryGroup?: string;
 }
 
 interface PaginatedResponse {
@@ -76,11 +76,11 @@ export const fetchNotifications = createAsyncThunk<
       page = 0,
       size = 10,
       readStatus = 'all',
-      category = 'all',
+      categoryGroup = 'all',
     } = params;
 
     const response = await axios.get(`${baseURL}/notification/`, {
-      params: { page, size, readStatus, category },
+      params: { page, size, readStatus, categoryGroup },
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${auth.token}`,
@@ -318,6 +318,14 @@ const notificationSlice = createSlice({
       })
       .addCase(fetchUnreadCount.rejected, (state, action) => {
         state.error = action.payload || 'Failed to fetch unread count';
+      })
+      .addCase(fetchCategoryGroups.fulfilled, (state, action) => {
+        state.loading = false;
+        state.categoryGroups = action.payload;
+      })
+      .addCase(fetchCategoryGroups.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch category groups';
       })
       .addCase(markNotificationRead.fulfilled, (state, action) => {
         const notification = state.items.find((n) => n.id === action.payload);

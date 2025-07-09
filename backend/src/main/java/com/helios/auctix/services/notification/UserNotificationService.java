@@ -1,8 +1,7 @@
 package com.helios.auctix.services.notification;
 
-import com.google.api.gax.rpc.NotFoundException;
 import com.helios.auctix.domain.notification.Notification;
-import com.helios.auctix.domain.notification.NotificationCategory;
+import com.helios.auctix.domain.notification.NotificationCategoryGroup;
 import com.helios.auctix.dtos.NotificationResponseDto;
 import com.helios.auctix.repositories.NotificationRepository;
 import org.springframework.data.domain.Page;
@@ -12,7 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,19 +22,23 @@ public class UserNotificationService {
         this.notificationRepository = notificationRepository;
     }
 
-    public Page<NotificationResponseDto> getUserNotifications(UUID userId, boolean onlyUnread, int page, int size, String categoryStr) {
+    public Page<NotificationResponseDto> getUserNotifications(UUID userId, String readStatus, int page, int size, String categoryGroupStr) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        NotificationCategory category = null;
-        if (categoryStr != null && !categoryStr.equalsIgnoreCase("all")) {
+        NotificationCategoryGroup categoryGroup = null;
+        if (categoryGroupStr != null && !categoryGroupStr.equalsIgnoreCase("all")) {
             try {
-                category = NotificationCategory.valueOf(categoryStr.toUpperCase());
+                categoryGroup = NotificationCategoryGroup.valueOf(categoryGroupStr.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid notification category: " + categoryStr);
+                throw new IllegalArgumentException("Invalid notification category: " + categoryGroupStr);
             }
         }
 
-        return notificationRepository.findByFilters(userId, onlyUnread, category, pageable)
+        if (!readStatus.equalsIgnoreCase("read") && !readStatus.equalsIgnoreCase("unread")) {
+            readStatus = null;
+        }
+
+        return notificationRepository.findByFilterCategoryGroup(userId, readStatus, categoryGroup, pageable)
                 .map(this::toDto);
     }
 

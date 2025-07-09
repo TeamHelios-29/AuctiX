@@ -189,13 +189,23 @@ export default function NotificationPreferencesPage() {
             </p>
           </div>
 
-          <Button
-            className="bg-brandGoldYellow text-gray-800 hover:bg-brandGoldYellow/80"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          <div>
+            <Button
+              className="mx-1"
+              variant={'secondary'}
+              onClick={() => window.history.back()}
+            >
+              Go Back
+            </Button>
+
+            <Button
+              className="bg-brandGoldYellow text-gray-800 hover:bg-brandGoldYellow/80 mx-1"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
 
         <div className="py-6">

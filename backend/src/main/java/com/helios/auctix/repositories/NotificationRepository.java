@@ -1,7 +1,7 @@
 package com.helios.auctix.repositories;
 
 import com.helios.auctix.domain.notification.Notification;
-import com.helios.auctix.domain.notification.NotificationCategory;
+import com.helios.auctix.domain.notification.NotificationCategoryGroup;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -19,13 +19,17 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Query("""
     SELECT n FROM Notification n
     WHERE n.user.id = :userId
-      AND (:onlyUnread = false OR n.read = false)
-      AND (:category IS NULL OR n.notificationCategory = :category)
-    """)
-    Page<Notification> findByFilters(
+      AND (
+        :readStatus IS NULL
+        OR (:readStatus = 'unread' AND n.read = false)
+        OR (:readStatus = 'read' AND n.read = true)
+      )
+      AND (:categoryGroup IS NULL OR n.notificationCategoryGroup = :categoryGroup)
+""")
+    Page<Notification> findByFilterCategoryGroup(
             @Param("userId") UUID userId,
-            @Param("onlyUnread") boolean onlyUnread,
-            @Param("category") NotificationCategory category,
+            @Param("readStatus") String readStatus,  // Can be 'read', 'unread', or null (for all)
+            @Param("categoryGroup") NotificationCategoryGroup categoryGroup,
             Pageable pageable
     );
 

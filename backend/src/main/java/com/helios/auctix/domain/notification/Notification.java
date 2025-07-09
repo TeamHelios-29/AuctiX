@@ -20,7 +20,7 @@ public class Notification {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
@@ -32,6 +32,9 @@ public class Notification {
 
     @Enumerated(EnumType.STRING)
     private NotificationCategory notificationCategory;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationCategoryGroup notificationCategoryGroup;
 
     private String title;
 
@@ -53,6 +56,7 @@ public class Notification {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.notificationCategoryGroup = notificationCategory.getCategoryGroup();
     }
 
     @PreUpdate
