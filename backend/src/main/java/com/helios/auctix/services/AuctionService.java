@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.UUID;
@@ -86,14 +87,93 @@ public class AuctionService {
     }
 
     public List<Auction> getAllAuctions() {
-        return auctionRepository.findAll();
+        return auctionRepository.findAllPublicAuctions(); // Use the new method
     }
 
-
-
-    // Add methods for fetching active auctions
+    // Get currently running auctions (started and not ended)
     public List<Auction> getActiveAuctions() {
         Instant now = Instant.now();
-        return auctionRepository.findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(now, now);
+        return auctionRepository.findActiveAuctions(now);
     }
+
+    // Get available auctions (not yet ended - includes future auctions)
+    public List<Auction> getAvailableAuctions() {
+        Instant now = Instant.now();
+        return auctionRepository.findAvailableAuctions(now);
+    }
+
+    // Get upcoming auctions (future auctions)
+    public List<Auction> getUpcomingAuctions() {
+        Instant now = Instant.now();
+        return auctionRepository.findUpcomingAuctions(now);
+    }
+
+    // Get expired auctions from the last 3 days
+    public List<Auction> getExpiredAuctions() {
+        Instant now = Instant.now();
+        Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
+        return auctionRepository.findExpiredAuctions(now, threeDaysAgo);
+    }
+
+
+    public List<AuctionDetailsDTO> getActiveAuctionsDTO() {
+        // Only return auctions that have started but not ended
+        return getActiveAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO() {
+        // Only return auctions that haven't started yet
+        return getUpcomingAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<AuctionDetailsDTO> getExpiredAuctionsDTO() {
+        // Only return auctions that have ended
+        return getExpiredAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Get all auctions as DTOs for the frontend
+    public List<AuctionDetailsDTO> getAllAuctionsDTO() {
+        return getAllAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Helper method to convert Auction entity to AuctionDetailsDTO
+    private AuctionDetailsDTO convertToDTO(Auction auction) {
+        List<String> imageIds = auctionImagePathsRepository.findById_AuctionId(auction.getId())
+                .stream()
+                .map(AuctionImagePath::getImageId)
+                .map(UUID::toString)
+                .collect(Collectors.toList());
+
+        UserDTO sellerDto = userMapperImpl.mapTo(auction.getSeller().getUser());
+
+        // For list view, we don't need full bid history, just the highest bid
+        BidDTO highestBid = bidService.getHighestBidForAuction(auction.getId())
+                .map(bidService::convertToDTO)
+                .orElse(null);
+
+        return AuctionDetailsDTO.builder()
+                .seller(sellerDto)
+                .id(auction.getId().toString())
+                .category(auction.getCategory())
+                .title(auction.getTitle())
+                .description(auction.getDescription())
+                .images(imageIds)
+                .endTime(auction.getEndTime().toString())
+                .startTime(auction.getStartTime().toString())
+                .bidHistory(null) // Don't load full history for list view
+                .currentHighestBid(highestBid)
+                .startingPrice(auction.getStartingPrice())
+                .build();
+    }
+
+
+
 }

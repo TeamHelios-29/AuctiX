@@ -139,29 +139,6 @@ public class AuctionController {
         }
     }
 
-    // Retrieve all auctions
-    @GetMapping
-    public ResponseEntity<List<Auction>> getAllAuctions() {
-        try {
-            List<Auction> auctions = auctionService.getAllAuctions();
-            return ResponseEntity.ok(auctions);
-        } catch (Exception e) {
-            log.warning("Error fetching all auctions: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    // Retrieve active auctions for displaying on the main page
-    @GetMapping("/active")
-    public ResponseEntity<List<Auction>> getActiveAuctions() {
-        try {
-            List<Auction> activeAuctions = auctionService.getActiveAuctions();
-            return ResponseEntity.ok(activeAuctions);
-        } catch (Exception e) {
-            log.warning("Error fetching active auctions: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-    }
 
     @GetMapping("/getAuctionImages")
     public ResponseEntity<?> getAuctionImages(@RequestParam("file_uuid") UUID file_uuid) {
@@ -206,6 +183,36 @@ public class AuctionController {
         }
     }
 
+    // Add this method to your existing AuctionController class
+
+    @GetMapping("/all")
+    public ResponseEntity<List<AuctionDetailsDTO>> getAllAuctions(
+            @RequestParam(value = "filter", defaultValue = "active") String filter) {
+        try {
+            List<AuctionDetailsDTO> auctions;
+
+            switch (filter.toLowerCase()) {
+                case "active":
+                    auctions = auctionService.getActiveAuctionsDTO();
+                    break;
+                case "expired":
+                    auctions = auctionService.getExpiredAuctionsDTO();
+                    break;
+                case "upcoming":  // Add new case for upcoming
+                    auctions = auctionService.getUpcomingAuctionsDTO();
+                    break;
+                default:
+                    auctions = auctionService.getAllAuctionsDTO();
+                    break;
+            }
+
+            return ResponseEntity.ok(auctions);
+        } catch (Exception e) {
+            log.warning("Error fetching auctions with filter " + filter + ": " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 //    // Update an auction
 //    @PutMapping("/{id}")
 //    public Auction updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
@@ -216,6 +223,30 @@ public class AuctionController {
 //    @DeleteMapping("/{id}")
 //    public void deleteAuction(@PathVariable Long id) {
 //        auctionService.deleteAuction(id);
+//    }
+
+//    // Retrieve all auctions
+//    @GetMapping
+//    public ResponseEntity<List<Auction>> getAllAuctions() {
+//        try {
+//            List<Auction> auctions = auctionService.getAllAuctions();
+//            return ResponseEntity.ok(auctions);
+//        } catch (Exception e) {
+//            log.warning("Error fetching all auctions: " + e.getMessage());
+//            return ResponseEntity.internalServerError().build();
+//        }
+//    }
+//
+//    // Retrieve active auctions for displaying on the main page
+//    @GetMapping("/active")
+//    public ResponseEntity<List<Auction>> getActiveAuctions() {
+//        try {
+//            List<Auction> activeAuctions = auctionService.getActiveAuctions();
+//            return ResponseEntity.ok(activeAuctions);
+//        } catch (Exception e) {
+//            log.warning("Error fetching active auctions: " + e.getMessage());
+//            return ResponseEntity.internalServerError().build();
+//        }
 //    }
 
 }
