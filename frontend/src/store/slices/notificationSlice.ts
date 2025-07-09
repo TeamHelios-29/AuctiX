@@ -8,6 +8,7 @@ import { RootState } from '../store';
 
 interface NotificationState {
   preferences: NotificationSettingsResponse | null;
+  latestItems: Notification[];
   items: Notification[];
   loading: boolean;
   error: string | null;
@@ -20,6 +21,7 @@ interface NotificationState {
 
 const initialState: NotificationState = {
   preferences: null,
+  latestItems: [],
   items: [],
   loading: false,
   error: null,
@@ -33,6 +35,8 @@ const initialState: NotificationState = {
 // Selectors
 export const selectNotifications = (state: RootState) =>
   state.notifications.items;
+export const selectLatestNotifications = (state: RootState) =>
+  state.notifications.latestItems;
 export const selectCurrentPage = (state: RootState) =>
   state.notifications.currentPage;
 export const selectTotalPages = (state: RootState) =>
@@ -101,6 +105,33 @@ export const fetchNotifications = createAsyncThunk<
     );
   }
 });
+
+export const fetchLatestNotifications = createAsyncThunk<
+  Notification[],
+  number | undefined,
+  { state: RootState; rejectValue: string }
+>(
+  'notification/fetchLatest',
+  async (size = 5, { rejectWithValue, getState }) => {
+    console.log('Fetching latests lol');
+    try {
+      const { auth } = getState();
+      const response = await axios.get(`${baseURL}/notification/`, {
+        params: { page: 0, size, readStatus: 'all', categoryGroup: 'all' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
+      return response.data.content;
+    } catch (err) {
+      const error = err as AxiosError<ErrorResponse>;
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch latest notifications',
+      );
+    }
+  },
+);
 
 export const fetchCategoryGroups = createAsyncThunk<
   string[],
@@ -312,6 +343,12 @@ const notificationSlice = createSlice({
       .addCase(fetchNotifications.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch notifications';
+      })
+      .addCase(fetchLatestNotifications.fulfilled, (state, action) => {
+        state.latestItems = action.payload;
+      })
+      .addCase(fetchLatestNotifications.rejected, (state, action) => {
+        state.error = action.payload || 'Failed to fetch lastest notifications';
       })
       .addCase(fetchUnreadCount.fulfilled, (state, action) => {
         state.unreadCount = action.payload;
