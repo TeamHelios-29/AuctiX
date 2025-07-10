@@ -1,0 +1,22 @@
+name: Flyway Migration Version Check
+
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - "src/main/resources/db/migration/**"
+
+jobs:
+  flyway-version-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history to compare branches
+
+      - name: Run Flyway version validation
+        run: |
+          chmod +x .github/scripts/check-flyway-versions.sh
+          .github/scripts/check-flyway-versions.sh
