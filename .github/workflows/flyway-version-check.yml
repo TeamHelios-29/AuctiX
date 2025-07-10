@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [dev]
     paths:
-      - "src/main/resources/db/migration/**"
+      - "backend/src/main/resources/db/migration/**"
 
 jobs:
   flyway-version-check:
