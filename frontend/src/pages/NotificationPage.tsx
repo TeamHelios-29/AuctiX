@@ -1,21 +1,22 @@
 import { useEffect, useCallback, useState } from 'react';
+
 import {
-  selectNotifications,
-  fetchNotifications,
-  markNotificationRead,
-  markNotificationUnread,
-  removeNotification,
-  markAllNotificationsRead,
-  selectCurrentPage,
-  selectTotalPages,
-  selectNotificationLoading,
+  fetchNotifications as fetchNotificationsService,
+  fetchCategoryGroups as fetchCategoryGroupsService,
+  markNotificationRead as markReadService,
+  markNotificationUnread as markUnreadService,
+  deleteNotification as deleteNotificationService,
+  markAllNotificationsRead as markAllService,
+} from '@/services/notificationService';
+
+import {
   selectUnreadCount,
   fetchUnreadCount,
-  fetchCategoryGroups,
-  selectCategoryGroups,
-  selectReadStatusFilter,
-  setReadStatusFilter,
+  decrementUnreadCount,
+  incrementUnreadCount,
+  setUnreadCount,
 } from '@/store/slices/notificationSlice';
+
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { NotificationCard } from '@/components/molecules/NotificationCard';
 import {
@@ -47,170 +48,303 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Link } from 'react-router-dom';
+import { AxiosError, AxiosInstance } from 'axios';
+import type {
+  Notification,
+  NotificationFetchParams,
+} from '@/types/notification';
+import AxiosRequest from '@/services/axiosInspector';
+
+interface ErrorResponse {
+  message: string;
+}
 
 const NotificationPage: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const notifications = useAppSelector(selectNotifications);
-  const categoryGroups = useAppSelector(selectCategoryGroups);
-  const currentPage = useAppSelector(selectCurrentPage);
-  const totalPages = useAppSelector(selectTotalPages) || 1;
-  const isLoading = useAppSelector(selectNotificationLoading);
-  const unreadCount = useAppSelector(selectUnreadCount);
-  const readStatusFilter = useAppSelector(selectReadStatusFilter);
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
 
+  const dispatch = useAppDispatch();
+  const unreadCount = useAppSelector(selectUnreadCount);
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [readStatusFilter, setReadStatusFilter] = useState<
+    'all' | 'unread' | 'read'
+  >('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [markAllSuccess, setMarkAllSuccess] = useState(false);
   const [pageSize, setPageSize] = useState(10);
 
-  const fetchData = useCallback(async () => {
+  const fetchNotifications = useCallback(
+    async (params: NotificationFetchParams = {}) => {
+      if (isLoading) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await fetchNotificationsService(params, axiosInstance);
+        setNotifications(data.content);
+        setCurrentPage(data.number + 1);
+        setTotalPages(data.totalPages);
+      } catch (err) {
+        const error = err as AxiosError<ErrorResponse>;
+        setError(
+          error.response?.data?.message || 'Failed to fetch notifications',
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [axiosInstance, isLoading],
+  );
+
+  const fetchCategoryGroups = useCallback(async () => {
+    try {
+      const data = await fetchCategoryGroupsService(axiosInstance);
+      setCategoryGroups(data);
+    } catch (err) {
+      const error = err as AxiosError<ErrorResponse>;
+      setError(
+        error.response?.data?.message || 'Failed to fetch category groups',
+      );
+    }
+  }, [axiosInstance]);
+
+  const markNotificationRead = useCallback(
+    async (id: string) => {
+      try {
+        await markReadService(id, axiosInstance);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+        );
+        dispatch(decrementUnreadCount());
+      } catch (err) {
+        const error = err as AxiosError<ErrorResponse>;
+        setError(error.response?.data?.message || 'Failed to mark as read');
+      }
+    },
+    [axiosInstance, dispatch],
+  );
+
+  const markNotificationUnread = useCallback(
+    async (id: string) => {
+      try {
+        await markUnreadService(id, axiosInstance);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, read: false } : n)),
+        );
+        dispatch(incrementUnreadCount());
+      } catch (err) {
+        const error = err as AxiosError<ErrorResponse>;
+        setError(error.response?.data?.message || 'Failed to mark as unread');
+      }
+    },
+    [axiosInstance, dispatch],
+  );
+  const removeNotification = useCallback(
+    async (id: string) => {
+      try {
+        await deleteNotificationService(id, axiosInstance);
+
+        const deleted = notifications.find((n) => n.id === id);
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+        if (deleted && !deleted.read) {
+          dispatch(decrementUnreadCount());
+        }
+
+        if (notifications.length === 1 && currentPage > 1) {
+          await fetchNotifications({
+            page: currentPage - 2,
+            size: pageSize,
+            readStatus: readStatusFilter,
+            categoryGroup: categoryFilter,
+          });
+        } else {
+          await fetchNotifications({
+            page: currentPage - 1,
+            size: pageSize,
+            readStatus: readStatusFilter,
+            categoryGroup: categoryFilter,
+          });
+        }
+      } catch (err) {
+        const error = err as AxiosError<ErrorResponse>;
+        setError(
+          error.response?.data?.message || 'Failed to delete notification',
+        );
+      }
+    },
+    [
+      axiosInstance,
+      dispatch,
+      notifications,
+      currentPage,
+      pageSize,
+      readStatusFilter,
+      categoryFilter,
+      fetchNotifications,
+    ],
+  );
+
+  const markAllNotificationsRead = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      await markAllService(axiosInstance);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      dispatch(setUnreadCount(0));
+      setMarkAllSuccess(true);
+      setTimeout(() => setMarkAllSuccess(false), 3000);
+    } catch (err) {
+      const error = err as AxiosError<ErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to mark all as read');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [axiosInstance, dispatch]);
+
+  const fetchInitialData = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
-      dispatch(
-        fetchNotifications({
-          page: currentPage - 1,
-          size: pageSize,
-          readStatus: readStatusFilter,
-          categoryGroup: categoryFilter,
-        }),
-      ),
+      fetchNotifications({
+        page: 0,
+        size: pageSize,
+        readStatus: readStatusFilter,
+        categoryGroup: categoryFilter,
+      }),
       dispatch(fetchUnreadCount()),
-      dispatch(fetchCategoryGroups()),
+      fetchCategoryGroups(),
     ]);
     setRefreshing(false);
-  }, [dispatch, currentPage, pageSize, readStatusFilter, categoryFilter]);
+  }, [
+    fetchNotifications,
+    fetchCategoryGroups,
+    dispatch,
+    pageSize,
+    readStatusFilter,
+    categoryFilter,
+  ]);
+
+  const refreshData = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([
+      fetchNotifications({
+        page: currentPage - 1,
+        size: pageSize,
+        readStatus: readStatusFilter,
+        categoryGroup: categoryFilter,
+      }),
+      dispatch(fetchUnreadCount()),
+      fetchCategoryGroups(),
+    ]);
+    setRefreshing(false);
+  }, [
+    fetchNotifications,
+    fetchCategoryGroups,
+    dispatch,
+    currentPage,
+    pageSize,
+    readStatusFilter,
+    categoryFilter,
+  ]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only initial load
 
   const handlePageChange = useCallback(
     (newPage: number) => {
       if (newPage >= 1 && newPage <= totalPages) {
-        dispatch(
-          fetchNotifications({
-            page: newPage - 1,
-            size: pageSize,
-            readStatus: readStatusFilter,
-            categoryGroup: categoryFilter,
-          }),
-        );
+        fetchNotifications({
+          page: newPage - 1,
+          size: pageSize,
+          readStatus: readStatusFilter,
+          categoryGroup: categoryFilter,
+        });
       }
     },
-    [dispatch, totalPages, pageSize, readStatusFilter, categoryFilter],
-  );
-
-  const handleMarkAsRead = useCallback(
-    (id: string) => {
-      dispatch(markNotificationRead(id)).then(() =>
-        dispatch(fetchUnreadCount()),
-      );
-    },
-    [dispatch],
-  );
-
-  const handleMarkAsUnread = useCallback(
-    (id: string) => {
-      dispatch(markNotificationUnread(id)).then(() =>
-        dispatch(fetchUnreadCount()),
-      );
-    },
-    [dispatch],
-  );
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      dispatch(removeNotification(id)).then(() => {
-        dispatch(fetchUnreadCount());
-        if (notifications.length === 1 && currentPage > 1) {
-          dispatch(
-            fetchNotifications({
-              page: currentPage - 2,
-              size: pageSize,
-              readStatus: readStatusFilter,
-              categoryGroup: categoryFilter,
-            }),
-          );
-        } else if (notifications.length > 1) {
-          dispatch(
-            fetchNotifications({
-              page: currentPage - 1,
-              size: pageSize,
-              readStatus: readStatusFilter,
-              categoryGroup: categoryFilter,
-            }),
-          );
-        }
-      });
-    },
     [
-      dispatch,
-      notifications.length,
-      currentPage,
+      fetchNotifications,
+      totalPages,
       pageSize,
       readStatusFilter,
       categoryFilter,
     ],
   );
 
-  const handleMarkAllAsRead = useCallback(async () => {
-    setRefreshing(true);
-    await dispatch(markAllNotificationsRead());
-    await dispatch(fetchUnreadCount());
-    setRefreshing(false);
-    setMarkAllSuccess(true);
-    setTimeout(() => setMarkAllSuccess(false), 3000);
-  }, [dispatch]);
-
   const handleRefresh = useCallback(async () => {
-    await fetchData();
-  }, [fetchData]);
+    await refreshData();
+  }, [refreshData]);
+
+  const handleMarkAsRead = useCallback(
+    (id: string) => {
+      markNotificationRead(id);
+    },
+    [markNotificationRead],
+  );
+
+  const handleMarkAsUnread = useCallback(
+    (id: string) => {
+      markNotificationUnread(id);
+    },
+    [markNotificationUnread],
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      removeNotification(id);
+    },
+    [removeNotification],
+  );
+
+  const handleMarkAllAsRead = useCallback(async () => {
+    await markAllNotificationsRead();
+  }, [markAllNotificationsRead]);
 
   const handleFilterChange = useCallback(
     (newFilter: 'all' | 'unread' | 'read') => {
-      dispatch(setReadStatusFilter(newFilter));
-
-      dispatch(
-        fetchNotifications({
-          page: 0,
-          size: pageSize,
-          readStatus: newFilter,
-          categoryGroup: categoryFilter,
-        }),
-      );
+      setReadStatusFilter(newFilter);
+      fetchNotifications({
+        page: 0,
+        size: pageSize,
+        readStatus: newFilter,
+        categoryGroup: categoryFilter,
+      });
     },
-    [dispatch, pageSize, categoryFilter],
+    [fetchNotifications, pageSize, categoryFilter],
   );
 
   const handleCategoryFilterChange = useCallback(
     (newCategory: string) => {
       setCategoryFilter(newCategory);
-      dispatch(
-        fetchNotifications({
-          page: 0,
-          size: pageSize,
-          readStatus: readStatusFilter,
-          categoryGroup: categoryFilter,
-        }),
-      );
+      fetchNotifications({
+        page: 0,
+        size: pageSize,
+        readStatus: readStatusFilter,
+        categoryGroup: newCategory,
+      });
     },
-    [dispatch, pageSize, readStatusFilter, categoryFilter],
+    [fetchNotifications, pageSize, readStatusFilter],
   );
 
   const handlePageSizeChange = useCallback(
     (newSize: string) => {
       const size = parseInt(newSize);
       setPageSize(size);
-      dispatch(
-        fetchNotifications({
-          page: 0,
-          size,
-          readStatus: readStatusFilter,
-          categoryGroup: categoryFilter,
-        }),
-      );
+      fetchNotifications({
+        page: 0,
+        size,
+        readStatus: readStatusFilter,
+        categoryGroup: categoryFilter,
+      });
     },
-    [dispatch, readStatusFilter, categoryFilter],
+    [fetchNotifications, readStatusFilter, categoryFilter],
   );
 
   const renderPaginationItems = useCallback(() => {
@@ -415,6 +549,12 @@ const NotificationPage: React.FC = () => {
         </div>
 
         <div className="p-4">
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded-md text-red-700">
+              {error}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
