@@ -20,6 +20,8 @@ import SellerDeliveryPage from '@/pages/Seller_Delivery';
 import AuctionsPage from '@/pages/ExploreAuctions';
 import AdminManagementPage from '@/pages/AdminManagementPage';
 import ComplaintDetail from '@/pages/ComplaintDetail';
+import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
+import NotificationsPage from '@/pages/NotificationPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -52,6 +54,28 @@ export default function AppRouter() {
             }
           />
           <Route
+            path="/notifications/"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications/preferences"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <NotificationPreferencesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/users"
             element={
               <ProtectedRoute
@@ -73,7 +97,6 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/admin-management"
             element={

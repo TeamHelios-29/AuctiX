@@ -7,6 +7,7 @@ import com.helios.auctix.services.notification.NotificationSender;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+@Deprecated
 @Component
 public class WebSocketNotificationSender implements NotificationSender {
 
@@ -20,7 +21,7 @@ public class WebSocketNotificationSender implements NotificationSender {
 
     @Override
     public NotificationType getNotificationType() {
-        return NotificationType.WEBSOCKET;
+        return null;  // TODO decide if we are going to have both WebSocket Push and FCM Push, currently prioritizing FCM
     }
 
     @Override

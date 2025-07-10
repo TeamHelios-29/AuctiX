@@ -1,6 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import {
+  getMessaging,
+  getToken,
+  onMessage,
+  isSupported,
+  Messaging,
+} from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APP_FIREBASE_API_KEY,
@@ -13,11 +19,19 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const messaging = getMessaging(app);
+getAnalytics(app);
+
+let messaging: Messaging | null = null;
 
 export const registerSWAndRequestNotificationPermission = async () => {
+  const supported = await isSupported();
+  if (!supported) {
+    console.warn('Firebase messaging not supported in this browser.');
+    return null;
+  }
+
   try {
+    messaging = getMessaging(app);
     await registerServiceWorker();
 
     const permission = await Notification.requestPermission();
@@ -43,14 +57,20 @@ export const registerSWAndRequestNotificationPermission = async () => {
   }
 };
 
-// Listen for foreground notifications
-export const listenForForegroundMessages = () => {
+export const listenForForegroundMessages = async () => {
+  const supported = await isSupported();
+  if (!supported) {
+    console.warn('Messaging not supported in this browser');
+    return;
+  }
+
+  if (!messaging) {
+    messaging = getMessaging(app);
+  }
+
   onMessage(messaging, (payload) => {
     console.log('Foreground notification received:', payload);
-    // new Notification(payload.notification?.title || "AuctiX Notification", {
-    //   body: payload.notification?.body || "",
-    //   icon: payload.notification?.image || "",
-    // });
+    // Handle foreground notification here
   });
 };
 
@@ -60,7 +80,6 @@ const registerServiceWorker = async () => {
   if ('serviceWorker' in navigator) {
     try {
       if (serviceWorkerRegistered) {
-        console.log('Service Worker already registered.');
         return;
       }
 
@@ -72,8 +91,6 @@ const registerServiceWorker = async () => {
     } catch (error) {
       console.error('Service Worker registration failed:', error);
     }
-  } else {
-    console.warn('Service Worker is not supported in this browser.');
   }
 };
 
@@ -83,7 +100,6 @@ export const unregisterServiceWorker = () => {
       .getRegistrations()
       .then((registrations) => {
         registrations.forEach((registration) => {
-          console.log('Unregistering Service Worker:', registration);
           registration.unregister();
         });
       })
@@ -92,5 +108,3 @@ export const unregisterServiceWorker = () => {
       });
   }
 };
-
-export { messaging };

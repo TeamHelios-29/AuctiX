@@ -17,11 +17,9 @@ import java.util.Map;
 public class EmailNotificationSender implements NotificationSender {
 
     private final EmailService emailService;
-    private final NotificationPersistenceHelper notificationPersistenceHelper;
 
-    public EmailNotificationSender(EmailService emailService, NotificationPersistenceHelper notificationPersistenceHelper) {
+    public EmailNotificationSender(EmailService emailService) {
         this.emailService = emailService;
-        this.notificationPersistenceHelper = notificationPersistenceHelper;
     }
 
     @Override
@@ -41,8 +39,7 @@ public class EmailNotificationSender implements NotificationSender {
                     "email/test-email",
                     variables
             );
-
-            notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
+//          TODO optionally we could save delivery status
 
         } catch (MessagingException e) {
             log.error("MessagingException: Failed to send email to {}: {}", notification.getUser().getEmail(), e.getMessage());
