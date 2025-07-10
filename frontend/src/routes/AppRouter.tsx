@@ -19,6 +19,7 @@ import UserDeliveryPage from '@/pages/User_Delivery';
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
 import AuctionsPage from '@/pages/ExploreAuctions';
 import AdminManagementPage from '@/pages/AdminManagementPage';
+import ComplaintDetail from '@/pages/ComplaintDetail';
 import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
 
@@ -107,8 +108,10 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-          <Route path="/reports" element={<Report />} />
+
+          <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/complaints/:id" element={<ComplaintDetail />} />
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
