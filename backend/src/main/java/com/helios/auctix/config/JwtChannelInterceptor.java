@@ -44,6 +44,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     // Store session ID to authentication mapping
     private final Map<String, Authentication> sessionAuthMap = new HashMap<>();
 
+
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
@@ -52,11 +53,39 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             return message;
         }
 
+        // === Allow SockJS handshake/info requests to pass through ===
+        if (accessor.getCommand() == null) {
+            return message;
+        }
+        // === End block ===
+
         String sessionId = accessor.getSessionId();
         log.info("Processing message type: " + accessor.getCommand() + " for session: " + sessionId);
+/*
+@Component
+public class JwtChannelInterceptor implements ChannelInterceptor {
 
+    @Override
+    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+
+        // Allow SockJS handshake (paths like /ws-auction/info)
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String endpoint = accessor.getNativeHeader("stompEndpoint").get(0);
+            if (endpoint.contains("/info")) {
+                return message; // Skip authentication for SockJS handshake
+            }
+        }
+
+        // Your existing JWT validation logic for other messages
+        // ...
+    }
+}
+
+ */
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             try {
+
                 String authHeader = accessor.getFirstNativeHeader("Authorization");
 
                 Authentication auth = null;

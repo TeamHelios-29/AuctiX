@@ -2,30 +2,22 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.AuctionImagePath;
-import com.helios.auctix.domain.user.Seller;
-import com.helios.auctix.domain.user.User;
-import com.helios.auctix.dtos.SellerDTO;
+import com.helios.auctix.dtos.BidDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.AuctionImagePathsRepository;
 
 import com.helios.auctix.dtos.AuctionDetailsDTO;
-import com.helios.auctix.repositories.AuctionRepository; // Updated repository
-import com.helios.auctix.repositories.UserRepository;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.helios.auctix.repositories.AuctionRepository;
 
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Optional;
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -36,23 +28,29 @@ public class AuctionService {
     private final AuctionImagePathsRepository auctionImagePathsRepository; // <-- Add this
     private final SellerMapperImpl sellerMapper;
     private final UserMapperImpl userMapperImpl;
-
-
+    private final BidService bidService;
 
     public AuctionDetailsDTO getAuctionDetails(UUID id) {
         Auction auction = auctionRepository.findById(id).orElse(null);
         if (auction == null) return null;
 
-        List<String> imageIds = auctionImagePathsRepository.findByAuctionId(id)
+        List<String> imageIds = auctionImagePathsRepository.findById_AuctionId(id)
                 .stream()
-                .map((AuctionImagePath::getImageId))
+                .map(AuctionImagePath::getImageId)
                 .map(UUID::toString)
                 .collect(Collectors.toList());
 
-//Seller seller = auction.getSeller();
-
        UserDTO sellerDto = userMapperImpl.mapTo(auction.getSeller().getUser());
 
+        // Fetch bid history and highest bid
+        List<BidDTO> bidHistory = bidService.getBidHistoryForAuction(id)
+                .stream()
+                .map(bidService::convertToDTO)
+                .toList();
+
+        BidDTO highestBid = bidService.getHighestBidForAuction(id)
+                .map(bidService::convertToDTO)
+                .orElse(null);
 
 
         return AuctionDetailsDTO.builder().seller(sellerDto)
@@ -63,9 +61,11 @@ public class AuctionService {
                 .images(imageIds) // <-- Only image IDs
                 .endTime(auction.getEndTime().toString())
                 .startTime(auction.getEndTime().toString())
+                .bidHistory(bidHistory)
+                .currentHighestBid(highestBid)
+                .startingPrice(auction.getStartingPrice())
                 .build();
     }
-
 
     public Auction createAuction(Auction auction) {
         // Validate required fields
@@ -84,118 +84,96 @@ public class AuctionService {
         auction.setUpdatedAt(Instant.now());
 
         return auctionRepository.save(auction);
-
-
-//        try {
-//            // Validate and save the auction
-//            return auctionRepository.save(auction);
-//        } catch (DataIntegrityViolationException e) {
-//            throw new RuntimeException("Failed to create auction: Duplicate entry or invalid data");
-//        } catch (Exception e) {
-//            throw new RuntimeException("Failed to create auction: " + e.getMessage());
-//        }
     }
 
     public List<Auction> getAllAuctions() {
-        return auctionRepository.findAll();
+        return auctionRepository.findAllPublicAuctions(); // Use the new method
     }
 
-//    @Service
-//    public class ImageService {
-//
-//        private final BlobServiceClient blobServiceClient;
-//        private final String containerName;
-//        private final String endpoint;
-//
-//        public ImageService(
-//                @Value("${azure.storage.connection-string}") String connectionString,
-//                @Value("${spring.cloud.azure.storage.blob.container-name}") String containerName,
-//                @Value("${azure.storage.endpoint}") String endpoint) {
-//
-//            this.blobServiceClient = new BlobServiceClientBuilder()
-//                    .connectionString(connectionString)
-//                    .buildClient();
-//            this.containerName = containerName;
-//            this.endpoint = endpoint;
-//        }
-//
-//        public String getImageUrl(String imageId) {
-//            return String.format("%s/%s/%s", endpoint, containerName, imageId);
-//        }
-//
-//        public List<String> getImageUrls(List<String> imageIds) {
-//            return imageIds.stream()
-//                    .map(this::getImageUrl)
-//                    .collect(Collectors.toList());
-//        }
-//    }
-
-
-    // Add methods for fetching active auctions
+    // Get currently running auctions (started and not ended)
     public List<Auction> getActiveAuctions() {
         Instant now = Instant.now();
-        return auctionRepository.findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(now, now);
+        return auctionRepository.findActiveAuctions(now);
     }
 
-//    public Auction createAuction(Auction auction, List<MultipartFile> images) {
-//        // Validate and save images
-//        if (images != null && !images.isEmpty()) {
-//            List<String> imagePaths = images.stream()
-//                    .map(this::saveImage)
-//                    .collect(Collectors.toList());
-//            auction.setImagePaths(imagePaths);
-//        }
-//
-//        // Save the auction
-//        return createAuction(auction);
-//    }
-//
-//    private String saveImage(MultipartFile image) {
-//        try {
-//            String fileName = image.getOriginalFilename();
-//            Path path = Paths.get("uploads/" + fileName);
-//            Files.write(path, image.getBytes());
-//            return path.toString();
-//        } catch (IOException e) {
-//            throw new RuntimeException("Failed to save image: " + e.getMessage());
-//        }
-//    }
+    // Get available auctions (not yet ended - includes future auctions)
+    public List<Auction> getAvailableAuctions() {
+        Instant now = Instant.now();
+        return auctionRepository.findAvailableAuctions(now);
+    }
+
+    // Get upcoming auctions (future auctions)
+    public List<Auction> getUpcomingAuctions() {
+        Instant now = Instant.now();
+        return auctionRepository.findUpcomingAuctions(now);
+    }
+
+    // Get expired auctions from the last 3 days
+    public List<Auction> getExpiredAuctions() {
+        Instant now = Instant.now();
+        Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
+        return auctionRepository.findExpiredAuctions(now, threeDaysAgo);
+    }
 
 
-//    // Retrieve all bids
-//    public List<Auction> getAllBids() {
-//        return bidRepository.findAll();
-//    }
-//
-//    // Retrieve a bid by ID
-//    public Optional<Auction> getBidById(Long id) {
-//        return bidRepository.findById(id);
-//    }
-//
-//    // Update a bid
-//    public Auction updateBid(Long id, Auction updatedAuction) {
-//        return bidRepository.findById(id)
-//                .map(auction -> {
-//                    auction.setAmount(updatedAuction.getAmount());
-//                    auction.setBidTime(updatedAuction.getBidTime());
-//                    auction.setUpdatedAt(LocalDateTime.now());
-//                    return bidRepository.save(auction);
-//                })
-//                .orElseThrow(() -> new RuntimeException("Bid not found with id: " + id));
-//    }
-//
-//    // Delete a bid
-//    public void deleteBid(Long id) {
-//        bidRepository.deleteById(id);
-//    }
-//
-//    // Custom business logic: Find bids with amount greater than a specified value
-//    public List<Auction> findBidsWithAmountGreaterThan(Double amount) {
-//        return bidRepository.findByAmountGreaterThan(amount);
-//    }
-//
-//    // Custom business logic: Find bids within a specific time range
-//    public List<Auction> findBidsBetweenDates(LocalDateTime start, LocalDateTime end) {
-//        return bidRepository.findByBidTimeBetween(start, end);
-//    }
+    public List<AuctionDetailsDTO> getActiveAuctionsDTO() {
+        // Only return auctions that have started but not ended
+        return getActiveAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO() {
+        // Only return auctions that haven't started yet
+        return getUpcomingAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<AuctionDetailsDTO> getExpiredAuctionsDTO() {
+        // Only return auctions that have ended
+        return getExpiredAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Get all auctions as DTOs for the frontend
+    public List<AuctionDetailsDTO> getAllAuctionsDTO() {
+        return getAllAuctions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Helper method to convert Auction entity to AuctionDetailsDTO
+    private AuctionDetailsDTO convertToDTO(Auction auction) {
+        List<String> imageIds = auctionImagePathsRepository.findById_AuctionId(auction.getId())
+                .stream()
+                .map(AuctionImagePath::getImageId)
+                .map(UUID::toString)
+                .collect(Collectors.toList());
+
+        UserDTO sellerDto = userMapperImpl.mapTo(auction.getSeller().getUser());
+
+        // For list view, we don't need full bid history, just the highest bid
+        BidDTO highestBid = bidService.getHighestBidForAuction(auction.getId())
+                .map(bidService::convertToDTO)
+                .orElse(null);
+
+        return AuctionDetailsDTO.builder()
+                .seller(sellerDto)
+                .id(auction.getId().toString())
+                .category(auction.getCategory())
+                .title(auction.getTitle())
+                .description(auction.getDescription())
+                .images(imageIds)
+                .endTime(auction.getEndTime().toString())
+                .startTime(auction.getStartTime().toString())
+                .bidHistory(null) // Don't load full history for list view
+                .currentHighestBid(highestBid)
+                .startingPrice(auction.getStartingPrice())
+                .build();
+    }
+
+
+
 }

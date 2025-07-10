@@ -13,6 +13,7 @@ import com.helios.auctix.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,19 +29,21 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final UserMapperImpl userMapperImpl;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
 
     // Get bid history for an auction
     public List<Bid> getBidHistoryForAuction(UUID auctionId) {
-        return bidRepository.findByAuctionIdOrderByBidTimeDesc(auctionId);
+        return bidRepository.findByAuctionIdOrderByBidTimeDesc(auctionId)
+                .stream()
+                .limit(10)
+                .toList();
     }
 
-    // Get highest bid for an auction
+    // Get the highest bid for an auction
     public Optional<Bid> getHighestBidForAuction(UUID auctionId) {
         return bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
     }
-
-
 
     // Add this method to get bidder details
     public BidDTO convertToDTO(Bid bid) {
@@ -52,27 +55,29 @@ public class BidService {
 
         return BidDTO.builder()
                 .id(bid.getId())
-                .auctionId(bid.getAuction().getId())  // Get auction ID from relationship
+                .auctionId(bid.getAuction().getId())
                 .amount(bid.getAmount())
                 .bidTime(bid.getBidTime())
-                .bidderId(bid.getBidderId())
-                .bidderName(bid.getBidderName())
-                .bidderAvatar(bid.getBidderAvatar())
+                .bidder(bidderDto)
                 .build();
     }
 
-
-    // Place a new bid
+    // Method for placing a new bid
     @Transactional
-    public BidDTO placeBid(PlaceBidRequest request) {
-        // Extract fields from the request
+    public BidDTO placeBid(PlaceBidRequest request, User bidder) {
+
         UUID auctionId = request.getAuctionId();
-        UUID bidderId = request.getBidderId();
-        String bidderName = request.getBidderName();
-        String bidderAvatar = request.getBidderAvatar();
         Double amount = request.getAmount();
 
-        // Find the auction
+        UUID bidderId = bidder.getId();
+        String bidderName = bidder.getFirstName() + " " + bidder.getLastName();
+        UUID bidderAvatar = null;
+        if(bidder.getUpload()!=null){
+             bidderAvatar = bidder.getUpload().getId();
+        }
+
+
+        // Find the auction given through request
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
 
@@ -98,24 +103,18 @@ public class BidService {
             }
         }
 
-
-
         // Create and save the bid
         Bid bid = Bid.builder()
                 .auction(auction)
                 .bidderId(bidderId)
                 .bidderName(bidderName)
-                .bidderAvatar(bidderAvatar)
+                .bidderAvatar(String.valueOf(bidderAvatar))
                 .amount(amount)
                 .bidTime(now)
                 .build();
 
-        // Add bidder details from user service
-//        User bidder = userDetailsService.getUserById(request.getBidderId());
-//        bid.setBidderName(bidder.getFullName());
-//        bid.setBidderAvatar(bidder.getAvatarUrl());
-
         Bid savedBid = bidRepository.save(bid);
+
         return convertToDTO(savedBid);
 
     }

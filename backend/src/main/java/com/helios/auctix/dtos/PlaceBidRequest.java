@@ -11,14 +11,7 @@ public class PlaceBidRequest {
     @NotNull
     private UUID auctionId;
 
-    @NotNull
-    private UUID bidderId;
-
     @Positive
     @NotNull
     private Double amount;
-
-     private String bidderName;
-
-     private String bidderAvatar;
 }
