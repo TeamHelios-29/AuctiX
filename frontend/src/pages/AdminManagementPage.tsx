@@ -15,7 +15,7 @@ import { IRegisterAdmin, registerAdmin } from '@/services/authService';
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
-import { AdminAddModal } from '@/components/molecules/AdminAddModal';
+import { AdminAddModal } from '@/components/molecules/adminAddModal';
 
 export default function AdminManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);

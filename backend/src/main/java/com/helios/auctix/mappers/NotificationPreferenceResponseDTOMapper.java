@@ -8,6 +8,7 @@ import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.domain.notification.preferences.NotificationEventPreference;
 import com.helios.auctix.domain.notification.preferences.NotificationGlobalPreference;
+import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.notification.NotificationPreferencesResponseDto;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +25,7 @@ public class NotificationPreferenceResponseDTOMapper {
         this.defaultProperties = defaultProperties;
     }
 
-    public NotificationPreferencesResponseDto toDTO(NotificationGlobalPreference global, NotificationEventPreference event) {
+    public NotificationPreferencesResponseDto toDTO(NotificationGlobalPreference global, NotificationEventPreference event, UserRoleEnum userRole) {
         Map<String, Boolean> globalRaw;
         Map<String, Map<String, Boolean>> eventsRaw;
 
@@ -56,6 +57,11 @@ public class NotificationPreferenceResponseDTOMapper {
         // Events categorized by group
         Map<String, Map<String, NotificationPreferencesResponseDto.EventSetting>> groupedEvents = new HashMap<>();
         for (NotificationCategory category : NotificationCategory.values()) {
+
+            if (category.isNotAllowedTo(userRole)) {
+                continue;
+            }
+
             String categoryId = category.name();
             String group = category.getCategoryGroup().name();
             Map<String, Boolean> channelPrefs = eventsRaw.getOrDefault(categoryId, Map.of());

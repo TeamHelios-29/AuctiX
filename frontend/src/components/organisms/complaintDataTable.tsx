@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
-import { DataTableForServerSideFiltering } from '@/components/molecules/DataTableForServerSideFiltering';
+import { DataTable } from '@/components/molecules/DataTable';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@radix-ui/react-checkbox';
 import { AxiosInstance } from 'axios';
@@ -259,7 +259,7 @@ export default function ComplaintDataTable() {
 
   return (
     <>
-      <DataTableForServerSideFiltering
+      <DataTable
         columns={complaintsColumns}
         data={complaints || []}
         pageCount={pageCount}

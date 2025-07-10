@@ -1,3 +1,13 @@
+export interface Notification {
+  id: string;
+  title: string;
+  content: string;
+  read: boolean;
+  notificationCategory: string;
+  notificationCategoryGroup: string;
+  createdAt: string;
+}
+
 export const NOTIFICATION_CATEGORY_GROUP_LABELS = {
   PROMO: 'Promotional',
   AUCTION: 'Auction',

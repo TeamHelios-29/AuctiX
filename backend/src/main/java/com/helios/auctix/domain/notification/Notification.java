@@ -20,17 +20,21 @@ public class Notification {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
     private String notificationEvent; // TODO: Decide if we are gonna store the events separately in the db
 
+    @Deprecated
     @Enumerated(EnumType.STRING)
     private NotificationType notificationType;
 
     @Enumerated(EnumType.STRING)
     private NotificationCategory notificationCategory;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationCategoryGroup notificationCategoryGroup;
 
     private String title;
 
@@ -52,6 +56,7 @@ public class Notification {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.notificationCategoryGroup = notificationCategory.getCategoryGroup();
     }
 
     @PreUpdate

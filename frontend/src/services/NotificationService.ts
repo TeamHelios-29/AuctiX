@@ -47,3 +47,66 @@ export async function saveNotificationPreferences(
 ): Promise<void> {
   await axiosInstance.post('/notification/settings/preferences', data);
 }
+
+// todo after fixing the AxiosInstance bug use the service
+
+// export async function getNotifications(
+// ): Promise<Notification[]> {
+//   const baseURL = import.meta.env.VITE_API_URL
+
+//   const response = await axios.get(`${baseURL}/notification`, {
+//     headers: {
+//       'Content-Type': 'application/json',
+//       Authorization: `Bearer ${authUser?.token}`,
+//     },
+//   });
+//   console.log("Getting notificaiotns: " + response.data)
+//   return response.data;
+// }
+
+// export async function markAsRead(
+//   id: string,
+//   axiosInstance: AxiosInstance,
+// ): Promise<void> {
+//   await axiosInstance.patch(`/notification/${id}/read`, { read: true });
+// }
+
+// export async function markAsUnread(
+//   id: string,
+//   axiosInstance: AxiosInstance,
+// ): Promise<void> {
+//   await axiosInstance.patch(`/notification/${id}/read`, { read: false });
+// }
+
+// export async function deleteNotification(
+//   id: string,
+//   axiosInstance: AxiosInstance,
+// ): Promise<void> {
+//   await axiosInstance.delete(`/notification/${id}`);
+// }
+
+// export async function markAllAsRead(
+//   axiosInstance: AxiosInstance,
+// ): Promise<void> {
+//   await axiosInstance.patch('/notification/mark-all-read');
+// }
+
+// export function getNotificationCategories(
+//   notifications: Notification[],
+// ): string[] {
+//   const categories = new Set<string>();
+//   notifications.forEach((notification) => {
+//     categories.add(notification.notificationCategory);
+//   });
+//   return Array.from(categories);
+// }
+
+// export function getNotificationCategoryGroups(
+//   notifications: Notification[],
+// ): string[] {
+//   const categoryGroups = new Set<string>();
+//   notifications.forEach((notification) => {
+//     categoryGroups.add(notification.notificationCategoryGroup);
+//   });
+//   return Array.from(categoryGroups);
+// }
