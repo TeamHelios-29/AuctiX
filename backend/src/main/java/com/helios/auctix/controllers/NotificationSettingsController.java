@@ -2,7 +2,8 @@ package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.FCMTokenRegisterRequestDTO;
-import com.helios.auctix.dtos.NotificationPreferencesDTO;
+import com.helios.auctix.dtos.notification.NotificationPreferencesResponseDto;
+import com.helios.auctix.dtos.notification.NotificationPreferenceUpdateDto;
 import com.helios.auctix.services.FirebaseCloudMessageService;
 import com.helios.auctix.services.notification.NotificationSettingsService;
 import com.helios.auctix.services.user.UserRegisterService;
@@ -67,7 +68,7 @@ public class NotificationSettingsController {
     }
 
     @GetMapping("/preferences")
-    public ResponseEntity<NotificationPreferencesDTO> getNotificationPreferences(
+    public ResponseEntity<NotificationPreferencesResponseDto> getNotificationPreferences(
             @AuthenticationPrincipal UserDetails userDetails) {
 
         if (userDetails == null) {
@@ -82,7 +83,7 @@ public class NotificationSettingsController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
 
-            NotificationPreferencesDTO preferences = notificationSettingsService.getPreferences(user);
+            NotificationPreferencesResponseDto preferences = notificationSettingsService.getPreferences(user);
             return ResponseEntity.ok(preferences);
 
         } catch (Exception e) {
@@ -94,7 +95,7 @@ public class NotificationSettingsController {
     @PostMapping("/preferences")
     public ResponseEntity<String> setNotificationPreferences(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody NotificationPreferencesDTO dto) {
+            @Valid @RequestBody NotificationPreferenceUpdateDto dto) {
 
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");

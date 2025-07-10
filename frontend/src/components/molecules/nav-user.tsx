@@ -25,7 +25,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useAppDispatch } from '@/hooks/hooks';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { logout } from '@/store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
@@ -39,6 +39,10 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+
+  const unreadNotificationCount = useAppSelector(
+    (state) => state.notifications.unreadCount,
+  );
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -98,6 +102,11 @@ export function NavUser({
               <DropdownMenuItem onClick={() => navigate('/notifications')}>
                 <Bell />
                 Notifications
+                {unreadNotificationCount > 0 && (
+                  <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
+                    {unreadNotificationCount}
+                  </span>
+                )}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

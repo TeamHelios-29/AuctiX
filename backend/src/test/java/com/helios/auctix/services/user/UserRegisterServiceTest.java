@@ -35,7 +35,6 @@ class UserRegisterServiceTest {
     @DisplayName("Test Registering a user with role bidder")
     void addBidder() {
 
-
 //        try {
 //            UserRegisterService userRegisterService = new UserRegisterService(userRepository, sellerRepository, bidderRepository, adminRepository, userRoleRepository, jwtService);
 //            for (int j = 0; j < 10; j++) {

@@ -3,12 +3,7 @@
 // Inspired by react-hot-toast library
 import * as React from 'react';
 
-// Define ToastProps here if not exported from the module
-export interface ToastProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  // Add other properties as needed for your toast component
-}
+import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
@@ -17,7 +12,7 @@ type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
-  action?: React.ReactNode;
+  action?: ToastActionElement;
 };
 
 const actionTypes = {

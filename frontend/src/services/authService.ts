@@ -29,6 +29,16 @@ export interface IRegisterUser {
   role: 'SELLER' | 'BIDDER';
 }
 
+export interface IRegisterAdmin {
+  email: string;
+  password: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  permissions: string[];
+  role: 'ADMIN';
+}
+
 export const registerUser = async (
   userdata: IRegisterUser,
   axiosInstance: AxiosInstance,
@@ -69,6 +79,36 @@ export interface ILoginCredentials {
   email: string;
   password: string;
 }
+
+export const registerAdmin = async (
+  userdata: IRegisterAdmin,
+  axiosInstance: AxiosInstance,
+): Promise<IJwtData> => {
+  try {
+    const response = await axiosInstance.post(
+      '/user/createAdmin',
+      {
+        email: userdata.email,
+        password: userdata.password,
+        username: userdata.username,
+        firstName: userdata.firstName,
+        lastName: userdata.lastName,
+        role: 'ADMIN',
+      },
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
+    );
+
+    console.log('Admin Registered', response);
+
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data || error.message || 'Unknown error');
+  }
+};
 
 export const loginUser = async (
   credentials: ILoginCredentials,

@@ -19,6 +19,10 @@ import UserDeliveryPage from '@/pages/User_Delivery';
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
 import AuctionsPage from '@/pages/ExploreAuctions';
 import ManageAuctions from '@/pages/ManageAuctions';
+import AdminManagementPage from '@/pages/AdminManagementPage';
+import ComplaintDetail from '@/pages/ComplaintDetail';
+import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
+import NotificationsPage from '@/pages/NotificationPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -45,7 +49,7 @@ export default function AppRouter() {
             path="/dashboard"
             element={
               <ProtectedRoute
-                allowedUsers={['SELLER', 'BIDDER']}
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
               >
                 <Dashboard />
@@ -53,10 +57,32 @@ export default function AppRouter() {
             }
           />
           <Route
-            path="/user"
+            path="/notifications/"
             element={
               <ProtectedRoute
-                allowedUsers={['ADMIN', 'SUPPER_ADMIN', 'BIDDER', 'SELLER']}
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications/preferences"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <NotificationPreferencesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute
+                allowedUsers={['ADMIN', 'SUPER_ADMIN', 'BIDDER', 'SELLER']}
                 redirectPath="/403"
               >
                 <User />
@@ -67,15 +93,27 @@ export default function AppRouter() {
             path="/settings/profile"
             element={
               <ProtectedRoute
-                allowedUsers={['SELLER', 'BIDDER']}
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
               >
                 <ProfileSettings />
               </ProtectedRoute>
             }
           />
-          <Route path="/reports" element={<Report />} />
+          <Route
+            path="/admin-management"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <AdminManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/complaints/:id" element={<ComplaintDetail />} />
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
