@@ -8,5 +8,6 @@ CREATE TABLE complaint_activity (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+
 CREATE INDEX idx_complaint_activity_complaint_id ON complaint_activity(complaint_id);
 CREATE INDEX idx_complaint_activity_timestamp ON complaint_activity(timestamp DESC);
