@@ -81,6 +81,37 @@ export const fetchUnreadCount = createAsyncThunk<
   }
 });
 
+export const markNotificationReadThunk = createAsyncThunk<
+  void,
+  string,
+  { state: RootState; rejectValue: string }
+>(
+  'notification/markNotificationRead',
+  async (id, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const { auth } = getState();
+      await axios.post(
+        `${baseURL}/notification/${id}/read`,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${auth.token}`,
+          },
+        },
+      );
+
+      dispatch(fetchUnreadCount());
+      dispatch(fetchLatestNotifications());
+    } catch (err) {
+      const error = err as AxiosError<ErrorResponse>;
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to mark notification as read',
+      );
+    }
+  },
+);
+
 const notificationSlice = createSlice({
   name: 'notification',
   initialState,

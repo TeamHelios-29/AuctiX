@@ -21,7 +21,7 @@ import { Notification } from '@/types/notification';
 import {
   fetchLatestNotifications,
   fetchUnreadCount,
-  // markNotificationRead,
+  markNotificationReadThunk,
 } from '@/store/slices/notificationSlice';
 
 export function Navbar() {
@@ -144,9 +144,11 @@ export function Navbar() {
                                 } hover:shadow-md hover:bg-yellow-100`}
                                 onClick={() => {
                                   if (!notification.read) {
-                                    // dispatch(
-                                    //   markNotificationRead(notification.id),
-                                    // );
+                                    dispatch(
+                                      markNotificationReadThunk(
+                                        notification.id,
+                                      ),
+                                    );
                                   }
                                   // TODO: add navigation to the notification
                                 }}

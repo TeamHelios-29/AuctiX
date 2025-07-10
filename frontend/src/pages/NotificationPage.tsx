@@ -1,4 +1,14 @@
 import { useEffect, useCallback, useState } from 'react';
+
+import {
+  fetchNotifications as fetchNotificationsService,
+  fetchCategoryGroups as fetchCategoryGroupsService,
+  markNotificationRead as markReadService,
+  markNotificationUnread as markUnreadService,
+  deleteNotification as deleteNotificationService,
+  markAllNotificationsRead as markAllService,
+} from '@/services/notificationService';
+
 import {
   selectUnreadCount,
   fetchUnreadCount,
@@ -6,6 +16,7 @@ import {
   incrementUnreadCount,
   setUnreadCount,
 } from '@/store/slices/notificationSlice';
+
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { NotificationCard } from '@/components/molecules/NotificationCard';
 import {
@@ -37,33 +48,23 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Link } from 'react-router-dom';
-import axios, { AxiosError } from 'axios';
-import type { Notification } from '@/types/notification';
-
-const baseURL = import.meta.env.VITE_API_URL;
-
-interface FetchParams {
-  page?: number;
-  size?: number;
-  readStatus?: string;
-  categoryGroup?: string;
-}
-
-interface PaginatedResponse {
-  content: Notification[];
-  number: number;
-  totalPages: number;
-}
+import { AxiosError, AxiosInstance } from 'axios';
+import type {
+  Notification,
+  NotificationFetchParams,
+} from '@/types/notification';
+import AxiosRequest from '@/services/axiosInspector';
 
 interface ErrorResponse {
   message: string;
 }
 
 const NotificationPage: React.FC = () => {
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
+
   const dispatch = useAppDispatch();
   const unreadCount = useAppSelector(selectUnreadCount);
 
-  // Local state for the notification page
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [categoryGroups, setCategoryGroups] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,35 +79,14 @@ const NotificationPage: React.FC = () => {
   const [markAllSuccess, setMarkAllSuccess] = useState(false);
   const [pageSize, setPageSize] = useState(10);
 
-  // Get auth token from Redux
-  const authToken = useAppSelector((state) => state.auth.token);
-
-  // Local API functions
   const fetchNotifications = useCallback(
-    async (params: FetchParams = {}) => {
-      console.log('🔥 fetch Notifications triggered');
+    async (params: NotificationFetchParams = {}) => {
+      if (isLoading) return;
+
       try {
         setIsLoading(true);
         setError(null);
-        const {
-          page = 0,
-          size = 10,
-          readStatus = 'all',
-          categoryGroup = 'all',
-        } = params;
-
-        const response = await axios.get<PaginatedResponse>(
-          `${baseURL}/notification/`,
-          {
-            params: { page, size, readStatus, categoryGroup },
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${authToken}`,
-            },
-          },
-        );
-
-        const data = response.data;
+        const data = await fetchNotificationsService(params, axiosInstance);
         setNotifications(data.content);
         setCurrentPage(data.number + 1);
         setTotalPages(data.totalPages);
@@ -119,113 +99,64 @@ const NotificationPage: React.FC = () => {
         setIsLoading(false);
       }
     },
-    [authToken],
+    [axiosInstance, isLoading],
   );
 
   const fetchCategoryGroups = useCallback(async () => {
     try {
-      const response = await axios.get<string[]>(
-        `${baseURL}/notification/category-groups`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-        },
-      );
-      setCategoryGroups(response.data);
+      const data = await fetchCategoryGroupsService(axiosInstance);
+      setCategoryGroups(data);
     } catch (err) {
       const error = err as AxiosError<ErrorResponse>;
       setError(
         error.response?.data?.message || 'Failed to fetch category groups',
       );
     }
-  }, [authToken]);
+  }, [axiosInstance]);
 
   const markNotificationRead = useCallback(
     async (id: string) => {
       try {
-        await axios.post(
-          `${baseURL}/notification/${id}/read`,
-          {},
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${authToken}`,
-            },
-          },
-        );
-
-        // Update local state
+        await markReadService(id, axiosInstance);
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
         );
-
-        // Update Redux unread count
         dispatch(decrementUnreadCount());
       } catch (err) {
         const error = err as AxiosError<ErrorResponse>;
-        setError(
-          error.response?.data?.message ||
-            'Failed to mark notification as read',
-        );
+        setError(error.response?.data?.message || 'Failed to mark as read');
       }
     },
-    [authToken, dispatch],
+    [axiosInstance, dispatch],
   );
 
   const markNotificationUnread = useCallback(
     async (id: string) => {
       try {
-        await axios.post(
-          `${baseURL}/notification/${id}/unread`,
-          {},
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${authToken}`,
-            },
-          },
-        );
-
-        // Update local state
+        await markUnreadService(id, axiosInstance);
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, read: false } : n)),
         );
-
-        // Update Redux unread count
         dispatch(incrementUnreadCount());
       } catch (err) {
         const error = err as AxiosError<ErrorResponse>;
-        setError(
-          error.response?.data?.message ||
-            'Failed to mark notification as unread',
-        );
+        setError(error.response?.data?.message || 'Failed to mark as unread');
       }
     },
-    [authToken, dispatch],
+    [axiosInstance, dispatch],
   );
-
   const removeNotification = useCallback(
     async (id: string) => {
       try {
-        await axios.delete(`${baseURL}/notification/${id}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-        });
+        await deleteNotificationService(id, axiosInstance);
 
-        // Update local state
-        const deletedNotification = notifications.find((n) => n.id === id);
+        const deleted = notifications.find((n) => n.id === id);
         setNotifications((prev) => prev.filter((n) => n.id !== id));
 
-        // Update Redux unread count if the deleted notification was unread
-        if (deletedNotification && !deletedNotification.read) {
+        if (deleted && !deleted.read) {
           dispatch(decrementUnreadCount());
         }
 
-        // Handle pagination when deleting the last item on a page
         if (notifications.length === 1 && currentPage > 1) {
           await fetchNotifications({
             page: currentPage - 2,
@@ -233,7 +164,7 @@ const NotificationPage: React.FC = () => {
             readStatus: readStatusFilter,
             categoryGroup: categoryFilter,
           });
-        } else if (notifications.length > 1) {
+        } else {
           await fetchNotifications({
             page: currentPage - 1,
             size: pageSize,
@@ -249,7 +180,7 @@ const NotificationPage: React.FC = () => {
       }
     },
     [
-      authToken,
+      axiosInstance,
       dispatch,
       notifications,
       currentPage,
@@ -264,39 +195,42 @@ const NotificationPage: React.FC = () => {
     try {
       setRefreshing(true);
       setError(null);
-
-      await axios.post(
-        `${baseURL}/notification/mark-all-read`,
-        {},
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-        },
-      );
-
-      // Update local state
+      await markAllService(axiosInstance);
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-
-      // Update Redux unread count
       dispatch(setUnreadCount(0));
-
       setMarkAllSuccess(true);
       setTimeout(() => setMarkAllSuccess(false), 3000);
     } catch (err) {
       const error = err as AxiosError<ErrorResponse>;
-      setError(
-        error.response?.data?.message ||
-          'Failed to mark all notifications as read',
-      );
+      setError(error.response?.data?.message || 'Failed to mark all as read');
     } finally {
       setRefreshing(false);
     }
-  }, [authToken, dispatch]);
+  }, [axiosInstance, dispatch]);
 
-  const fetchData = useCallback(async () => {
-    console.log('🔥 fetchData triggered');
+  const fetchInitialData = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([
+      fetchNotifications({
+        page: 0,
+        size: pageSize,
+        readStatus: readStatusFilter,
+        categoryGroup: categoryFilter,
+      }),
+      dispatch(fetchUnreadCount()),
+      fetchCategoryGroups(),
+    ]);
+    setRefreshing(false);
+  }, [
+    fetchNotifications,
+    fetchCategoryGroups,
+    dispatch,
+    pageSize,
+    readStatusFilter,
+    categoryFilter,
+  ]);
+
+  const refreshData = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
       fetchNotifications({
@@ -320,9 +254,9 @@ const NotificationPage: React.FC = () => {
   ]);
 
   useEffect(() => {
-    console.log('🧨 useEffect fired');
-    fetchData();
-  }, []);
+    fetchInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only initial load
 
   const handlePageChange = useCallback(
     (newPage: number) => {
@@ -343,6 +277,10 @@ const NotificationPage: React.FC = () => {
       categoryFilter,
     ],
   );
+
+  const handleRefresh = useCallback(async () => {
+    await refreshData();
+  }, [refreshData]);
 
   const handleMarkAsRead = useCallback(
     (id: string) => {
@@ -368,10 +306,6 @@ const NotificationPage: React.FC = () => {
   const handleMarkAllAsRead = useCallback(async () => {
     await markAllNotificationsRead();
   }, [markAllNotificationsRead]);
-
-  const handleRefresh = useCallback(async () => {
-    await fetchData();
-  }, [fetchData]);
 
   const handleFilterChange = useCallback(
     (newFilter: 'all' | 'unread' | 'read') => {

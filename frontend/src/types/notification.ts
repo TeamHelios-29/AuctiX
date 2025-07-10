@@ -99,3 +99,16 @@ export interface SaveNotificationPreferences {
   };
   events: SaveEventCategories;
 }
+
+export interface NotificationFetchParams {
+  page?: number;
+  size?: number;
+  readStatus?: string;
+  categoryGroup?: string;
+}
+
+export interface NotificationPaginatedResponse {
+  content: Notification[];
+  number: number;
+  totalPages: number;
+}
