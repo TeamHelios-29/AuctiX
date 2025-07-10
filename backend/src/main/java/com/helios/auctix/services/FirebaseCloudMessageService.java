@@ -48,6 +48,9 @@ public class FirebaseCloudMessageService {
                 // for other errors including service unavailability
                 log.severe("Error sending FCM message: " + e.getMessage());
             }
+        } catch (Exception e) {
+            // e.printStackTrace();
+            log.severe("Error sending with FCM message sending: " + e.getMessage());
         }
     }
 

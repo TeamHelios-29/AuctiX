@@ -9,5 +9,6 @@ import java.util.UUID;
 
 @Repository
 public interface AuctionImagePathsRepository extends JpaRepository<AuctionImagePath, Long> {
-    List<AuctionImagePath> findByAuctionId(UUID auctionId);
+    List<AuctionImagePath> findById_AuctionId(UUID auctionId);
+
 }

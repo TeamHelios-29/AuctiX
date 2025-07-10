@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import AuctionForm from '@/components/organisms/create-auction-form';
+import AuctionForm from '@/components/organisms/CreateAuctionForm';
 import { useNavigate } from 'react-router-dom';
 
 const CreateAuction: React.FC = () => {
@@ -11,11 +11,10 @@ const CreateAuction: React.FC = () => {
       <Card className="w-full max-w-3xl p-8 shadow-xl">
         <Button
           variant="ghost"
-          onClick={() => navigate(-1)} // Go back to the previous page
+          onClick={() => navigate(-1)}
           className="mb-4 flex items-center space-x"
         >
           <span className="text-xl font-bold text-gray-700">&larr;</span>{' '}
-          {/* Larger arrow */}
           <span>Back</span>
         </Button>
         <h1 className="text-2xl font-bold mb-2">Create new Auction Listing</h1>

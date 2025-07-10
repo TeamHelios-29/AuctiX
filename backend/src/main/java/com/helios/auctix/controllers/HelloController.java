@@ -143,12 +143,19 @@ public class HelloController {
     public String sendNotifTest(
             @Valid @RequestParam(required = true) String email,
             @Valid @RequestParam(required = false) String category,
-            @RequestParam(required = false) String message) {
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String title
+            ) {
 
 //        return " e " + email + " " + category + " msg " + message;
 
         if (message == null) {
             message = "hello from springboot";
+        }
+
+
+        if (title == null ) {
+            title = "Hi from Auctix";
         }
 
         User user = userRepository.findByEmail(email);
@@ -159,7 +166,7 @@ public class HelloController {
         NotificationCategory notificationCategory = NotificationCategory.valueOf(category);
 
         notificationEventPublisher.publishNotificationEvent(
-                "Hi from AuctiX",
+                title,
                 message,
                 notificationCategory,
                 user

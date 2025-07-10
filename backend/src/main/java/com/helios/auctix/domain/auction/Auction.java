@@ -22,7 +22,6 @@ public class Auction {
     @Id
     @GeneratedValue
     private UUID id;
-
     private String title;
     private String description;
     private Double startingPrice;
@@ -42,6 +41,14 @@ public class Auction {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", referencedColumnName = "id")

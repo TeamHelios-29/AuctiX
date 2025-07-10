@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auctions/**").permitAll()
                         .requestMatchers("/api/roletest/**").authenticated()
                         .requestMatchers("/api/notification/settings").authenticated()
+                        .requestMatchers("/api/bids/**").permitAll()
+
 
                         .requestMatchers("/api/coins/**").authenticated()
                         .anyRequest().authenticated()
@@ -96,4 +98,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+
+
 }

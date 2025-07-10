@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -41,10 +42,13 @@ public class BidService {
 
     // Get bid history for an auction
     public List<Bid> getBidHistoryForAuction(UUID auctionId) {
-        return bidRepository.findByAuctionIdOrderByBidTimeDesc(auctionId);
+        return bidRepository.findByAuctionIdOrderByBidTimeDesc(auctionId)
+                .stream()
+                .limit(10)
+                .toList();
     }
 
-    // Get highest bid for an auction
+    // Get the highest bid for an auction
     public Optional<Bid> getHighestBidForAuction(UUID auctionId) {
         return bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
     }

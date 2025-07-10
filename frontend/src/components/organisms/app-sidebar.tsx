@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sidebar';
 import { IUser } from '@/types/IUser';
 import { useAppSelector } from '@/hooks/hooks';
+import { Link } from 'react-router-dom';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const userData = useAppSelector((state) => state.user as IUser);
@@ -64,8 +65,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 url: '/delivery',
               },
               {
-                title: 'Reports',
-                url: '/Reports',
+                title: 'Complaints',
+                url: '/complaints',
               },
               {
                 title: 'Users',
@@ -107,14 +108,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader className="pl-4">
-        <a href="#">
+        <Link to="/">
           <span className="text-black text-4xl font-normal font-productsans leading-normal">
             Aucti
           </span>
           <span className="text-[#ecb02d] text-4xl font-normal font-productsans leading-normal">
             X
           </span>
-        </a>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         {data.navMain.map((group) => (

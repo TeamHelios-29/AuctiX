@@ -35,23 +35,22 @@ class UserRegisterServiceTest {
     @DisplayName("Test Registering a user with role bidder")
     void addBidder() {
 
-
-       /* try {
-            UserRegisterService userRegisterService = new UserRegisterService(userRepository, sellerRepository, bidderRepository, adminRepository, userRoleRepository, jwtService);
-            for (int j = 0; j < 10; j++) {
-                userRegisterService.addUser(
-                        "testuser_username" + j,
-                        "testemail_email" + j + "@example.com",
-                        "password123",
-                        "FirstName" + j,
-                        "LastName" + j,
-                        UserRoleEnum.BIDDER,
-                        null
-                );
-                Thread.sleep(100);
-            }
-        } catch (Exception e) {
-            log.error("ERROR occurred while adding user ");
-        }*/
+//        try {
+//            UserRegisterService userRegisterService = new UserRegisterService(userRepository, sellerRepository, bidderRepository, adminRepository, userRoleRepository, jwtService);
+//            for (int j = 0; j < 10; j++) {
+//                userRegisterService.addUser(
+//                        "testuser_username" + j,
+//                        "testemail_email" + j + "@example.com",
+//                        "password123",
+//                        "FirstName" + j,
+//                        "LastName" + j,
+//                        UserRoleEnum.BIDDER,
+//                        null
+//                );
+//                Thread.sleep(100);
+//            }
+//        } catch (Exception e) {
+//            log.error("ERROR occurred while adding user ");
+//        }
     }
 }
