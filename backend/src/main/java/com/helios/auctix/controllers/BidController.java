@@ -14,11 +14,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.logging.Logger;
 
 @RestController
@@ -98,35 +95,6 @@ public class BidController {
                 .createdAt(bid.getCreatedAt())
                 .build();
     }
-
     // Request DTO for placing bids
-    public static class PlaceBidRequest {
-        private UUID auctionId;
-        private String bidderName;
-        private String bidderAvatar;
-        private Double amount;
-
-        // Getters and setters
-        public UUID getAuctionId() { return auctionId; }
-        public void setAuctionId(UUID auctionId) { this.auctionId = auctionId; }
-
-        public String getBidderName() { return bidderName; }
-        public void setBidderName(String bidderName) { this.bidderName = bidderName; }
-
-        public String getBidderAvatar() { return bidderAvatar; }
-        public void setBidderAvatar(String bidderAvatar) { this.bidderAvatar = bidderAvatar; }
-
-        public Double getAmount() { return amount; }
-        public void setAmount(Double amount) { this.amount = amount; }
-
-        @Override
-        public String toString() {
-            return "PlaceBidRequest{" +
-                    "auctionId=" + auctionId +
-                    ", bidderName='" + bidderName + '\'' +
-                    ", bidderAvatar='" + bidderAvatar + '\'' +
-                    ", amount=" + amount +
-                    '}';
-        }
-    }
+    // Use com.helios.auctix.dtos.PlaceBidRequest instead of inner class.
 }
