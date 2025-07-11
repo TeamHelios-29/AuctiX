@@ -20,7 +20,7 @@ public class BulkNotificationEventListener {
     private final ThreadPoolTaskExecutor notificationExecutor;
 
     @EventListener
-    @Async
+    @Async("notificationExecutor")
     public void handleBulkNotification(BulkNotificationEvent event) {
         List<Notification> notifications = event.getUsers().stream()
                 .map(user -> Notification.builder()

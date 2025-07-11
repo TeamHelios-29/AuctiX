@@ -45,6 +45,10 @@ public class WatchListService {
      */
 
     public void notifySubscribers(Auction auction, String title, String message, NotificationCategory category) {
+        if (auction == null) {
+            throw new IllegalArgumentException("Auction cannot be null");
+        }
+        
         List<User> users = watchRepo.findUsersByAuction_Id(auction.getId());
         bulkNotificationPublisher.publish(users, title, message, category);
     }
