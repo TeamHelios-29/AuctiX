@@ -1,0 +1,60 @@
+package com.helios.auctix.services;
+
+import com.helios.auctix.domain.auction.Auction;
+import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.watchlist.AuctionWatchList;
+import com.helios.auctix.dtos.AuctionDetailsDTO;
+import com.helios.auctix.repositories.AuctionRepository;
+import com.helios.auctix.repositories.AuctionWatchListRepository;
+import com.helios.auctix.repositories.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class WatchListService {
+
+    private final AuctionWatchListRepository watchRepo;
+    private final AuctionRepository auctionRepo;
+    private final UserRepository userRepo;
+    private final AuctionService auctionService;
+
+    @Transactional
+    public void subscribe(UUID userId, UUID auctionId) {
+        User user = userRepo.findById(userId).orElseThrow();
+        Auction auction = auctionRepo.findById(auctionId).orElseThrow();
+
+        if (!watchRepo.existsByUserAndAuction(user, auction)) {
+            AuctionWatchList watch = AuctionWatchList.builder()
+                    .user(user)
+                    .auction(auction)
+                    .build();
+            watchRepo.save(watch);
+        }
+    }
+
+    @Transactional
+    public void unsubscribe(UUID userId, UUID auctionId) {
+        User user = userRepo.findById(userId).orElseThrow();
+        Auction auction = auctionRepo.findById(auctionId).orElseThrow();
+
+        watchRepo.findByUserAndAuction(user, auction).ifPresent(watchRepo::delete);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AuctionDetailsDTO> getWatchedAuctions(UUID userId, Pageable pageable) {
+        return watchRepo.findAllByUser_Id(userId, pageable)
+                .map(AuctionWatchList::getAuction)
+                .map(this::toDto);
+    }
+
+    private AuctionDetailsDTO toDto(Auction auction) {
+       return auctionService.convertToDTO(auction);
+    }
+}
