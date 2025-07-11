@@ -19,6 +19,7 @@ public class UserDTO {
     private String email;
     private String firstName;
     private String lastName;
+    private boolean isProfileComplete;
 
     private UserRoleDTO userRole;
     private UploadDTO profilePicture;
