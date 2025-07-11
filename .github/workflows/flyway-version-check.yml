@@ -3,8 +3,6 @@ name: Flyway Migration Version Check
 on:
   pull_request:
     branches: [main, dev]
-    paths:
-      - "backend/src/main/resources/db/migration/**"
 
 permissions:
   contents: read
@@ -12,6 +10,7 @@ permissions:
 
 jobs:
   flyway-version-check:
+    if: contains(join(github.event.pull_request.changed_files.*.filename, ','), 'backend/src/main/resources/db/migration/')
     runs-on: ubuntu-latest
 
     steps:
