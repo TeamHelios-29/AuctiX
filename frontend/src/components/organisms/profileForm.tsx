@@ -25,6 +25,7 @@ import ProfileCard from '../molecules/ProfileCard';
 import { ProfileUrlsSection } from '../molecules/ProfileURLsSection';
 import { AddressSection } from '../molecules/ProfileAddressSection';
 import { PersonalBasicInfoSection } from '../molecules/ProfileBasicInfoSection';
+import { assets } from '@/config/assets';
 
 const profileFormSchema = z.object({
   firstName: z
@@ -105,25 +106,29 @@ const defaultValues: Partial<ProfileFormValues> = {
 };
 
 export function ProfileForm() {
+  // useState hooks
   const [croppedImg, setCroppedImg] = useState<string | null>(null);
-  const [bannerImg, setBannerImg] = useState<string>('/defaultBanner.jpg');
+  const [bannerImg, setBannerImg] = useState<string>(
+    assets.default_banner_image,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isProfilePictureLoading, setIsProfilePictureLoading] = useState(false);
-  const { toast } = useToast();
   const [isBannerLoading, setIsBannerLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // hooks
+  const { toast } = useToast();
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const dispatch = useAppDispatch();
   const userData = useAppSelector((state) => state.user);
-
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues,
     mode: 'onChange',
   });
 
+  // useEffect hooks
   useEffect(() => {
     const values = {
       ...defaultValues,
@@ -169,7 +174,8 @@ export function ProfileForm() {
 
     form.reset(values);
     setCroppedImg(userData.profile_photo || null);
-    setBannerImg('/defaultBanner.jpg'); // get the banner image from backend
+    setBannerImg(assets.default_banner_image);
+    //TODO: get the banner image from backend
   }, [userData, form]);
 
   function onSubmit(_data: ProfileFormValues) {
@@ -226,7 +232,7 @@ export function ProfileForm() {
   );
 
   const onRemoveBanner = () => {
-    setBannerImg('/defaultbanner.jpg');
+    setBannerImg(assets.default_banner_image);
     // TODO: API call to remove banner
   };
 
@@ -298,6 +304,7 @@ export function ProfileForm() {
 
   return (
     <>
+      {/* Update profile alert */}
       <AlertBox
         onAlertOpenChange={(e) => {
           setIsAlertOpen(e);
@@ -316,7 +323,7 @@ export function ProfileForm() {
         username={userData.username || ''}
         email={userData.email || ''}
         role={userData.role || ''}
-        profilePhoto={croppedImg || '/defaultProfilePhoto.jpg'}
+        profilePhoto={croppedImg || assets.default_profile_image}
         bannerPhoto={bannerImg}
         isProfileLoading={isProfilePictureLoading}
         isBannerLoading={isBannerLoading}
@@ -324,6 +331,7 @@ export function ProfileForm() {
         onProfilePhotoDelete={onProfilePhotoDelete}
         onBannerPhotoSet={onBannerPhotoSet}
         onRemoveBanner={onRemoveBanner}
+        isInEditMode={true}
       />
 
       {/* Error Message */}

@@ -21,6 +21,7 @@ import AuctionsPage from '@/pages/ExploreAuctions';
 import AdminManagementPage from '@/pages/AdminManagementPage';
 import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
+import UserProfile from '@/components/organisms/UserProfile';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -104,6 +105,14 @@ export default function AppRouter() {
                 redirectPath="/403"
               >
                 <AdminManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:id"
+            element={
+              <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
+                <UserProfile />
               </ProtectedRoute>
             }
           />

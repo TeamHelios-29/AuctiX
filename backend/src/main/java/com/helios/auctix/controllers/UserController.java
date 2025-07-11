@@ -36,7 +36,7 @@ public class UserController {
     private final UserDetailsService userDetailsService;
     private final UserMapperImpl userMapper;
 
-
+    @Profile("dev")
     @GetMapping("/hello")
     public String hello() {
         return "hello world!";
@@ -44,9 +44,9 @@ public class UserController {
 
     @GetMapping("/isUserExists")
     public String isUserExcist(@RequestParam(required = false) String username, @RequestParam(required = false) UUID id, @RequestParam(required = false) String email) {
-        boolean hasUname = !(username==null || username.isBlank());
+        boolean hasUname = !(username == null || username.isBlank());
         boolean hasId = id != null;
-        boolean hasEmail = !(email==null || email.isBlank());
+        boolean hasEmail = !(email == null || email.isBlank());
         byte providedParamsCount = 0;
         if (hasUname) {
             providedParamsCount++;
@@ -90,7 +90,7 @@ public class UserController {
     @PostMapping("/createSeller")
     public ResponseEntity<String> createUser(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Seller creation request: " + username);
-        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.SELLER,null);
+        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.SELLER, null);
         if (res.isSuccess()) {
             return ResponseEntity.ok("Success: Seller Created");
         } else {
@@ -102,7 +102,7 @@ public class UserController {
     @PostMapping("/createBidder")
     public String createBidder(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
         log.info("Bidder creation request: " + username);
-        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.BIDDER,null);
+        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.BIDDER, null);
         if (res.isSuccess()) {
             return "Success: Bidder Created";
         } else {
@@ -116,7 +116,7 @@ public class UserController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
 
-        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.ADMIN,currentUser);
+        UserServiceResponse res = userRegisterService.addUser(username, email, password, firstName, lastName, UserRoleEnum.ADMIN, currentUser);
         if (res.isSuccess()) {
             return ResponseEntity.ok("Success: Admin Created");
         } else {
@@ -139,17 +139,17 @@ public class UserController {
             @RequestParam(value = "sortby", required = false, defaultValue = "id") String sortBy,
             @RequestParam(value = "order", required = false, defaultValue = "asc") String order,
             @RequestParam(value = "search", required = false) String search)
-            throws AuthenticationException{
+            throws AuthenticationException {
 
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            User user = userDetailsService.getAuthenticatedUser(authentication);
-            String userRole = user.getRole().getName().toString();
-            log.info("user data requested by "+user.getEmail()+","+userRole);
-            if(!(UserRoleEnum.valueOf(userRole)==UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole)==UserRoleEnum.SUPER_ADMIN)){
-                throw new PermissionDeniedDataAccessException("You don't have permission to access this resource", new Throwable("Permission Denied"));
-            }
-            Page<UserDTO> userPage = userDetailsService.getAllUsers(limit,offset,order,sortBy,search);
-            return ResponseEntity.ok(userPage);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userDetailsService.getAuthenticatedUser(authentication);
+        String userRole = user.getRole().getName().toString();
+        log.info("user data requested by " + user.getEmail() + "," + userRole);
+        if (!(UserRoleEnum.valueOf(userRole) == UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole) == UserRoleEnum.SUPER_ADMIN)) {
+            throw new PermissionDeniedDataAccessException("You don't have permission to access this resource", new Throwable("Permission Denied"));
+        }
+        Page<UserDTO> userPage = userDetailsService.getAllUsers(limit, offset, order, sortBy, search);
+        return ResponseEntity.ok(userPage);
     }
 
 
@@ -163,13 +163,13 @@ public class UserController {
     @GetMapping("/getUser")
     public ResponseEntity<?> getUser(
             @RequestParam(value = "username", required = false) String username,
-            @RequestParam(value = "email" , required = false) String email,
-            @RequestParam(value = "userId" , required = false) UUID userId
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "userId", required = false) UUID userId
     ) {
         User user = null;
-        boolean hasUname = !(username==null || username.isBlank());
+        boolean hasUname = !(username == null || username.isBlank());
         boolean hasId = userId != null;
-        boolean hasEmail = !(email==null || email.isBlank());
+        boolean hasEmail = !(email == null || email.isBlank());
         byte providedParamsCount = 0;
         if (hasUname) {
             providedParamsCount++;
@@ -191,7 +191,7 @@ public class UserController {
                 user = userDetailsService.getUserById(userId);
             }
         }
-        if(user==null){
+        if (user == null) {
             return ResponseEntity.status(404).body("User not found");
         }
         return ResponseEntity.ok(user);
@@ -207,7 +207,7 @@ public class UserController {
 
         // Upload file
         log.info("Trying to upload file");
-        FileUploadResponse uploadRes = uploader.uploadFile(file, FileUploadUseCaseEnum.PROFILE_PHOTO , currentUser.getEmail() , true );
+        FileUploadResponse uploadRes = uploader.uploadFile(file, FileUploadUseCaseEnum.PROFILE_PHOTO, currentUser.getEmail(), true);
 
         if (uploadRes.isSuccess()) {
             // save file upload data
@@ -216,7 +216,7 @@ public class UserController {
             log.info("File upload data saved");
 
             if (res.isSuccess()) {
-                return ResponseEntity.ok().body("Profile photo uploaded successfully "+ res.getUser().getUpload().getId());
+                return ResponseEntity.ok().body("Profile photo uploaded successfully " + res.getUser().getUpload().getId());
             } else {
                 log.warning(res.getMessage());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data saving failed");
@@ -263,20 +263,19 @@ public class UserController {
     @GetMapping("/getUserProfilePhoto")
     public ResponseEntity<?> getUserProfilePhoto(@RequestParam("file_uuid") UUID file_uuid) throws AuthenticationException {
 
-        log.info("file get request: "+ file_uuid);
+        log.info("file get request: " + file_uuid);
 
         // Authenticate user
         User currentUser = null;
         FileUploadResponse res = null;
-        if(!fileUploadService.isFilePublic(file_uuid)) {
+        if (!fileUploadService.isFilePublic(file_uuid)) {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             currentUser = userDetailsService.getAuthenticatedUser(authentication);
             log.info("getting File by user " + currentUser.getEmail());
 
             // Get file upload data
             res = fileUploadService.getFile(file_uuid, currentUser.getEmail());
-        }
-        else{
+        } else {
             res = fileUploadService.getFile(file_uuid);
         }
 

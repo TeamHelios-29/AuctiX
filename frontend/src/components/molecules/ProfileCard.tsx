@@ -6,6 +6,7 @@ import ImageUploadPopup from '../molecules/ImageUploadPopup';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Mail, AtSign, Shield } from 'lucide-react';
 import { TooltipBtn } from '../atoms/TooltipBtn';
+import { useMemo } from 'react';
 
 interface ProfileCardProps {
   username: string;
@@ -15,6 +16,7 @@ interface ProfileCardProps {
   bannerPhoto: string;
   isProfileLoading: boolean;
   isBannerLoading: boolean;
+  isInEditMode: boolean;
   onProfilePhotoSet: (e: ImageResult) => void;
   onBannerPhotoSet: (e: ImageResult) => void;
   onRemoveBanner: () => void;
@@ -29,6 +31,7 @@ export default function ProfileCard({
   bannerPhoto,
   isProfileLoading,
   isBannerLoading,
+  isInEditMode,
   onProfilePhotoSet,
   onProfilePhotoDelete,
   onBannerPhotoSet,
@@ -40,6 +43,18 @@ export default function ProfileCard({
       .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
       .join(' ');
   };
+
+  const editBtnVisibility = useMemo(() => {
+    if (isInEditMode) {
+      if (role != 'SELLER') {
+        return 'hidden';
+      } else {
+        return 'visible';
+      }
+    } else {
+      return 'hidden';
+    }
+  }, [isInEditMode, role]);
 
   return (
     <Card className="overflow-hidden mb-6">
@@ -69,11 +84,13 @@ export default function ProfileCard({
                 acceptingWidth={1500}
                 shape="square"
                 onConfirm={onBannerPhotoSet}
+                buttonClassName={editBtnVisibility}
               />
               <TooltipBtn
                 icon={Trash2}
                 text="Remove Banner"
                 onClick={onRemoveBanner}
+                className={editBtnVisibility}
               />
             </div>
           </motion.div>
@@ -100,7 +117,7 @@ export default function ProfileCard({
                 icon={Trash2}
                 text="Remove Profile Photo"
                 onClick={onProfilePhotoDelete}
-                className="p-2 mr-14"
+                className={'p-2 mr-14' + ' ' + editBtnVisibility}
               />
               <ImageUploadPopup
                 minHeight={100}
@@ -109,6 +126,7 @@ export default function ProfileCard({
                 acceptingWidth={500}
                 shape="circle"
                 onConfirm={onProfilePhotoSet}
+                buttonClassName={editBtnVisibility}
               />
             </div>
           </div>

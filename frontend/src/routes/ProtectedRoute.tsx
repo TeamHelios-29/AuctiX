@@ -17,7 +17,11 @@ const ProtectedRoute = ({
 
   useEffect(() => {
     console.log('ProtectedRoute called');
-    if (authUser?.role && !allowedUsers.includes(authUser.role)) {
+    if (
+      authUser?.role &&
+      !allowedUsers.includes(authUser.role) &&
+      !allowedUsers.includes('ANY')
+    ) {
       console.log(
         'user :',
         authUser?.role,

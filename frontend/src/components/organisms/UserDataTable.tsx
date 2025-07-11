@@ -16,6 +16,7 @@ import { AxiosInstance } from 'axios';
 import AxiosReqest from '@/services/axiosInspector';
 import { Skeleton } from '../ui/skeleton';
 import { BanUserModal, IBanUser } from '../molecules/BanUserModal';
+import { Card } from '@/components/ui/card';
 
 interface IProfilePhoto {
   category: string;
@@ -386,7 +387,28 @@ export default function UserDataTable() {
 
   return (
     <>
-      <h1 className="text-center text-5xl mt-5">User Data Table</h1>
+      <div className="p-6 border rounded-lg mb-8">
+        <h3 className="text-lg font-semibold mb-4">User management</h3>
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          <Card className="p-4 border-none shadow-none bg-gray-100">
+            <div className="text-4xl font-bold">12</div>
+            <div className="text-sm text-gray-500">All</div>
+          </Card>
+          <Card className="p-4 border-spacing-1 border-yellow-300 shadow-lg shadow-yellow-100">
+            <div className="text-4xl font-bold">3</div>
+            <div className="text-sm text-gray-500">Admins</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-4xl font-bold">7</div>
+            <div className="text-sm text-gray-500">Sellers</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-4xl font-bold">2</div>
+            <div className="text-sm text-gray-500">Bidders</div>
+          </Card>
+        </div>
+      </div>
+
       <DataTable
         columns={userColumns}
         data={users}
