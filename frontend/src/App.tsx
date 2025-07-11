@@ -8,6 +8,7 @@ import {
   fetchLatestNotifications,
   fetchUnreadCount,
 } from './store/slices/notificationSlice';
+import { Toaster } from './components/ui/toaster';
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -30,7 +31,12 @@ const App: React.FC = () => {
     dispatch(fetchCurrentUser());
   }, [auth.isUserLoggedIn]);
 
-  return <AppRouter />;
+  return (
+    <>
+      <AppRouter />
+      <Toaster />
+    </>
+  );
 };
 
 export default App;
