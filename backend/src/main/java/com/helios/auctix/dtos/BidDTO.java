@@ -22,4 +22,5 @@ public class BidDTO {
     private Double amount;
     private Instant bidTime;
     private Instant createdAt;
+    private UserDTO bidder;
 }

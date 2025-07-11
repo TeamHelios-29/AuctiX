@@ -62,7 +62,7 @@ public class BidService {
                 .auctionId(bid.getAuction().getId())
                 .amount(bid.getAmount())
                 .bidTime(bid.getBidTime())
-//                .bidder(bidderDto)
+                .bidder(bidderDto)
                 .build();
     }
 
