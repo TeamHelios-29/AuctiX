@@ -106,6 +106,9 @@ exprot function FunctionalComponent(){
   ```js
   // add protected page to AppRouter
   // redirectPath is optional
+  // force redirects will be used to force user for an action
+  // such as completing the profile if not completed 
+  // or force to upload verification document if user account is reported by users
 
   <Route
     path="/page_path"
@@ -113,6 +116,7 @@ exprot function FunctionalComponent(){
       <ProtectedRoute
         allowedUsers={['SELLER']} 
         redirectPath="/403"
+        ignorePendingForceRedirects={true}
       >
         <YourPage />
       </ProtectedRoute>

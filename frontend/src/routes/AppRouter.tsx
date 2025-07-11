@@ -96,6 +96,7 @@ export default function AppRouter() {
               <ProtectedRoute
                 allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
+                ignorePendingForceRedirects={true}
               >
                 <ProfileSettings />
               </ProtectedRoute>
@@ -107,6 +108,7 @@ export default function AppRouter() {
               <ProtectedRoute
                 allowedUsers={['SUPER_ADMIN']}
                 redirectPath="/403"
+                ignorePendingForceRedirects={true}
               >
                 <AdminManagementPage />
               </ProtectedRoute>

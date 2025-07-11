@@ -42,6 +42,9 @@ public class User {
     @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
+    @Column(name = "is_profile_complete", nullable = false)
+    private boolean isProfileComplete = false;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JsonProperty("profile_photo")
     @JoinColumn(name = "profile_photo_id", nullable = true , referencedColumnName = "id")
