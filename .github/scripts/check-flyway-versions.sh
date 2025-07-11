@@ -1,137 +1,119 @@
 #!/bin/bash
-
 set -e
-
 MIGRATION_DIR="backend/src/main/resources/db/migration"
-
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-NC='\033[0m' # No Color
+NC='\033[0m'
+echo "🔍 Checking Flyway migration versions..."
 
-echo "🔍 Checking Flyway migration versions between branches..."
+# Ensure base branch ref is available in CI
+git fetch --quiet origin "$GITHUB_BASE_REF"
 
-# Extract version number from migration filename
 get_version() {
-    local file="$1"
-    local basename=$(basename "$file")
-    if [[ $basename =~ ^V([0-9]+)__.*\.sql$ ]]; then
-        echo "${BASH_REMATCH[1]}"
-    fi
+    local file=$(basename "$1")
+    [[ $file =~ ^V([0-9]+)__.*\.sql$ ]] && echo "${BASH_REMATCH[1]}"
 }
 
-# Get all migration versions from a branch
 get_versions() {
     local branch="$1"
-    local versions=()
-    
-    # Get migration files from the branch
-    local files=$(git ls-tree -r --name-only "$branch" -- "$MIGRATION_DIR" 2>/dev/null | grep "V.*__.*\.sql$" || true)
-    
-    if [[ -n "$files" ]]; then
-        while IFS= read -r file; do
-            local version=$(get_version "$file")
-            if [[ -n "$version" ]]; then
-                versions+=("$version")
-            fi
-        done <<< "$files"
-    fi
-    
-    # Sort numerically and return
-    printf '%s\n' "${versions[@]}" | sort -n
+    git ls-tree -r --name-only "$branch" -- "$MIGRATION_DIR" 2>/dev/null \
+    | grep -E '^.*V[0-9]+__.*\.sql$' \
+    | while read -r file; do get_version "$file"; done \
+    | sort -n
 }
 
-# Get versions from base branch (target)
+# Get only NEW migration files added in PR
+get_new_pr_versions() {
+    git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- "$MIGRATION_DIR" \
+    | grep -E '^.*V[0-9]+__.*\.sql$' \
+    | while read -r file; do get_version "$file"; done \
+    | sort -n
+}
+
+# Load versions
 echo "📋 Getting versions from base branch ($GITHUB_BASE_REF)..."
 base_versions=($(get_versions "origin/$GITHUB_BASE_REF"))
-max_base_version=0
-if [[ ${#base_versions[@]} -gt 0 ]]; then
-    max_base_version=${base_versions[-1]}
-    echo "   Highest version: V$max_base_version"
+pr_versions=($(get_new_pr_versions))  # Only NEW versions
+
+# Handle case where base has no migrations
+if [[ ${#base_versions[@]} -eq 0 ]]; then
+    max_base=0
+    echo "   No migrations found in base branch"
 else
-    echo "   No migrations found"
+    max_base=${base_versions[-1]}
+    echo "   Base versions found: V${base_versions[*]}"
+    echo "   Highest base version: V$max_base"
 fi
 
-# Get versions from PR branch (head)
-echo "📋 Getting versions from PR branch..."
-pr_versions=($(get_versions "HEAD"))
-echo "   PR versions: ${pr_versions[*]}"
-
-# Find NEW versions (in PR but not in base)
-new_versions=()
-for version in "${pr_versions[@]}"; do
-    if [[ ! " ${base_versions[@]} " =~ " ${version} " ]]; then
-        new_versions+=("$version")
-    fi
-done
-
-if [[ ${#new_versions[@]} -eq 0 ]]; then
-    echo -e "${GREEN}✅ No new migrations found${NC}"
+# If no new migrations in PR, exit successfully
+if [[ ${#pr_versions[@]} -eq 0 ]]; then
+    echo -e "${GREEN}✅ No new migrations in PR${NC}"
     exit 0
 fi
 
-echo "   New versions: ${new_versions[*]}"
+echo "   New migrations in PR: V${pr_versions[*]}"
 
-# Check rules
-has_errors=false
 
-# Rule 1: New versions must be higher than base
+# Check for reuse (should be 0 since we only get NEW versions)
 echo ""
-echo "🔍 Checking: New versions must be higher than existing..."
-bad_versions=()
-for version in "${new_versions[@]}"; do
-    if [[ "$version" -le "$max_base_version" ]]; then
-        bad_versions+=("$version")
+echo "🔍 Checking: reused versions from base..."
+reused=()
+for v in "${pr_versions[@]}"; do
+    if [[ " ${base_versions[*]} " =~ " $v " ]]; then
+        reused+=("$v")
     fi
 done
+if [[ ${#reused[@]} -gt 0 ]]; then
+    echo -e "${RED}❌ Reused versions from base: ${reused[*]}${NC}"
+    exit 1
+else
+    echo -e "${GREEN}✅ No reused versions${NC}"
+fi
 
+# Check for duplicates
+echo ""
+echo "🔍 Checking: duplicate versions in PR..."
+dupes=$(printf "%s\n" "${pr_versions[@]}" | sort | uniq -d)
+if [[ -n "$dupes" ]]; then
+    echo -e "${RED}❌ Duplicate versions in PR: $dupes${NC}"
+    exit 1
+else
+    echo -e "${GREEN}✅ No duplicates in PR${NC}"
+fi
+
+# Check new versions > base max
+echo ""
+echo "🔍 Checking: new versions are higher than base..."
+bad_versions=()
+for v in "${pr_versions[@]}"; do
+    if (( v <= max_base )); then
+        bad_versions+=("$v")
+    fi
+done
 if [[ ${#bad_versions[@]} -gt 0 ]]; then
-    echo -e "${RED}❌ Found versions ≤ existing highest (V$max_base_version): ${bad_versions[*]}${NC}"
-    has_errors=true
+    echo -e "${RED}❌ New versions not higher than V$max_base: ${bad_versions[*]}${NC}"
+    exit 1
 else
     echo -e "${GREEN}✅ All new versions are higher${NC}"
 fi
 
-# Rule 2: New versions must be contiguous
+# Check contiguous versions
 echo ""
-echo "🔍 Checking: New versions must be contiguous..."
-sorted_new=($(printf '%s\n' "${new_versions[@]}" | sort -n))
-expected=$((max_base_version + 1))
-missing=()
-
-for version in "${sorted_new[@]}"; do
-    while [[ "$expected" -lt "$version" ]]; do
-        missing+=("$expected")
-        expected=$((expected + 1))
-    done
-    expected=$((version + 1))
+echo "🔍 Checking: versions are contiguous from V$((max_base + 1))..."
+expected=$((max_base + 1))
+for v in "${pr_versions[@]}"; do
+    if (( v != expected )); then
+        echo -e "${RED}❌ Missing version: expected V$expected, found V$v${NC}"
+        exit 1
+    fi
+    expected=$((expected + 1))
 done
+echo -e "${GREEN}✅ Versions are contiguous${NC}"
 
-if [[ ${#missing[@]} -gt 0 ]]; then
-    echo -e "${RED}❌ Missing versions: ${missing[*]}${NC}"
-    has_errors=true
-else
-    echo -e "${GREEN}✅ Versions are contiguous${NC}"
-fi
-
-# Rule 3: No duplicates in new versions
 echo ""
-echo "🔍 Checking: No duplicate versions..."
-duplicates=($(printf '%s\n' "${new_versions[@]}" | sort | uniq -d))
+echo -e "${GREEN}✅ Flyway migration version check PASSED${NC}"
+echo "   Base branch versions: V${base_versions[*]:-none}"
+echo "   PR versions: V${pr_versions[*]}"
+echo "   Validated ${#pr_versions[@]} new migration(s)"
 
-if [[ ${#duplicates[@]} -gt 0 ]]; then
-    echo -e "${RED}❌ Duplicate versions: ${duplicates[*]}${NC}"
-    has_errors=true
-else
-    echo -e "${GREEN}✅ No duplicates${NC}"
-fi
-
-# Final result
-echo ""
-if [[ "$has_errors" == true ]]; then
-    echo -e "${RED}❌ Migration version check FAILED${NC}"
-    echo "Expected next version: V$((max_base_version + 1))"
-    exit 1
-else
-    echo -e "${GREEN}✅ All migration version checks passed!${NC}"
-fi
+exit 0
