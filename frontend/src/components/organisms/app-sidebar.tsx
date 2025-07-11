@@ -103,7 +103,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         avatar: userData.profile_photo || '/defaultProfilePhoto.jpg',
       },
     }));
-  }, [userData.username]);
+  }, [userData.profile_photo, userData.firstName, userData.lastName]);
 
   return (
     <Sidebar {...props}>
@@ -133,7 +133,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          key={`${data.user.avatar}-${data.user.name}-${data.user.email}`}
+          user={data.user}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

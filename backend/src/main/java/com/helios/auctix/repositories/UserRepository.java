@@ -1,6 +1,7 @@
 package com.helios.auctix.repositories;
 
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.UserDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
@@ -14,7 +15,6 @@ public interface UserRepository extends CrudRepository<User,UUID> {
     boolean existsByEmail(String email);
     User findByEmail(String email);
     Page<User> findAll(Pageable pageable);
-    Page<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String search, String search1, Pageable pageable);
 
     User findByUsername(String username);
 

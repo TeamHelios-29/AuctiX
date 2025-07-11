@@ -1,6 +1,8 @@
 package com.helios.auctix.services.user;
 
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.UserDTO;
+import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.UserRepository;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,8 @@ public class UserDetailsService {
 
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    private UserMapperImpl userMapperImpl;
 
     /**
      * Retrieves a user by {@link Authentication}.
@@ -63,7 +67,7 @@ public class UserDetailsService {
      *                                   - sortBy is not one of the valid fields.
      *                                   - order is not "asc" or "desc".
      */
-    public Page getAllUsers(int limit, int offset, String order, String sortBy, String search) {
+    public Page<UserDTO> getAllUsers(int limit, int offset, String order, String sortBy, String search) {
 
         if (limit < 0 || offset < 0) {
             throw new InvalidParameterException("Error: limit and offset must be positive");
@@ -84,11 +88,13 @@ public class UserDetailsService {
         Sort.Direction direction = order.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(offset, limit, Sort.by(direction, sortBy));
 
-        Page<User> userPage;
+        Page<UserDTO> userPage;
         if (search != null && !search.trim().isEmpty()) {
-            userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(search, search, search, search , pageable);
+            userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(search, search, search, search , pageable)
+                    .map(userMapperImpl::mapTo);
         } else {
-            userPage = userRepository.findAll(pageable);
+            userPage = userRepository.findAll(pageable)
+                    .map(userMapperImpl::mapTo);
         }
 
         return userPage;

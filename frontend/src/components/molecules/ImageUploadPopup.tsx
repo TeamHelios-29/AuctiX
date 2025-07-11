@@ -7,6 +7,7 @@ import {
   BanIcon,
   RefreshCcwDot,
   LucideDelete,
+  Camera,
 } from 'lucide-react';
 import {
   Dialog,
@@ -18,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AlertBox } from '../organisms/AlertBox';
-import { error } from 'console';
+import { TooltipBtn } from '../atoms/TooltipBtn';
 
 interface Position {
   x: number;
@@ -40,6 +41,7 @@ interface ImageUploadPopupProps {
   shape?: 'square' | 'circle';
   acceptingWidth?: number;
   acceptingHeight?: number;
+  buttonClassName?: string;
 }
 
 export default function ImageUploadPopup({
@@ -49,6 +51,7 @@ export default function ImageUploadPopup({
   shape = 'square',
   acceptingWidth = 200,
   acceptingHeight = 200,
+  buttonClassName = '',
 }: ImageUploadPopupProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [image, setImage] = useState<string | null>(null);
@@ -173,9 +176,7 @@ export default function ImageUploadPopup({
                   containerWidth,
                   containerHeight,
                 );
-                // console.log('Container size:', containerWidth, containerHeight);
-                // console.log('Image size:', img.naturalWidth, img.naturalHeight);
-                // console.log('Calculated scale:', initialScale);
+
                 setAutoScale(initialScale);
                 setScale(initialScale);
                 // Set initial position to center
@@ -479,10 +480,12 @@ export default function ImageUploadPopup({
 
   return (
     <div className="flex flex-col items-center">
-      <Button onClick={handleOpenDialog} className="flex items-center gap-2">
-        <Upload size={16} />
-        Upload Image
-      </Button>
+      <TooltipBtn
+        icon={Camera}
+        text="Change Photo"
+        onClick={handleOpenDialog}
+        className={`${buttonClassName}`}
+      />
 
       <Dialog open={isOpen} onOpenChange={(e) => setIsOpen(e)}>
         <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl">

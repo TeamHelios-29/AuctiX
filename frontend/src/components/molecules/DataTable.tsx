@@ -1,16 +1,8 @@
-'use client';
-
 import * as React from 'react';
 import {
   ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import { ChevronDown } from 'lucide-react';
@@ -31,52 +23,77 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { PaginationNav } from './Pagination';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[] | null;
+  pageCount?: number;
+  currentPage?: number;
+  pageSize?: number;
+  setCurrentPage: (page: number) => void;
+  setPageSize: (pageSize: number) => void;
+  setSearchText: (searchText: string) => void;
+  searchText: string | null;
 }
 
 export function DataTable<TData, TValue>({
   data,
   columns,
+  pageCount,
+  currentPage,
+  pageSize,
+  setCurrentPage,
+  setPageSize,
+  setSearchText,
+  searchText,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
+  const currentPageHandler = React.useCallback(
+    (page: number) => {
+      console.log('[DataTableForServerSideFiltering]: currentPageHandler');
+      setCurrentPage(page);
+    },
+    [setCurrentPage],
   );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+
+  console.log('[DataTableForServerSideFiltering]:');
+
+  const memoizedData = React.useMemo(() => data || [], [data]);
+  const memoizedColumns = React.useMemo(() => columns, [columns]);
+  const paginationState = React.useMemo(
+    () => ({
+      pageIndex: currentPage ?? 0,
+      pageSize: pageSize ?? 10,
+    }),
+    [currentPage, pageSize],
+  );
 
   const table = useReactTable({
-    data: data || [],
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    data: memoizedData,
+    columns: memoizedColumns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    pageCount: pageCount ?? 0,
+    manualPagination: true,
     state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
+      pagination: paginationState,
     },
   });
+
+  React.useEffect(() => {
+    console.log('DataTableForServerSideFiltering mounted');
+    return () => {
+      console.log('DataTableForServerSideFiltering unmounted');
+    };
+  }, []);
 
   return (
     <div className="w-full p-4">
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter emails..."
-          value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('email')?.setFilterValue(event.target.value)
-          }
+          value={searchText ?? ''}
+          onChange={(event) => setSearchText(event.target.value)}
           className="max-w-sm"
         />
         <DropdownMenu>
@@ -161,24 +178,13 @@ export function DataTable<TData, TValue>({
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
+      </div>
+      <div className="flex items-center justify-between py-4">
+        <PaginationNav
+          currentPage={currentPage ? currentPage + 1 : 1}
+          pages={pageCount ?? 1}
+          handlePage={currentPageHandler}
+        />
       </div>
     </div>
   );

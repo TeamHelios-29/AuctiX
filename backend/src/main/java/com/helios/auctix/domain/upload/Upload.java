@@ -18,45 +18,45 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "uploads" )
+@Table(name = "uploads")
 @ToString(exclude = "owner")
 public class Upload {
 
     @Id
     private UUID id;
 
-    @Column(name="file_name", nullable = false)
+    @Column(name = "file_name", nullable = false)
     private String fileName;
 
-    @Column(name="file_type", nullable = false)
+    @Column(name = "file_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private FileTypeEnum fileType;
 
     @JsonIgnore
-    @Column(name="file_size", nullable = false)
+    @Column(name = "file_size", nullable = false)
     private Long fileSize; // in bytes
 
-    @Column(name="file_id", nullable = false)
+    @Column(name = "file_id", nullable = false)
     private UUID fileId;
 
     @JsonIgnore
-    @Column(name="hash_256", nullable = false)
+    @Column(name = "hash_256", nullable = false)
     private String hash256;
 
     @JsonIgnore
-    @Column(name="uploaded_at", nullable = false )
+    @Column(name = "uploaded_at", nullable = false)
     private Timestamp uploadedAt;
 
-    @Column(name="is_public", nullable = false)
+    @Column(name = "is_public", nullable = false)
     private Boolean isPublic;
 
-    @Column(name="is_deleted", nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted;
 
-    @Column(name="category", nullable = false)
+    @Column(name = "category", nullable = false)
     private String category;
 
-    @Column(name="owner_id")
+    @Column(name = "owner_id")
     @JsonIgnore
     private UUID ownerId;
 
@@ -70,10 +70,10 @@ public class Upload {
         log.info("onCreate called for Upload ,old uploadAt" + this.uploadedAt);
         this.id = UUID.randomUUID();
         this.isDeleted = false;
-        if(this.uploadedAt == null) {
+        if (this.uploadedAt == null) {
             this.uploadedAt = Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC));
         }
-        if(this.isPublic == null) {
+        if (this.isPublic == null) {
             this.isPublic = false;
         }
     }

@@ -1,7 +1,8 @@
 package com.helios.auctix.services.fileUpload;
 
 public enum FileUploadUseCaseEnum {
-    VERIFICATION_DOCUMENTS,
+    VERIFICATION_DOCUMENT,
     PROFILE_PHOTO,
-    PRODUCT_PHOTO,
+    AUCTION_IMAGE,
+    PROFILE_BANNER_PHOTO,
 }

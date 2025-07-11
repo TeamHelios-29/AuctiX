@@ -9,12 +9,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
-import { DataTableForServerSideFiltering } from '@/components/molecules/DataTableForServerSideFiltering';
+import { DataTable } from '@/components/molecules/DataTable';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@radix-ui/react-checkbox';
 import { AxiosInstance } from 'axios';
 import AxiosReqest from '@/services/axiosInspector';
 import { Skeleton } from '../ui/skeleton';
+import { BanUserModal, IBanUser } from '../molecules/BanUserModal';
+import { Card } from '@/components/ui/card';
 
 interface IProfilePhoto {
   category: string;
@@ -30,7 +32,7 @@ interface ITableUser {
   lastName: string;
   email: string;
   role: string;
-  profile_photo: IProfilePhoto;
+  profilePicture: IProfilePhoto;
 }
 
 export default function UserDataTable() {
@@ -47,6 +49,9 @@ export default function UserDataTable() {
   const [pageSize, setPageSize] = useState<number>(10);
   const [isInSearchDelay, setIsInSearchDelay] = useState<boolean>(false);
 
+  const [isBanUserModalOpen, setIsBanUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<IBanUser | null>(null);
+
   useEffect(() => {
     setIsLoading(true);
     if (!isInSearchDelay) {
@@ -61,7 +66,20 @@ export default function UserDataTable() {
           },
         })
         .then((usersData) => {
-          setUsers(usersData?.data?.content);
+          const data: Array<ITableUser> = usersData.data.content.map(
+            (user: any, index: number): ITableUser => {
+              return {
+                id: index,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.userRole?.userRole,
+                profilePicture: user.profilePicture,
+              };
+            },
+          );
+          setUsers(data);
           setCurrentPage(usersData?.data?.pageable?.pageNumber);
           setPageCount(usersData?.data?.totalPages);
           setPageSize(usersData?.data?.size);
@@ -178,12 +196,12 @@ export default function UserDataTable() {
       enableHiding: false,
     },
     {
-      accessorKey: 'profile_photo',
+      accessorKey: 'profilePicture',
       header: '',
       enableSorting: false,
       enableHiding: true,
       cell: ({ row }) =>
-        ProfilePhoto((row.getValue('profile_photo') as IProfilePhoto)?.id),
+        ProfilePhoto((row.getValue('profilePicture') as IProfilePhoto)?.id),
     },
     {
       accessorKey: 'username',
@@ -309,7 +327,11 @@ export default function UserDataTable() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Sample Menu Item 1</DropdownMenuItem>
-              <DropdownMenuItem>Sample Menu Item 2</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleBanUser(row.getValue('username'))}
+              >
+                Ban User
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -341,10 +363,53 @@ export default function UserDataTable() {
     [setSearch],
   );
 
+  const handleBanUser = useCallback(
+    async (userName: string) => {
+      const user = users?.find((user) => user.username === userName);
+      if (!user) {
+        console.error('User not found');
+        return;
+      }
+      const banUser: IBanUser = {
+        username: user?.username,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        email: user?.email,
+        role: user?.role as 'BIDDER' | 'SELLER' | 'ADMIN',
+        profilePicture: user?.profilePicture?.id,
+      };
+      setSelectedUser(banUser);
+      setIsBanUserModalOpen(true);
+      console.log('Banning user with ID:', userName);
+    },
+    [axiosInstance],
+  );
+
   return (
     <>
-      <h1 className="text-center text-5xl mt-5">User Data Table</h1>
-      <DataTableForServerSideFiltering
+      <div className="p-6 border rounded-lg mb-8">
+        <h3 className="text-lg font-semibold mb-4">User management</h3>
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          <Card className="p-4 border-none shadow-none bg-gray-100">
+            <div className="text-4xl font-bold">12</div>
+            <div className="text-sm text-gray-500">All</div>
+          </Card>
+          <Card className="p-4 border-spacing-1 border-yellow-300 shadow-lg shadow-yellow-100">
+            <div className="text-4xl font-bold">3</div>
+            <div className="text-sm text-gray-500">Admins</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-4xl font-bold">7</div>
+            <div className="text-sm text-gray-500">Sellers</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-4xl font-bold">2</div>
+            <div className="text-sm text-gray-500">Bidders</div>
+          </Card>
+        </div>
+      </div>
+
+      <DataTable
         columns={userColumns}
         data={users}
         pageCount={pageCount}
@@ -355,6 +420,14 @@ export default function UserDataTable() {
         setSearchText={searchHandler}
         searchText={search}
       />
+      {selectedUser && (
+        <BanUserModal
+          isOpen={isBanUserModalOpen}
+          onClose={() => setIsBanUserModalOpen(false)}
+          onConfirm={handleBanUser}
+          user={selectedUser}
+        />
+      )}
     </>
   );
 }

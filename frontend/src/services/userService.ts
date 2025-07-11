@@ -45,3 +45,51 @@ export const updateProfilePhoto = async (
   );
   return response.data;
 };
+
+export const deleteProfilePhoto = async (
+  username: string,
+  axiosInstance: AxiosInstance,
+) => {
+  const response = await axiosInstance.delete(
+    `${baseURL}/user/deleteUserProfilePhoto`,
+    {
+      params: {
+        username,
+      },
+    },
+  );
+  return response.data;
+};
+
+export const updateBannerPhoto = async (
+  file: File,
+  axiosInstance: AxiosInstance,
+) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await axiosInstance.post(
+    `${baseURL}/user/uploadUserBannerPhoto`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    },
+  );
+  return response.data;
+};
+
+export const deleteBannerPhoto = async (
+  username: string,
+  axiosInstance: AxiosInstance,
+) => {
+  const response = await axiosInstance.delete(
+    `${baseURL}/user/deleteBannerPhoto`,
+    {
+      params: {
+        username,
+      },
+    },
+  );
+  return response.data;
+};

@@ -15,7 +15,8 @@ const initialState: UserState = {
   firstName: null,
   lastName: null,
   fcmTokens: [],
-  profile_photo: null,
+  profile_photo: '/defaultProfilePhoto.jpg',
+  banner_photo: '/defaultBanner.jpg',
   role: null,
   loading: true,
   error: null,
@@ -46,6 +47,9 @@ export const fetchCurrentUser = createAsyncThunk(
         profile_photo_link: response.data.profilePicture?.id
           ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.profilePicture.id}`
           : '/defaultProfilePhoto.jpg',
+        banner_photo_link: response.data.seller?.bannerId
+          ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.seller.bannerId}`
+          : '/defaultBanner.jpg',
         fcmTokens: response.data.fcmTokens || [],
       };
       delete userData.profilePicture;
@@ -84,7 +88,8 @@ const userSlice = createSlice({
         state.fcmTokens = action.payload.fcmTokens;
         state.profile_photo =
           action.payload.profile_photo_link || '/defaultProfilePhoto.jpg';
-        state.role = action.payload.role;
+        state.banner_photo = action.payload.banner_photo_link;
+        state.role = action.payload.userRole.userRole;
         console.log('User data updated:', action.payload);
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {

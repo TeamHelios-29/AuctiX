@@ -2,14 +2,13 @@ package com.helios.auctix.controllers;
 
 import com.azure.core.util.BinaryData;
 import com.helios.auctix.domain.auction.Auction;
-import com.helios.auctix.domain.user.Seller;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.services.AuctionService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
+import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import com.helios.auctix.services.user.UserDetailsService;
-import com.helios.auctix.services.user.UserServiceResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -19,12 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.io.IOException;
 
-import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 
@@ -32,11 +26,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @RestController
@@ -122,7 +114,7 @@ public class AuctionController {
         try {
             // Upload file
             log.info("Trying to upload file");
-            FileUploadResponse uploadRes = uploader.uploadFile(image, "auctionPhotos" );
+            FileUploadResponse uploadRes = uploader.uploadFile(image, FileUploadUseCaseEnum.AUCTION_IMAGE);
 
             if (uploadRes.isSuccess()) {
                 // save file upload data

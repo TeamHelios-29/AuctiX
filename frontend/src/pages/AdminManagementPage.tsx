@@ -10,12 +10,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { AdminAddModal } from '@/components/molecules/adminAddModal';
 import { ViewAdminActionsLog } from '@/components/molecules/viewAdminActionsLog';
 import { IRegisterAdmin, registerAdmin } from '@/services/authService';
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { AdminAddModal } from '@/components/molecules/adminAddModal';
 
 export default function AdminManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,13 +23,13 @@ export default function AdminManagementPage() {
   const { toast } = useToast();
 
   const handleConfirm = async (form: IRegisterAdmin) => {
-    registerAdmin(form, axiosInstance)
+    await registerAdmin(form, axiosInstance)
       .then(() => {
         toast({
           title: 'Success! Admin registered.',
           description: 'The new admin has been successfully registered.',
         });
-        setTimeout(() => setIsModalOpen(false), 2000);
+        setTimeout(() => setIsModalOpen(false), 1000);
       })
       .catch((error: Error) => {
         toast({
@@ -39,6 +39,7 @@ export default function AdminManagementPage() {
             error.message || 'An error occurred while registering the admin.',
           action: <ToastAction altText="Try again">Try again</ToastAction>,
         });
+        throw new Error('Error registering admin: ' + error.message);
       });
   };
 
