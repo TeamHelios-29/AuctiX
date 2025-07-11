@@ -12,14 +12,9 @@ import java.util.UUID;
 @Repository
 public interface BidRepository extends JpaRepository<Bid, UUID> {
 
-    List<Bid> findByAuctionIdOrderByAmountDesc(UUID auctionId);
-
     // Find the highest bid for an auction
     Optional<Bid> findTopByAuctionIdOrderByAmountDesc(UUID auctionId);
 
     // Find bid history for an auction, ordered by time (newest first)
     List<Bid> findByAuctionIdOrderByBidTimeDesc(UUID auctionId);
-
-    // Count the number of bids for an auction
-    Long countByAuctionId(UUID auctionId);
 }

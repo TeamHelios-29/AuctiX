@@ -4,7 +4,6 @@ import { restoreUser } from './store/slices/authSlice';
 import { useAppDispatch, useAppSelector } from './hooks/hooks';
 import { fetchCurrentUser } from './store/slices/userSlice';
 import { IAuthUser } from './types/IAuthUser';
-import { Toaster } from '@/components/ui/toaster';
 import {
   fetchLatestNotifications,
   fetchUnreadCount,
@@ -34,12 +33,7 @@ const App: React.FC = () => {
     dispatch(fetchCurrentUser()); // Fetch the current user data from the server and set it in the redux store
   }, [auth.isUserLoggedIn]);
 
-  return (
-    <>
-      <AppRouter />
-      <Toaster />
-    </>
-  );
+  return <AppRouter />;
 };
 
 export default App;

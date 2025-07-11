@@ -7,7 +7,7 @@ import {
   getNotificationPreferences,
   saveNotificationPreferences,
   extractEditableSettings,
-} from '@/services/NotificationService';
+} from '@/services/notificationService';
 import {
   type NotificationSettingsResponse,
   type NotificationSettingsUpdateRequest,

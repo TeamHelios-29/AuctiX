@@ -21,7 +21,7 @@ import { Notification } from '@/types/notification';
 import {
   fetchLatestNotifications,
   fetchUnreadCount,
-  markNotificationRead,
+  markNotificationReadThunk,
 } from '@/store/slices/notificationSlice';
 
 export function Navbar() {
@@ -145,7 +145,9 @@ export function Navbar() {
                                 onClick={() => {
                                   if (!notification.read) {
                                     dispatch(
-                                      markNotificationRead(notification.id),
+                                      markNotificationReadThunk(
+                                        notification.id,
+                                      ),
                                     );
                                   }
                                   // TODO: add navigation to the notification

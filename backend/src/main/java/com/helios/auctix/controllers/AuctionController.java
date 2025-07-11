@@ -1,5 +1,6 @@
 package com.helios.auctix.controllers;
 
+import com.azure.core.util.BinaryData;
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.AuctionDetailsDTO;
@@ -10,6 +11,9 @@ import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import com.helios.auctix.services.user.UserDetailsService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,12 +37,10 @@ public class AuctionController {
     private final AuctionService auctionService;
     private final Logger log = Logger.getLogger(AuctionController.class.getName());
     private final UserDetailsService userDetailsService;
-
-
+    private static final int SELLER_ROLE_ID = 4;
 
     @Autowired
     private FileUploadService uploader;
-
 
     // Create a new auction with multipart/form-data
     @PostMapping("/create")
@@ -52,6 +54,8 @@ public class AuctionController {
             @RequestParam("category") String category,
             @RequestParam("images") List<MultipartFile> images) {
 
+        log.info("Received createAuction request");
+
         // Create an Auction object using the domain model
         try {
             //get seller id
@@ -62,9 +66,11 @@ public class AuctionController {
             User seller = userDetailsService
                     .getAuthenticatedUser(authentication);
 
-//            UUID sellerId = seller.getId();
-
-
+            if (seller.getRole().getId() != SELLER_ROLE_ID) {
+                return ResponseEntity
+                        .status(HttpStatus.FORBIDDEN) //returning 403 status code if user isn't a seller
+                        .body(null);
+            }
 
             // Parse dates with timezone support
             Instant startInstant = Instant.parse(startTime);
@@ -81,15 +87,15 @@ public class AuctionController {
                     .seller(seller.getSeller())
                     .build();
 
-
             List<UUID> imagePaths = images.stream()
                     .map(this::saveImage)
                     .collect(Collectors.toList());
             auction.setImagePaths(imagePaths);
 
             Auction createdAuction = auctionService.createAuction(auction);
-            return ResponseEntity.ok(createdAuction);
 
+            log.info("Auction created successfully with ID: " + createdAuction.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdAuction);
 
         } catch (DateTimeParseException e) {
             log.warning("Invalid date format");
@@ -106,35 +112,14 @@ public class AuctionController {
     // Helper method to save an image and return its path
     private UUID saveImage(MultipartFile image) {
         try {
-            // Authenticate user
-//            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//            String userEmail = null;
-//            if (authentication == null || authentication.getAuthorities() == null || !authentication.isAuthenticated()) {
-//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-//            }
-//            userEmail = authentication.getName();
-//            if (userEmail == null) {
-//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-//            }
-//            log.info("File upload by user " + userEmail);
-
-
             // Upload file
             log.info("Trying to upload file");
             FileUploadResponse uploadRes = uploader.uploadFile(image, FileUploadUseCaseEnum.AUCTION_IMAGE);
 
             if (uploadRes.isSuccess()) {
                 // save file upload data
-                log.info("Trying to save file upload data");
-//                UserServiceResponse res = userUploadsService.UserProfilePhotoUpdate(userEmail, uploadRes.getUpload());
                 log.info("File upload data saved");
 
-//                if (res.isSuccess()) {
-//                    return ResponseEntity.ok().body("Uploaded successfully");
-//                } else {
-//                    log.warning(res.getMessage());
-//                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload data saving failed");
-//                }
                 return uploadRes.getUpload().getId();
 
             } else {
@@ -146,28 +131,33 @@ public class AuctionController {
         }
     }
 
-    // Retrieve all auctions
-    @GetMapping
-    public ResponseEntity<List<Auction>> getAllAuctions() {
-        try {
-            List<Auction> auctions = auctionService.getAllAuctions();
-            return ResponseEntity.ok(auctions);
-        } catch (Exception e) {
-            log.warning("Error fetching all auctions: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-    }
 
-    // Retrieve active auctions for displaying on the main page
-    @GetMapping("/active")
-    public ResponseEntity<List<Auction>> getActiveAuctions() {
-        try {
-            List<Auction> activeAuctions = auctionService.getActiveAuctions();
-            return ResponseEntity.ok(activeAuctions);
-        } catch (Exception e) {
-            log.warning("Error fetching active auctions: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
+    @GetMapping("/getAuctionImages")
+    public ResponseEntity<?> getAuctionImages(@RequestParam("file_uuid") UUID file_uuid) {
+        FileUploadResponse res;
+        log.info("file get request: "+ file_uuid);
+
+        if(!uploader.isFilePublic(file_uuid)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            // Get file upload data
+            res = uploader.getFile(file_uuid);
         }
+        else{
+            res = uploader.getFile(file_uuid);
+        }
+
+        if (!res.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+        }
+
+        BinaryData binaryFile = res.getBinaryData();
+        String fileName = res.getUpload().getFileName();
+        String contentType = res.getUpload().getFileType().getContentType();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(binaryFile.toBytes());
     }
 
     // Get auction by ID
@@ -184,7 +174,37 @@ public class AuctionController {
             return ResponseEntity.internalServerError().build();
         }
     }
-//
+
+    // Add this method to your existing AuctionController class
+
+    @GetMapping("/all")
+    public ResponseEntity<List<AuctionDetailsDTO>> getAllAuctions(
+            @RequestParam(value = "filter", defaultValue = "active") String filter) {
+        try {
+            List<AuctionDetailsDTO> auctions;
+
+            switch (filter.toLowerCase()) {
+                case "active":
+                    auctions = auctionService.getActiveAuctionsDTO();
+                    break;
+                case "expired":
+                    auctions = auctionService.getExpiredAuctionsDTO();
+                    break;
+                case "upcoming":  // Add new case for upcoming
+                    auctions = auctionService.getUpcomingAuctionsDTO();
+                    break;
+                default:
+                    auctions = auctionService.getAllAuctionsDTO();
+                    break;
+            }
+
+            return ResponseEntity.ok(auctions);
+        } catch (Exception e) {
+            log.warning("Error fetching auctions with filter " + filter + ": " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 //    // Update an auction
 //    @PutMapping("/{id}")
 //    public Auction updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
@@ -196,18 +216,29 @@ public class AuctionController {
 //    public void deleteAuction(@PathVariable Long id) {
 //        auctionService.deleteAuction(id);
 //    }
-//
-//    // Custom endpoint: Find auctions with starting price greater than a specified value
-//    @GetMapping("/priceGreaterThan")
-//    public List<Auction> findAuctionsWithPriceGreaterThan(@RequestParam Double price) {
-//        return auctionService.findAuctionsWithPriceGreaterThan(price);
+
+//    // Retrieve all auctions
+//    @GetMapping
+//    public ResponseEntity<List<Auction>> getAllAuctions() {
+//        try {
+//            List<Auction> auctions = auctionService.getAllAuctions();
+//            return ResponseEntity.ok(auctions);
+//        } catch (Exception e) {
+//            log.warning("Error fetching all auctions: " + e.getMessage());
+//            return ResponseEntity.internalServerError().build();
+//        }
 //    }
 //
-//    // Custom endpoint: Find auctions within a specific time range
-//    @GetMapping("/betweenDates")
-//    public List<Auction> findAuctionsBetweenDates(
-//            @RequestParam LocalDateTime start,
-//            @RequestParam LocalDateTime end) {
-//        return auctionService.findAuctionsBetweenDates(start, end);
+//    // Retrieve active auctions for displaying on the main page
+//    @GetMapping("/active")
+//    public ResponseEntity<List<Auction>> getActiveAuctions() {
+//        try {
+//            List<Auction> activeAuctions = auctionService.getActiveAuctions();
+//            return ResponseEntity.ok(activeAuctions);
+//        } catch (Exception e) {
+//            log.warning("Error fetching active auctions: " + e.getMessage());
+//            return ResponseEntity.internalServerError().build();
+//        }
 //    }
+
 }

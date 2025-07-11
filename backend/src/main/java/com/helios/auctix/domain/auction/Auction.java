@@ -23,27 +23,22 @@ public class Auction {
     @Id
     @GeneratedValue
     private UUID id;
-
-
     private String title;
     private String description;
     private Double startingPrice;
-    private Instant startTime;      // For precise event timing (UTC)
-    private Instant endTime;        // For precise event timing (UTC)
+    private Instant startTime;
+    private Instant endTime;
     private Boolean isPublic;
     private String category;
-//    private UUID sellerId;
-
 
     @ElementCollection
-    private List<UUID> imageIds; // Change from imagePaths to imageIds
+    private List<UUID> imageIds;
 
     @Column(name = "created_at", updatable = false)
-    private Instant createdAt;      // Changed to Instant for consistency
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    private Instant updatedAt; // Changed to Instant for consistency
-
+    private Instant updatedAt;
 
     public String getTitle() {
         return title;
@@ -56,8 +51,6 @@ public class Auction {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", referencedColumnName = "id")
     private Seller seller;
-
-
 
     @PrePersist
     protected void onCreate() {

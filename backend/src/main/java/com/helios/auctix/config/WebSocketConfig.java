@@ -28,7 +28,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*") // for now allow all origins
                 .withSockJS();  // sockJs for fallback if client does not support websocket
+
+        // New endpoint for auction system
+        registry.addEndpoint("/ws-auction")
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
+
     }
+
+
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {

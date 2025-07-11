@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios, { AxiosInstance } from 'axios';
+import { AxiosInstance } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,18 +18,52 @@ const AuctionForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [category, setCategory] = useState<string>('');
   const navigate = useNavigate();
-
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title || !description || !startingPrice || !startTime || !endTime) {
-      toast.error('Please fill in all required fields');
+    if (!title || title.trim().length < 5) {
+      toast.error('Title must be at least 5 characters long.');
+      return;
+    }
+
+    if (!description || description.trim().length < 20) {
+      toast.error('Description must be at least 20 characters long.');
+      return;
+    }
+
+    if (!category) {
+      toast.error('Please select a category.');
+      return;
+    }
+
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    if (!startTime || isNaN(start.getTime()) || start <= now) {
+      toast.error('Start time must be a future date and time.');
+      return;
+    }
+
+    if (!endTime || isNaN(end.getTime()) || end <= start) {
+      toast.error('End time must be after start time.');
+      return;
+    }
+
+    if (!startingPrice || startingPrice <= 0) {
+      toast.error('Starting price must be greater than 0.');
+      return;
+    }
+
+    if (images.length === 0) {
+      toast.error('Please upload at least one image.');
       return;
     }
 
     if (images.length > 5) {
-      toast.error('You can upload a maximum of 5 images');
+      toast.error('You can upload a maximum of 5 images.');
       return;
     }
 
@@ -54,11 +88,26 @@ const AuctionForm: React.FC = () => {
 
       if (response.status === 201) {
         toast.success('Auction created successfully!');
-        navigate('/auctions');
+        setTimeout(() => navigate('/'), 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating auction:', error);
-      toast.error('Failed to create auction. Please try again.');
+
+      if (error.response) {
+        const { status } = error.response;
+
+        if (status === 403) {
+          toast.error('Only sellers can create auctions.');
+        } else if (status === 400) {
+          toast.error('Bad request. Please check your input.');
+        } else if (status === 500) {
+          toast.error('Server error. Please try again later.');
+        } else {
+          toast.error('Failed to create auction. Please try again.');
+        }
+      } else {
+        toast.error('Something went wrong. Please check your connection.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -106,11 +155,11 @@ const AuctionForm: React.FC = () => {
           required
         >
           <option value="">Select a category</option>
-          <option value="electronics">Electronics</option>
-          <option value="fashion">Fashion</option>
-          <option value="home">Home & Garden</option>
-          <option value="art">Art</option>
-          <option value="other">Other</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Fashion">Fashion</option>
+          <option value="Home & Garden">Home & Garden</option>
+          <option value="Art">Art</option>
+          <option value="Other">Other</option>
         </select>
       </div>
 
@@ -127,6 +176,7 @@ const AuctionForm: React.FC = () => {
             required
           />
         </div>
+
         <div>
           <label htmlFor="end-time" className="block font-medium mb-2">
             End Time

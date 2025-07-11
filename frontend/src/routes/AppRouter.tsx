@@ -18,7 +18,9 @@ import { useNotificationRegistration } from '@/hooks/use-notification-registrati
 import UserDeliveryPage from '@/pages/User_Delivery';
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
 import AuctionsPage from '@/pages/ExploreAuctions';
+import ManageAuctions from '@/pages/ManageAuctions';
 import AdminManagementPage from '@/pages/AdminManagementPage';
+import ComplaintDetail from '@/pages/ComplaintDetail';
 import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
 import UserProfile from '@/components/organisms/UserProfile';
@@ -40,8 +42,10 @@ export default function AppRouter() {
           <Route path="/create-auction" element={<CreateAuction />} />
           <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>
+
         {/* Routes using DashboardLayout */}
         <Route element={<DashboardLayout />}>
+          <Route path="/manage-auctions" element={<ManageAuctions />} />;
           <Route
             path="/dashboard"
             element={
@@ -117,7 +121,9 @@ export default function AppRouter() {
             }
           />
           <Route path="/reports" element={<Report />} />
+          <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/complaints/:id" element={<ComplaintDetail />} />
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />

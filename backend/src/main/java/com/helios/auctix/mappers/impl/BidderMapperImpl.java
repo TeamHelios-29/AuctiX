@@ -17,7 +17,7 @@ public class BidderMapperImpl implements Mapper<Bidder, BidderDTO> {
         }
 
         BidderDTO bidderDTO = new BidderDTO();
-        bidderDTO.setBidderId(bidder.getId());
+        bidderDTO.setId(bidder.getId());
         bidderDTO.setIsActive(bidder.isActive());
         return bidderDTO;
     }
@@ -29,7 +29,7 @@ public class BidderMapperImpl implements Mapper<Bidder, BidderDTO> {
         }
 
         return Bidder.builder()
-                .id(bidderDTO.getBidderId())
+                .id(bidderDTO.getId())
                 .isActive(bidderDTO.getIsActive())
                 .build();
     }

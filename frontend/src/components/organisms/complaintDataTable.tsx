@@ -1,5 +1,6 @@
-import { ColumnDef, Table } from '@tanstack/react-table';
-import React, { useEffect, useState } from 'react';
+import { ColumnDef } from '@tanstack/react-table';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ interface IComplaint {
 
 export default function ComplaintDataTable() {
   const axiosInstance: AxiosInstance = AxiosReqest().axiosInstance;
+  const navigate = useNavigate();
   const [complaints, setComplaints] = useState<IComplaint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<null | string>(null);
@@ -214,7 +216,7 @@ export default function ComplaintDataTable() {
           setStatus(newStatus);
 
           axiosInstance
-            .put(`/complaints/${complaint.id}/${newStatus}`, {
+            .put(`/complaints/${complaint.id}/status`, {
               status: newStatus,
             })
             .then(() => {
@@ -234,22 +236,16 @@ export default function ComplaintDataTable() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigate(`/complaints/${complaint.id}`)}
+              >
+                View
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigator.clipboard.writeText(complaint.id)}
               >
                 Copy Complaint ID
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Edit Status</DropdownMenuLabel>
-              {Object.keys(statusStyles).map((statusOption) => (
-                <DropdownMenuItem
-                  key={statusOption}
-                  onClick={() => handleStatusChange(statusOption)}
-                >
-                  {statusOption}
-                </DropdownMenuItem>
-              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         );
