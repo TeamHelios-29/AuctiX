@@ -6,6 +6,9 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 echo "🔍 Checking Flyway migration versions..."
 
+# Ensure base branch ref is available in CI
+git fetch --quiet origin "$GITHUB_BASE_REF"
+
 get_version() {
     local file=$(basename "$1")
     [[ $file =~ ^V([0-9]+)__.*\.sql$ ]] && echo "${BASH_REMATCH[1]}"
