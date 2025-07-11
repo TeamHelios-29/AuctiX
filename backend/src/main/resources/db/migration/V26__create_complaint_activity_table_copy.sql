@@ -2,7 +2,7 @@ CREATE TABLE complaint_activity (
     id UUID PRIMARY KEY,
     complaint_id UUID NOT NULL REFERENCES complaints(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL,
-    messagess TEXT,
+    messagessz TEXT,
     performed_by VARCHAR(255) NOT NULL,
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
