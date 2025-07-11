@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -13,29 +14,50 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "User_addresses" )
+@Table(name = "user_addresses")
 public class UserAddress {
+
     @Id
+    @Column(columnDefinition = "UUID")
     private UUID id;
 
-    @Column(name = "country", nullable = false)
-    private String country;
-
-    @Column(name = "address_number" , length = 50)
-    private String addressNumber;
-
-    @Column(name = "address_line1", length = 255)
+    @Column(length = 100)
     private String addressLine1;
 
-    @Column(name = "address_line2", length = 255)
+    @Column(length = 100)
     private String addressLine2;
 
-    @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
-    @JoinColumn(name = "id", nullable = false)
+    @Column(length = 50)
+    private String city;
+
+    @Column(length = 50)
+    private String state;
+
+    @Column(length = 20)
+    private String postalCode;
+
+    @Column(length = 50)
+    private String country;
+
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "id")
     private User user;
 
     @PrePersist
     protected void onCreate() {
-        this.id = UUID.randomUUID();
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = Instant.now();
     }
 }

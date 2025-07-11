@@ -48,7 +48,7 @@ public class BidController {
     public ResponseEntity<?> getHighestBidForAuction(@PathVariable UUID auctionId) {
         try {
             Optional<Bid> highestBid = bidService.getHighestBidForAuction(auctionId);
-            return highestBid.map(ResponseEntity::ok)
+            return highestBid.map(bid -> ResponseEntity.ok(convertToDTO(bid)))
                     .orElseGet(() -> ResponseEntity.ok(null)); // Return null if no bids yet
         } catch (Exception e) {
             log.warning("Error fetching highest bid for auction " + auctionId + ": " + e.getMessage());
@@ -70,12 +70,31 @@ public class BidController {
             BidDTO placedBid = bidService.placeBid(request, bidder);
             return ResponseEntity.ok(placedBid);
         } catch (IllegalArgumentException e) {
+            log.warning("Bad request in place bid: " + e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IllegalStateException e) {
+            log.warning("Conflict in place bid: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (Exception e) {
-            log.warning("Error placing bid: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to place bid");
+            log.severe("Error placing bid: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to place bid: " + e.getMessage());
         }
     }
+
+    private BidDTO convertToDTO(Bid bid) {
+        return BidDTO.builder()
+                .id(bid.getId())
+                .auctionId(bid.getAuction().getId())
+                .auctionTitle(bid.getAuction().getTitle())
+                .bidderId(bid.getBidderId())
+                .bidderName(bid.getBidderName())
+                .bidderAvatar(bid.getBidderAvatar())
+                .amount(bid.getAmount())
+                .bidTime(bid.getBidTime())
+                .createdAt(bid.getCreatedAt())
+                .build();
+    }
+    // Request DTO for placing bids
+    // Use com.helios.auctix.dtos.PlaceBidRequest instead of inner class.
 }
