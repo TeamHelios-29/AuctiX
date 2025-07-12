@@ -141,6 +141,29 @@ public class UserUploadsService {
             throw new IllegalArgumentException("Upload cannot be null");
         }
         seller.setBannerId(upload.getId());
+        sellerRepository.save(seller);
+    }
+
+    public UserServiceResponse UserBannerPhotoDelete(UUID userId) {
+        Seller seller = sellerRepository.findById(userId).orElse(null);
+        if(seller == null) {
+            return new UserServiceResponse(false, "User not found");
+        }
+        if(seller.getBannerId() == null) {
+            return new UserServiceResponse(false, "No banner photo to delete");
+        }
+
+        // Delete the banner photo
+        FileUploadResponse res = fileUploadService.deleteFile(seller.getBannerId(), seller.getId());
+        if(!res.isSuccess()){
+            return new UserServiceResponse(false, res.getMessage());
+        }
+
+        // Set the banner ID to null
+        seller.setBannerId(null);
+        sellerRepository.save(seller);
+
+        return new UserServiceResponse(true, "Banner photo deleted", seller.getUser());
     }
 }
 

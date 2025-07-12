@@ -314,6 +314,27 @@ public class UserController {
 
     }
 
+    @DeleteMapping("/deleteBannerPhoto")
+    public ResponseEntity<String> deleteBannerPhoto() throws AuthenticationException {
+
+        // Authenticate user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // only sellers can delete banner photos
+        if (currentUser != null && currentUser.getRole().getName() != UserRoleEnum.SELLER) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You don't have permission to delete banner photo");
+        }
+
+        // Delete file
+        UserServiceResponse res = userUploadsService.UserBannerPhotoDelete(currentUser.getId());
+        if (res.isSuccess()) {
+            return ResponseEntity.ok().body("Banner photo deleted successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+        }
+    }
+
     @PostMapping("/updateProfile")
     public ResponseEntity<Boolean> updateProfileInfo(@RequestBody ProfileUpdateDataDTO profileUpdateDataDTO) throws AuthenticationException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
