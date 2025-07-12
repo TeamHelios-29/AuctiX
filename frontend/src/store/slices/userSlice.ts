@@ -19,7 +19,6 @@ const initialState: UserState = {
   profile_photo: assets.default_profile_image,
   banner_photo: assets.default_banner_image,
   role: null,
-  isProfileComplete: false,
   loading: true,
   error: null,
 };

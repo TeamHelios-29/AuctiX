@@ -135,7 +135,7 @@ export default function AppRouter() {
         <Route path="/user-delivery" element={<UserDeliveryPage />} />
         <Route path="/seller-delivery" element={<SellerDeliveryPage />} />
 
-        <Route path="/403" element={<h2>403 Unautherized</h2>} />
+        <Route path="/403" element={<h2>403 Unauthorized</h2>} />
         <Route path="/test-chat" element={<AuctionChat />} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>

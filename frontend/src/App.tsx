@@ -9,6 +9,7 @@ import {
   fetchUnreadCount,
 } from './store/slices/notificationSlice';
 import { Toaster } from './components/ui/toaster';
+import { fetchPendingRequiredActions } from './store/slices/requiredActionsSlice';
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -29,6 +30,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchCurrentUser());
+    dispatch(fetchPendingRequiredActions());
   }, [auth.isUserLoggedIn]);
 
   return (

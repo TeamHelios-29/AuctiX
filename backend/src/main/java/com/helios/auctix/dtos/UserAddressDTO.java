@@ -13,6 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserAddressDTO {
     private UUID id;
+    private String addressNumber;
     private String addressLine1;
     private String addressLine2;
     private String city;
