@@ -5,24 +5,23 @@ import com.helios.auctix.domain.notification.NotificationCategory;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
+import java.util.List;
 
 @Getter
-public class NotificationEvent  extends ApplicationEvent {
+public class BulkNotificationEvent extends ApplicationEvent {
 
+    private final List<User> users;
     private final String title;
-
     private final String message;
-
     private final NotificationCategory notificationCategory;
 
-    private final User userToNotify;
-
-    public NotificationEvent(Object source, String title, String message, NotificationCategory notificationCategory, User userToNotify) {
+    public BulkNotificationEvent(Object source, List<User> users, String title, String message,
+                                 NotificationCategory notificationCategory) {
         super(source);
+        this.users = users;
         this.title = title;
         this.message = message;
         this.notificationCategory = notificationCategory;
-        this.userToNotify = userToNotify;
     }
 
 }

@@ -144,8 +144,8 @@ public class AuctionService {
                 .collect(Collectors.toList());
     }
 
-    // Helper method to convert Auction entity to AuctionDetailsDTO
-    private AuctionDetailsDTO convertToDTO(Auction auction) {
+    // Helper method to convert Auction entity to AuctionDetailsDTO (package private so other services can use)
+    AuctionDetailsDTO convertToDTO(Auction auction) {
         List<String> imageIds = auctionImagePathsRepository.findById_AuctionId(auction.getId())
                 .stream()
                 .map(AuctionImagePath::getImageId)
