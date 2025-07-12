@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Mail, AtSign, Shield } from 'lucide-react';
 import { TooltipBtn } from '../atoms/TooltipBtn';
 import { useMemo } from 'react';
+import { assets } from '@/config/assets';
 
 interface ProfileCardProps {
   username: string;
@@ -72,7 +73,7 @@ export default function ProfileCard({
             className="w-full h-full"
           >
             <img
-              src={bannerPhoto || '/defaultBanner.jpg'}
+              src={bannerPhoto || assets.default_banner_image}
               alt="Profile Banner"
               className="w-full h-full object-cover"
             />
@@ -106,7 +107,7 @@ export default function ProfileCard({
                 </div>
               ) : (
                 <img
-                  src={profilePhoto || '/defaultProfilePhoto.jpg'}
+                  src={profilePhoto || assets.default_profile_image}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
