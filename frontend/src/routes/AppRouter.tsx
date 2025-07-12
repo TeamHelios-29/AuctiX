@@ -26,6 +26,7 @@ import NotificationsPage from '@/pages/NotificationPage';
 // import WatchList from '@/pages/WatchList';
 import UserProfile from '@/components/organisms/UserProfile';
 import SellerVerificationSubmitPage from '@/pages/SellerVerificationSubmitPage';
+import SecuritySettingsPage from '@/pages/SecuritySettingsPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -121,6 +122,14 @@ export default function AppRouter() {
             element={
               <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/403">
                 <SellerVerificationSubmitPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/security"
+            element={
+              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/403">
+                <SecuritySettingsPage />
               </ProtectedRoute>
             }
           />

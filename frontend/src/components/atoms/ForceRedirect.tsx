@@ -45,8 +45,8 @@ export default function ForceRedirect() {
           action.actionType === 'SELLER_VERIFICATION_DOCUMENT_SUBMISSION'
         ) {
           forceNavigate(
-            '/settings/verification-submit',
-            'Verify your email to continue',
+            '/settings/seller-verification-submit',
+            'Submit documents to get verified as a seller',
           );
         } else if (action.actionType === 'FIRST_LOGIN_CHANGE_PASSWORD') {
           forceNavigate(

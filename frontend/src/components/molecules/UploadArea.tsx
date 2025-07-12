@@ -4,7 +4,7 @@ import type React from 'react';
 
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { UploadIcon } from '@/components/atoms/upload-icon';
+import { UploadIcon } from '@/components/atoms/UploadIcon';
 import { Text } from '@/components/atoms/text';
 import { cn } from '@/lib/utils';
 
