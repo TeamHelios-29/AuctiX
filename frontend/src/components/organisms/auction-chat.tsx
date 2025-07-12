@@ -12,16 +12,13 @@ import { Label } from '@radix-ui/react-dropdown-menu';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 
-function AuctionChat() {
+const AuctionChat = ({ auctionId }: { auctionId: string }) => {
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [messages, setMessages] = useState<ChatMessageProps[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [chatRoomId, setChatRoomId] = useState(
-    '5ded2b18-e4c6-4bed-8716-aa551123b469',
-  ); // TODO Change after integrating with auction page when that is done
   const user = useAppSelector((state) => state.user);
   const userAuth: IAuthUser = useAppSelector(
     (state) => state.auth as IAuthUser,
@@ -55,9 +52,9 @@ function AuctionChat() {
 
       try {
         const response = await axiosInstance.get(
-          `/public/chat/${chatRoomId}/messages`,
+          `/public/chat/${auctionId}/messages`,
           {
-            params: { page: pageNum, size: 4 },
+            params: { page: pageNum, size: 10 },
           },
         );
 
@@ -92,27 +89,36 @@ function AuctionChat() {
         setIsLoading(false);
       }
     },
-    [isLoading, axiosInstance, chatRoomId, user],
+    [isLoading, axiosInstance, auctionId, user],
   );
 
   // Handle scrolling after messages are updated
   useEffect(() => {
-    if (messages.length > 0) {
-      // If we're loading older messages, keep scroll position
-      if (isLoadingOlderMessages.current) {
-        const container = scrollContainerRef.current;
-        if (container) {
-          // Small timeout to ensure the DOM has updated
-          setTimeout(() => {
-            // Keep scroll position after loading older messages
-            // Keep the user at the same position relative to the content they were viewing
-            container.scrollTop = 10;
-            isLoadingOlderMessages.current = false;
-          }, 100);
-        }
-      } else {
-        // for new messages sent or received, scroll to bottom
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = scrollContainerRef.current;
+
+    if (!container || messages.length === 0) return;
+
+    // If we're loading older messages, keep scroll position
+    if (isLoadingOlderMessages.current) {
+      const previousScrollHeight = container.scrollHeight;
+
+      // Wait for the DOM to update before measuring new scroll height
+      requestAnimationFrame(() => {
+        const newScrollHeight = container.scrollHeight;
+        const scrollDifference = newScrollHeight - previousScrollHeight;
+
+        // Adjust scrollTop to keep the user at the same position
+        container.scrollTop += scrollDifference;
+        isLoadingOlderMessages.current = false;
+      });
+    } else {
+      // for new messages sent or received, scroll to bottom
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth',
+        });
       }
     }
   }, [messages]);
@@ -137,7 +143,7 @@ function AuctionChat() {
         // Subscribe to the auction chat topic only if not already subscribed
         if (!subscriptionRef.current) {
           subscriptionRef.current = client.subscribe(
-            `/topic/auction/${chatRoomId}/chat`,
+            `/topic/auction/${auctionId}/chat`,
             (messageOutput) => {
               try {
                 const receivedMessage: ChatMessageDTO = JSON.parse(
@@ -208,7 +214,7 @@ function AuctionChat() {
       }
     };
   }, [
-    chatRoomId,
+    auctionId,
     webSocketURL,
     user,
     isAuthenticated,
@@ -230,12 +236,12 @@ function AuctionChat() {
         senderId: displayName,
         senderName: displayName,
         content: newMessage,
-        auctionId: chatRoomId,
+        auctionId: auctionId,
       };
 
       // Send to server
       stompClient.publish({
-        destination: `/app/chat.sendMessage/${chatRoomId}`,
+        destination: `/app/chat.sendMessage/${auctionId}`,
         body: JSON.stringify(chatMessage),
         headers: {
           Authorization: `Bearer ${userAuth.token}`,
@@ -292,18 +298,6 @@ function AuctionChat() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-2 border-b">
         <h2 className="font-medium">Auction Chat</h2>
-        <div>
-          Dev only
-          <div>
-            <label>ChatRoomId</label>
-            <input
-              type="text"
-              value={chatRoomId}
-              onChange={(e) => setChatRoomId(e.target.value)}
-            />
-          </div>
-        </div>
-
         <div className="flex items-center gap-2">
           <span className="text-sm">
             {isAuthenticated
@@ -393,6 +387,6 @@ function AuctionChat() {
       </div>
     </div>
   );
-}
+};
 
 export default AuctionChat;

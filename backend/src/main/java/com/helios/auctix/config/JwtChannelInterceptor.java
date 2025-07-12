@@ -184,7 +184,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                     User user = userRepository.findByEmail(userEmail);
                     if (user != null && auctionId != null) {
                         log.info("Auto joining user " + userEmail + " to chat room for auction: " + auctionId);
-                        chatService.joinChatRoom(user, auctionId);
+                        chatService.joinChatRoom(user, UUID.fromString(auctionId));
                     }
                 } catch (Exception e) {
                     log.warning("Error joining chat room: " + e.getMessage());

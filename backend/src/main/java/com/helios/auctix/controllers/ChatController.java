@@ -18,6 +18,11 @@ import org.springframework.stereotype.Controller;
 
 import static java.lang.Thread.sleep;
 
+/**
+ * This is the Controller for the websocket side of Chat, not for the API
+ * <p/>
+ * For the Checkout ChatRestController for API Controller of Chat
+ */
 @Log
 @Controller
 public class ChatController {

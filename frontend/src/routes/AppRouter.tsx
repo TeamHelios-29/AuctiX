@@ -127,7 +127,7 @@ export default function AppRouter() {
           <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/complaints/:id" element={<ComplaintDetail />} />
-{/*           <Route path="/watchlist" element={<WatchList />} /> */}
+          {/*           <Route path="/watchlist" element={<WatchList />} /> */}
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
@@ -136,7 +136,6 @@ export default function AppRouter() {
         <Route path="/seller-delivery" element={<SellerDeliveryPage />} />
 
         <Route path="/403" element={<h2>403 Unautherized</h2>} />
-        <Route path="/test-chat" element={<AuctionChat />} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>
     </BrowserRouter>

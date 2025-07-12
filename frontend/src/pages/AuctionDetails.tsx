@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
+import AuctionChat from '@/components/organisms/auction-chat';
 
 interface BidHistory {
   bidder: {
@@ -460,7 +461,11 @@ const AuctionDetailsPage = () => {
       <div className="border rounded-md p-4 mt-6">
         <h2 className="text-lg font-semibold mb-4">Live Chat</h2>
         <p className="text-sm text-gray-500">
-          Live chat will be integrated here.
+          {auctionId ? (
+            <AuctionChat auctionId={auctionId} />
+          ) : (
+            <div>Sorry chat is unvaliable</div>
+          )}
         </p>
       </div>
 
