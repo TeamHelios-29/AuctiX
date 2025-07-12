@@ -23,7 +23,7 @@ import AdminManagementPage from '@/pages/AdminManagementPage';
 import ComplaintDetail from '@/pages/ComplaintDetail';
 import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
-import WatchList from '@/pages/WatchList';
+// import WatchList from '@/pages/WatchList';
 import UserProfile from '@/components/organisms/UserProfile';
 
 export default function AppRouter() {
@@ -127,7 +127,7 @@ export default function AppRouter() {
           <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/complaints/:id" element={<ComplaintDetail />} />
-          <Route path="/watchlist" element={<WatchList />} />
+{/*           <Route path="/watchlist" element={<WatchList />} /> */}
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
