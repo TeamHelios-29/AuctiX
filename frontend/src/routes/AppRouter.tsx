@@ -23,6 +23,7 @@ import AdminManagementPage from '@/pages/AdminManagementPage';
 import ComplaintDetail from '@/pages/ComplaintDetail';
 import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
+import WatchList from '@/pages/WatchList';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -114,6 +115,7 @@ export default function AppRouter() {
           <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/complaints/:id" element={<ComplaintDetail />} />
+          <Route path="/watchlist" element={<WatchList />} />
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
