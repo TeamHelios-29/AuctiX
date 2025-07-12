@@ -2,11 +2,13 @@ package com.helios.auctix.services.user;
 
 import com.google.api.client.json.Json;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserAddress;
 import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRequiredActionEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
+import com.helios.auctix.repositories.UserAddressRepository;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.repositories.UserRequiredActionRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,8 @@ public class UserDetailsService {
     UserRepository userRepository;
     @Autowired
     UserRequiredActionRepository userRequiredActionRepository;
+    @Autowired
+    UserAddressRepository userAddressRepository;
     @Autowired
     private UserMapperImpl userMapperImpl;
 
@@ -110,23 +114,35 @@ public class UserDetailsService {
 
     }
 
-    public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO profileData) {
-        log.info("Updating user profile"+profileData.getBio()+"  "+profileData.getFirstName()+" "+profileData.getLastName());
-        if (user == null) {
-            return new UserServiceResponse(false, "Current User data cannot be null");
-        }
-        else{
-            user.setFirstName(profileData.getFirstName());
-            user.setLastName(profileData.getLastName());
-            if (profileData.getAddress() != null) {
-                user.getUserAddress().setCountry(profileData.getAddress().getCountry());
-                user.getUserAddress().setAddressLine1(profileData.getAddress().getAddressLine1());
-                user.getUserAddress().setAddressLine2(profileData.getAddress().getAddressLine2());
-            }
-            userRepository.save(user);
-            return new UserServiceResponse(true, "User profile updated successfully");
-        }
+public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO profileData) {
+    log.info("Updating user profile" + profileData.getBio() + "  " + profileData.getFirstName() + " " + profileData.getLastName());
+
+    user.setFirstName(profileData.getFirstName());
+    user.setLastName(profileData.getLastName());
+
+    UserAddress address;
+    if(user.getUserAddress() != null) {
+        address = userAddressRepository.findById(user.getUserAddress().getId()).orElse(new UserAddress());
     }
+    else{
+        address = new UserAddress();
+    }
+    if (profileData.getAddress() != null) {
+        address.setCountry(profileData.getAddress().getCountry());
+        address.setAddressNumber(profileData.getAddress().getAddressNumber());
+        address.setAddressLine1(profileData.getAddress().getAddressLine1());
+        address.setAddressLine2(profileData.getAddress().getAddressLine2());
+        address.setUser(user);
+    }
+    userAddressRepository.save(address);
+    userRepository.save(user);
+    log.info("Updated user profile");
+
+    this.resolveUserRequiredAction(user, UserRequiredActionEnum.COMPLETE_PROFILE);
+    log.info("Resolved required action COMPLETE_PROFILE for user: {}", user.getUsername());
+
+    return new UserServiceResponse(true, "User profile updated successfully");
+}
 
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email);
@@ -141,7 +157,7 @@ public class UserDetailsService {
     }
 
     public List<UserRequiredAction> getRequiredActions(User currentUser) {
-        List<UserRequiredAction> requiredActions = userRequiredActionRepository.findByUserId(currentUser.getId());
+        List<UserRequiredAction> requiredActions = userRequiredActionRepository.findByUserIdAndIsResolvedFalse(currentUser.getId());
 
         if (requiredActions == null || requiredActions.isEmpty()) {
             log.info("No required actions found for user: {}", currentUser.getUsername());
@@ -152,7 +168,7 @@ public class UserDetailsService {
         }
     }
 
-    public boolean registerUserRequiredAction(User user, UserRequiredActionEnum action) {
+    public void registerUserRequiredAction(User user, UserRequiredActionEnum action) {
         if (action == null) {
             throw new InvalidParameterException("Action cannot be null");
         }
@@ -160,7 +176,7 @@ public class UserDetailsService {
         boolean exists = userRequiredActionRepository.existsByUserIdAndActionTypeAndIsResolvedFalse(user.getId(), action);
         if (exists) {
             log.warn("Required action {} already exists for user: {}", action, user.getUsername());
-            return false;
+            throw new InvalidParameterException("Required action already exists for user: " + user.getUsername());
         }
 
         UserRequiredAction requiredAction = UserRequiredAction.builder()
@@ -171,7 +187,22 @@ public class UserDetailsService {
                 .build();
 
         userRequiredActionRepository.save(requiredAction);
-        log.info("Registered required action {} for user: {}", action, user.getUsername());
-        return true;
+    }
+
+    public void resolveUserRequiredAction(User user, UserRequiredActionEnum action) {
+        if (action == null) {
+            throw new InvalidParameterException("Action cannot be null");
+        }
+
+        UserRequiredAction requiredAction = userRequiredActionRepository.findByUserIdAndActionTypeAndIsResolvedFalse(user.getId(), action);
+        if (requiredAction == null) {
+            log.info("No required action {} found for user: {}", action, user.getUsername());
+            return;
+        }
+
+        requiredAction.setResolved(true);
+        requiredAction.setResolvedAt(java.time.LocalDateTime.now());
+        userRequiredActionRepository.save(requiredAction);
+        log.info("Resolved required action {} for user: {}", action, user.getUsername());
     }
 }
