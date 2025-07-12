@@ -1,9 +1,11 @@
 package com.helios.auctix.services.user;
 
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class UserDetailsService {
 
@@ -99,6 +102,24 @@ public class UserDetailsService {
 
         return userPage;
 
+    }
+
+    public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO profileData) {
+        log.info("Updating user profile"+profileData.getBio()+"  "+profileData.getFirstName()+" "+profileData.getLastName());
+        if (user == null) {
+            return new UserServiceResponse(false, "Current User data cannot be null");
+        }
+        else{
+            user.setFirstName(profileData.getFirstName());
+            user.setLastName(profileData.getLastName());
+            if (profileData.getAddress() != null) {
+                user.getUserAddress().setCountry(profileData.getAddress().getCountry());
+                user.getUserAddress().setAddressLine1(profileData.getAddress().getAddressLine1());
+                user.getUserAddress().setAddressLine2(profileData.getAddress().getAddressLine2());
+            }
+            userRepository.save(user);
+            return new UserServiceResponse(true, "User profile updated successfully");
+        }
     }
 
     public User getUserByEmail(String email) {
