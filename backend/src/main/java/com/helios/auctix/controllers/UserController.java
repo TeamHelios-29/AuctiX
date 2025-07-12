@@ -2,6 +2,7 @@ package com.helios.auctix.controllers;
 
 import com.azure.core.util.BinaryData;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
@@ -325,6 +326,14 @@ public class UserController {
         } else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
         }
+    }
+
+    @GetMapping("/getUserRequiredActions")
+    public ResponseEntity<List<UserRequiredAction>> getUserRequiredActions() throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        List<UserRequiredAction> requiredActions = userDetailsService.getRequiredActions(currentUser);
+        return ResponseEntity.ok(requiredActions);
     }
 
 }

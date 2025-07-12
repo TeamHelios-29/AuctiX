@@ -4,10 +4,9 @@ ALTER TABLE users
 CREATE TABLE user_required_actions (
    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-   action_type INT NOT NULL,
-   context JSONB,
+   action_type VARCHAR(50) NOT NULL,
+   context TEXT,
    is_resolved BOOLEAN DEFAULT FALSE,
    resolved_at TIMESTAMP,
    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-

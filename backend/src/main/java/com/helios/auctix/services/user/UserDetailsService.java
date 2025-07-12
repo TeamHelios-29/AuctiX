@@ -1,10 +1,14 @@
 package com.helios.auctix.services.user;
 
+import com.google.api.client.json.Json;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRequiredAction;
+import com.helios.auctix.domain.user.UserRequiredActionEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.UserRepository;
+import com.helios.auctix.repositories.UserRequiredActionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +31,8 @@ public class UserDetailsService {
 
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    UserRequiredActionRepository userRequiredActionRepository;
     @Autowired
     private UserMapperImpl userMapperImpl;
 
@@ -134,4 +140,38 @@ public class UserDetailsService {
         return userRepository.findById(id).orElse(null);
     }
 
+    public List<UserRequiredAction> getRequiredActions(User currentUser) {
+        List<UserRequiredAction> requiredActions = userRequiredActionRepository.findByUserId(currentUser.getId());
+
+        if (requiredActions == null || requiredActions.isEmpty()) {
+            log.info("No required actions found for user: {}", currentUser.getUsername());
+            return List.of();
+        } else {
+            log.info("Found {} required actions for user: {}", requiredActions.size(), currentUser.getUsername());
+            return requiredActions;
+        }
+    }
+
+    public boolean registerUserRequiredAction(User user, UserRequiredActionEnum action) {
+        if (action == null) {
+            throw new InvalidParameterException("Action cannot be null");
+        }
+
+        boolean exists = userRequiredActionRepository.existsByUserIdAndActionTypeAndIsResolvedFalse(user.getId(), action);
+        if (exists) {
+            log.warn("Required action {} already exists for user: {}", action, user.getUsername());
+            return false;
+        }
+
+        UserRequiredAction requiredAction = UserRequiredAction.builder()
+                .user(user)
+                .actionType(action)
+                .isResolved(false)
+                .context(null)
+                .build();
+
+        userRequiredActionRepository.save(requiredAction);
+        log.info("Registered required action {} for user: {}", action, user.getUsername());
+        return true;
+    }
 }

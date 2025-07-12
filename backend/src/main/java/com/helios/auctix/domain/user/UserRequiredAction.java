@@ -1,10 +1,14 @@
 package com.helios.auctix.domain.user;
 
 import com.fasterxml.jackson.annotation.*;
+import com.google.api.client.json.Json;
+import com.helios.auctix.converters.JsonMapConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -21,15 +25,17 @@ public class UserRequiredAction {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     @JsonIgnore
     private User user;
 
     @Column(name = "action_type", nullable = false)
-    private int actionType; // Map to an Enum in service layer if needed
+    @Enumerated(EnumType.STRING)
+    private UserRequiredActionEnum actionType;
 
-    @Column(columnDefinition = "jsonb")
-    private String context; // Can use custom type handler for JSON mapping if needed
+    @Convert(converter = JsonMapConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private Map<String, Object> context;
 
     @Column(name = "is_resolved", nullable = false)
     private boolean isResolved = false;
@@ -38,5 +44,13 @@ public class UserRequiredAction {
     private LocalDateTime resolvedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private Instant createdAt ;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
+        }
+    }
+
 }
