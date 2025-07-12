@@ -7,5 +7,4 @@ export interface IUser {
   profile_photo: string;
   banner_photo: string;
   role?: string | null;
-  isProfileComplete: boolean;
 }

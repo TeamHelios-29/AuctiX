@@ -12,7 +12,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ImageResult } from '../molecules/ImageUploadPopup';
 import {
   deleteProfilePhoto,
+  IProfileUpdateData,
   updateBannerPhoto,
+  updateProfileInfo,
   updateProfilePhoto,
 } from '@/services/userService';
 import { AxiosInstance } from 'axios';
@@ -41,11 +43,9 @@ const profileFormSchema = z.object({
     .min(3, {
       message: 'Last name must be at least 3 characters.',
     })
-
     .max(30, {
       message: 'Last name must not be longer than 30 characters.',
-    })
-    .optional(),
+    }),
   bio: z
     .string()
     .max(160, {
@@ -266,14 +266,44 @@ export function ProfileForm() {
     setTimeout(() => {
       const formData = form.getValues();
       console.log('Submitting form data:', formData);
+      let validUrls: string[] = [];
       if (formData.urls && formData.urls.length > 0) {
-        const validUrls = formData.urls.filter(
-          (url) => url.value.trim() !== '',
-        );
+        validUrls = formData.urls
+          .filter((url) => url.value.trim() !== '')
+          .map((url) => url.value);
         console.log('URLs to submit:', validUrls);
       }
 
-      // TODO: Add actual API call to update profile with axiosInstance
+      // Prepare profile data for submission
+      const profileData: IProfileUpdateData = {
+        bio: formData.bio,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        urls: validUrls,
+        address: {
+          number: formData.address.number || '',
+          addressLine1: formData.address.addressLine1 || '',
+          addressLine2: formData.address.addressLine2 || '',
+          country: formData.address.country || '',
+        },
+      };
+
+      updateProfileInfo(profileData, axiosInstance)
+        .then(() => {
+          toast({
+            title: 'Profile details updated successfully',
+            description: 'Your profile details has been updated.',
+          });
+        })
+        .catch((err) => {
+          console.error('Error updating profile details:', err);
+          toast({
+            variant: 'destructive',
+            title: 'Profile details not updated.',
+            description:
+              'There was an error when updating your profile details.',
+          });
+        });
 
       setIsSubmitting(false);
       setIsAlertOpen(false);

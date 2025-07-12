@@ -2,7 +2,9 @@ package com.helios.auctix.controllers;
 
 import com.azure.core.util.BinaryData;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRoleEnum;
+import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
@@ -310,6 +312,28 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
         }
 
+    }
+
+    @PostMapping("/updateProfile")
+    public ResponseEntity<Boolean> updateProfileInfo(@RequestBody ProfileUpdateDataDTO profileUpdateDataDTO) throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // Update user profile
+        UserServiceResponse response = userDetailsService.updateUserProfile(currentUser, profileUpdateDataDTO);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(true);
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
+
+    @GetMapping("/getUserRequiredActions")
+    public ResponseEntity<List<UserRequiredAction>> getUserRequiredActions() throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        List<UserRequiredAction> requiredActions = userDetailsService.getRequiredActions(currentUser);
+        return ResponseEntity.ok(requiredActions);
     }
 
 }
