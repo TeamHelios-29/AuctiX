@@ -58,7 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/watchlist/**").permitAll()
 
 
-                        .requestMatchers("/api/coins/**").permitAll()
+                        .requestMatchers("/api/coins/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

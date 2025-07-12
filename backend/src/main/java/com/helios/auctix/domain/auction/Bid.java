@@ -42,4 +42,26 @@ public class Bid {
     @Column(nullable = false)
     private Instant bidTime;
 
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+        if (this.bidTime == null) {
+            this.bidTime = Instant.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = Instant.now();
+    }
 }

@@ -24,6 +24,7 @@ import ComplaintDetail from '@/pages/ComplaintDetail';
 import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
 import WatchList from '@/pages/WatchList';
+import UserProfile from '@/components/organisms/UserProfile';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -96,6 +97,7 @@ export default function AppRouter() {
               <ProtectedRoute
                 allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
+                ignorePendingForceRedirects={true}
               >
                 <ProfileSettings />
               </ProtectedRoute>
@@ -107,11 +109,21 @@ export default function AppRouter() {
               <ProtectedRoute
                 allowedUsers={['SUPER_ADMIN']}
                 redirectPath="/403"
+                ignorePendingForceRedirects={true}
               >
                 <AdminManagementPage />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/profile/:id"
+            element={
+              <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
+                <UserProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/reports" element={<Report />} />
           <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/complaints/:id" element={<ComplaintDetail />} />

@@ -2,12 +2,15 @@ package com.helios.auctix.services.user;
 
 import com.helios.auctix.domain.upload.Upload;
 import com.helios.auctix.domain.user.*;
+import com.helios.auctix.repositories.SellerRepository;
 import com.helios.auctix.repositories.UploadRepository;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.PermissionDeniedDataAccessException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -20,6 +23,7 @@ public class UserUploadsService {
     private final UploadRepository uploadRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+    private final SellerRepository sellerRepository;
 
     Logger log = Logger.getLogger(UserRegisterService.class.getName());
 
@@ -60,11 +64,21 @@ public class UserUploadsService {
                 return new UserServiceResponse(false, "User not found");
             }
 
+            // Delete the previous profile picture if it exists
+            Upload previousProfilePicture = user.getUpload();
+            if(previousProfilePicture != null) {
+                FileUploadResponse res = fileUploadService.deleteFile(previousProfilePicture, user);
+                if(!res.isSuccess()){
+                    return new UserServiceResponse(false, res.getMessage());
+                }
+            }
+
+            // Save the new profile picture
             uploadRepository.save(upload);
-            log.info("UserProfilePhotoUpdate successfully");
+            log.info("UserProfilePhotoUpdate successful onUploads");
             user.setUpload(upload);
             userRepository.save(user);
-            log.info("UserProfilePhotoUpdate successfully");
+            log.info("UserProfilePhotoUpdate successful onUser");
 
             return new UserServiceResponse(true, "Upload saved",user);
     }
@@ -103,12 +117,30 @@ public class UserUploadsService {
             return new UserServiceResponse(false, "User not found");
         }
 
+        // mark as deleted
         FileUploadResponse res = fileUploadService.deleteFile(user.getUpload(), user);
+        // set profile photo to null
+        user.setUpload(null);
+
+        userRepository.save(user);
+
         if(!res.isSuccess()){
             return new UserServiceResponse(false, res.getMessage());
         }
 
         return new UserServiceResponse(true, "profile photo deleted",user);
+    }
+
+
+    public void UserBannerPhotoUpdate(UUID userId,Upload upload) {
+        Seller seller = sellerRepository.findById(userId).orElse(null);
+        if(seller == null) {
+            throw new PermissionDeniedDataAccessException("User not found", new Exception("User not found"));
+        }
+        if(upload == null) {
+            throw new IllegalArgumentException("Upload cannot be null");
+        }
+        seller.setBannerId(upload.getId());
     }
 }
 

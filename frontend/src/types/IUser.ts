@@ -4,6 +4,8 @@ export interface IUser {
   firstName?: string | null;
   lastName?: string | null;
   fcmTokens?: string[];
-  profile_photo?: string | null;
+  profile_photo: string;
+  banner_photo: string;
   role?: string | null;
+  isProfileComplete: boolean;
 }

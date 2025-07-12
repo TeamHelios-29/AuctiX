@@ -9,7 +9,6 @@ import com.helios.auctix.dtos.UserRoleDTO;
 import com.helios.auctix.mappers.Mapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Log4j2
@@ -22,19 +21,20 @@ public class UserMapperImpl implements Mapper<User, UserDTO> {
     private final SellerMapperImpl sellerMapper;
     private final UserRoleMapperImpl userRoleMapper;
     private final UploadMapperImpl uploadMapper;
-    private final UserAddresseMapperImpl userAddresseMapper;
+    private final UserAddresseMapperImpl userAddressMapper;
 
     @Override
-    public UserDTO mapTo(User user){
+    public UserDTO mapTo(User user) {
         UserDTO userDTO = new UserDTO();
         userDTO.setId(user.getId());
         userDTO.setUsername(user.getUsername());
         userDTO.setEmail(user.getEmail());
         userDTO.setFirstName(user.getFirstName());
         userDTO.setLastName(user.getLastName());
+        userDTO.setProfileComplete(user.isProfileComplete());
 
         UserRole userRole = user.getRole();
-        if( userRole != null){
+        if (userRole != null) {
             UserRoleDTO userRoleDTO = new UserRoleDTO();
             userRoleDTO.setUserRole(userRole.getName().name());
             userDTO.setUserRole(userRoleDTO);
@@ -43,7 +43,7 @@ public class UserMapperImpl implements Mapper<User, UserDTO> {
         }
 
         Upload upload = user.getUpload();
-        if(upload != null){
+        if (upload != null) {
             UploadDTO uploadDTO = uploadMapper.mapTo(upload);
             userDTO.setProfilePicture(uploadDTO);
         } else {
@@ -51,7 +51,7 @@ public class UserMapperImpl implements Mapper<User, UserDTO> {
         }
 
         Admin admin = user.getAdmin();
-        if(admin != null){
+        if (admin != null) {
             AdminDTO adminDTO = adminMapper.mapTo(admin);
             userDTO.setAdmin(adminDTO);
         } else {
@@ -59,22 +59,22 @@ public class UserMapperImpl implements Mapper<User, UserDTO> {
         }
 
         Bidder bidder = user.getBidder();
-        if(bidder != null){
+        if (bidder != null) {
             userDTO.setBidder(bidderMapper.mapTo(bidder));
         } else {
             userDTO.setBidder(null);
         }
 
         Seller seller = user.getSeller();
-        if(seller != null){
+        if (seller != null) {
             userDTO.setSeller(sellerMapper.mapTo(seller));
         } else {
             userDTO.setSeller(null);
         }
 
         UserAddress userAddress = user.getUserAddress();
-        if(userAddress != null){
-            userDTO.setUserAddress(userAddresseMapper.mapTo(userAddress));
+        if (userAddress != null) {
+            userDTO.setUserAddress(userAddressMapper.mapTo(userAddress));
         } else {
             userDTO.setUserAddress(null);
         }
@@ -83,20 +83,21 @@ public class UserMapperImpl implements Mapper<User, UserDTO> {
     }
 
     @Override
-    public User mapFrom(UserDTO userDTO){
+    public User mapFrom(UserDTO userDTO) {
 
         Admin admin = adminMapper.mapFrom(userDTO.getAdmin());
         Bidder bidder = bidderMapper.mapFrom(userDTO.getBidder());
         Seller seller = sellerMapper.mapFrom(userDTO.getSeller());
         UserRole userRole = userRoleMapper.mapFrom(userDTO.getUserRole());
         Upload upload = uploadMapper.mapFrom(userDTO.getProfilePicture());
-        UserAddress userAddress = userAddresseMapper.mapFrom(userDTO.getUserAddress());
+        UserAddress userAddress = userAddressMapper.mapFrom(userDTO.getUserAddress());
 
         return User.builder()
                 .username(userDTO.getUsername())
                 .email(userDTO.getEmail())
                 .firstName(userDTO.getFirstName())
                 .lastName(userDTO.getLastName())
+                .isProfileComplete(userDTO.isProfileComplete())
                 .role(userRole)
                 .admin(admin)
                 .bidder(bidder)

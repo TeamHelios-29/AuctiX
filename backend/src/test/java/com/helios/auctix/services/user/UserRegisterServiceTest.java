@@ -1,5 +1,6 @@
 package com.helios.auctix.services.user;
 
+import com.helios.auctix.config.SupperAdminConfig;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.repositories.*;
@@ -23,6 +24,7 @@ class UserRegisterServiceTest {
     private final AdminRepository adminRepository = Mockito.mock(AdminRepository.class);
     private final UserRoleRepository userRoleRepository = Mockito.mock(UserRoleRepository.class);
     private final JwtService jwtService = Mockito.mock(JwtService.class);
+    private final SupperAdminConfig supperAdminConfig = Mockito.mock(SupperAdminConfig.class);
 
 
 

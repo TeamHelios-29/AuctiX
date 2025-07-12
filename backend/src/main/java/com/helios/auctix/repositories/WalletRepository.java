@@ -10,6 +10,8 @@ import java.util.UUID;
 
 @Repository
 public interface WalletRepository extends JpaRepository<Wallet, UUID> {
+
+    List<Wallet> findAllByUserId(UUID userId);  // Add this method to get all wallets for a user
     Optional<Wallet> findByUserId(UUID userId);
 }
 

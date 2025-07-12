@@ -69,7 +69,7 @@ const AuctionDetailsPage = () => {
       if (profilePicture && profilePicture.id) {
         return `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${profilePicture.id}`;
       }
-      return '/default-avatar.png';
+      return '/defaultProfilePhoto.jpg';
     };
 
     const transformUser = (user: {
@@ -100,7 +100,7 @@ const AuctionDetailsPage = () => {
         : {
             id: '',
             name: 'No bidder yet',
-            avatar: '/default-avatar.png',
+            avatar: '/defaultProfilePhoto.jpg',
           },
       seller: {
         ...backendData.seller,
@@ -315,7 +315,7 @@ const AuctionDetailsPage = () => {
                 src={
                   product.currentBidder?.avatar !== 'NULL'
                     ? product.currentBidder?.avatar
-                    : '/default-avatar.png'
+                    : '/defaultProfilePhoto.jpg'
                 }
                 alt={product.currentBidder?.name}
                 className="w-6 h-6 rounded-full mx-2"
@@ -392,7 +392,7 @@ const AuctionDetailsPage = () => {
           <div className="flex items-center mt-6">
             <p className="text-sm mr-2">By</p>
             <img
-              src={product.seller.profilePicture || '/default-avatar.png'}
+              src={product.seller.profilePicture || '/defaultProfilePhoto.jpg'}
               alt={`${product.seller.firstName} ${product.seller.lastName}`}
               className="w-6 h-6 rounded-full mr-2"
             />
