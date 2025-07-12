@@ -127,7 +127,7 @@ export default function AppRouter() {
           <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/complaints/:id" element={<ComplaintDetail />} />
-{/*           <Route path="/watchlist" element={<WatchList />} /> */}
+          {/*           <Route path="/watchlist" element={<WatchList />} /> */}
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />

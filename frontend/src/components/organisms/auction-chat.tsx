@@ -12,16 +12,19 @@ import { Label } from '@radix-ui/react-dropdown-menu';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 
-function AuctionChat() {
+const AuctionChat = ({ auctionId }: { auctionId: string }) => {
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [messages, setMessages] = useState<ChatMessageProps[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [chatRoomId, setChatRoomId] = useState(
-    '5ded2b18-e4c6-4bed-8716-aa551123b469',
-  ); // TODO Change after integrating with auction page when that is done
+  const previousScrollHeightRef = useRef(0);
+  const previousScrollTopRef = useRef(0);
+  const lastNewMessageSource = useRef<'self' | 'other' | null>(null); // null if no last message
+
+  const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false);
+
   const user = useAppSelector((state) => state.user);
   const userAuth: IAuthUser = useAppSelector(
     (state) => state.auth as IAuthUser,
@@ -51,13 +54,19 @@ function AuctionChat() {
       // Set flag when loading older messages (not the initial load)
       if (pageNum > 0) {
         isLoadingOlderMessages.current = true;
+
+        const container = scrollContainerRef.current;
+        if (container) {
+          previousScrollHeightRef.current = container.scrollHeight;
+          previousScrollTopRef.current = container.scrollTop;
+        }
       }
 
       try {
         const response = await axiosInstance.get(
-          `/public/chat/${chatRoomId}/messages`,
+          `/public/chat/${auctionId}/messages`,
           {
-            params: { page: pageNum, size: 4 },
+            params: { page: pageNum, size: 3 },
           },
         );
 
@@ -92,30 +101,72 @@ function AuctionChat() {
         setIsLoading(false);
       }
     },
-    [isLoading, axiosInstance, chatRoomId, user],
+    [isLoading, axiosInstance, auctionId, user],
   );
 
   // Handle scrolling after messages are updated
   useEffect(() => {
-    if (messages.length > 0) {
-      // If we're loading older messages, keep scroll position
-      if (isLoadingOlderMessages.current) {
-        const container = scrollContainerRef.current;
-        if (container) {
-          // Small timeout to ensure the DOM has updated
-          setTimeout(() => {
-            // Keep scroll position after loading older messages
-            // Keep the user at the same position relative to the content they were viewing
-            container.scrollTop = 10;
-            isLoadingOlderMessages.current = false;
-          }, 100);
-        }
-      } else {
-        // for new messages sent or received, scroll to bottom
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = scrollContainerRef.current;
+    if (!container || messages.length === 0) return;
+
+    if (isLoadingOlderMessages.current) {
+      requestAnimationFrame(() => {
+        const newScrollHeight = container.scrollHeight;
+        const scrollDiff = newScrollHeight - previousScrollHeightRef.current;
+
+        container.scrollTop = previousScrollTopRef.current + scrollDiff;
+
+        // we need to check again or the new message indicator is shown when scrolling up
+        requestAnimationFrame(() => {
+          isLoadingOlderMessages.current = false;
+        });
+      });
+    } else if (lastNewMessageSource.current == 'self') {
+      // If user just sent a message, scroll to bottom
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+      lastNewMessageSource.current = null;
+    } else {
+      //  Scroll to bottom if user is near the bottom already
+      const nearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        100;
+
+      if (nearBottom) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth',
+        });
+      } else if (
+        isLoadingOlderMessages.current == false &&
+        lastNewMessageSource.current == 'other' &&
+        nearBottom == false
+      ) {
+        setShowNewMessageIndicator(true);
+        lastNewMessageSource.current = null;
       }
     }
   }, [messages]);
+
+  // Auto hide the new message indicator when scrolled to near the bottom.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+
+      if (distanceFromBottom < 100) {
+        setShowNewMessageIndicator(false);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Connect to WebSocket
   useEffect(() => {
@@ -137,7 +188,7 @@ function AuctionChat() {
         // Subscribe to the auction chat topic only if not already subscribed
         if (!subscriptionRef.current) {
           subscriptionRef.current = client.subscribe(
-            `/topic/auction/${chatRoomId}/chat`,
+            `/topic/auction/${auctionId}/chat`,
             (messageOutput) => {
               try {
                 const receivedMessage: ChatMessageDTO = JSON.parse(
@@ -170,6 +221,12 @@ function AuctionChat() {
                   ...prevMessages,
                   newChatMessage,
                 ]);
+
+                if (newChatMessage.isSentByCurrentUser) {
+                  lastNewMessageSource.current = 'self';
+                } else {
+                  lastNewMessageSource.current = 'other';
+                }
               } catch (error) {
                 console.error('Error parsing message:', error);
               }
@@ -208,7 +265,7 @@ function AuctionChat() {
       }
     };
   }, [
-    chatRoomId,
+    auctionId,
     webSocketURL,
     user,
     isAuthenticated,
@@ -230,12 +287,12 @@ function AuctionChat() {
         senderId: displayName,
         senderName: displayName,
         content: newMessage,
-        auctionId: chatRoomId,
+        auctionId: auctionId,
       };
 
       // Send to server
       stompClient.publish({
-        destination: `/app/chat.sendMessage/${chatRoomId}`,
+        destination: `/app/chat.sendMessage/${auctionId}`,
         body: JSON.stringify(chatMessage),
         headers: {
           Authorization: `Bearer ${userAuth.token}`,
@@ -292,18 +349,6 @@ function AuctionChat() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-2 border-b">
         <h2 className="font-medium">Auction Chat</h2>
-        <div>
-          Dev only
-          <div>
-            <label>ChatRoomId</label>
-            <input
-              type="text"
-              value={chatRoomId}
-              onChange={(e) => setChatRoomId(e.target.value)}
-            />
-          </div>
-        </div>
-
         <div className="flex items-center gap-2">
           <span className="text-sm">
             {isAuthenticated
@@ -321,7 +366,7 @@ function AuctionChat() {
         className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[500px]"
         ref={scrollContainerRef}
       >
-        {hasMore && (
+        {hasMore ? (
           <button
             onClick={() => {
               isLoadingOlderMessages.current = true;
@@ -334,16 +379,18 @@ function AuctionChat() {
           >
             {isLoading ? 'Loading...' : 'Load Previous Messages'}
           </button>
+        ) : (
+          <div className="text-center">Start of chat history</div>
         )}
 
         {isLoading && page === 0 && (
           <div className="text-center text-gray-500">Loading messages...</div>
         )}
-        {isLoading && page > 0 && (
+        {/* {isLoading && page > 0 && (
           <div className="text-center text-gray-500">
             Loading more messages...
           </div>
-        )}
+        )} */}
         {messages.length === 0 && !isLoading ? (
           <div className="text-center text-gray-500">No messages yet</div>
         ) : (
@@ -362,6 +409,28 @@ function AuctionChat() {
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {showNewMessageIndicator && (
+        <div className="relative bottom-4 w-full z-10">
+          <div className="mx-auto w-fit">
+            <button
+              className="bg-yellow-500 text-black px-4 py-2 rounded shadow"
+              onClick={() => {
+                const container = scrollContainerRef.current;
+                if (container) {
+                  container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth',
+                  });
+                  setShowNewMessageIndicator(false);
+                }
+              }}
+            >
+              New messages - Click to view
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="p-4 border-t border-gray-200">
         <form
@@ -393,6 +462,6 @@ function AuctionChat() {
       </div>
     </div>
   );
-}
+};
 
 export default AuctionChat;
