@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
+import AuctionReport from '@/components/organisms/AuctionReport';
 
 interface BidHistory {
   bidder: {
@@ -234,6 +235,16 @@ const AuctionDetailsPage = () => {
     }
   };
 
+  const [reportOpen, setReportOpen] = useState(false);
+  const handleReportSubmit = (itemId: string, complaint: string) => {
+    // You can send this to your backend or show a toast
+    toast({
+      title: 'Report Submitted',
+      description: `Your report for item ${itemId} has been submitted.`,
+      variant: 'success',
+    });
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -369,6 +380,7 @@ const AuctionDetailsPage = () => {
             <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
+              onClick={() => setReportOpen(true)}
             >
               <Flag className="h-5 w-5 mb-1" />
               Report
@@ -469,6 +481,13 @@ const AuctionDetailsPage = () => {
           {error}
         </div>
       )}
+
+      <AuctionReport
+        itemId={product.id}
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 };
