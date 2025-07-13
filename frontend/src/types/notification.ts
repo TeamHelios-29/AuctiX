@@ -5,6 +5,7 @@ export interface Notification {
   read: boolean;
   notificationCategory: string;
   notificationCategoryGroup: string;
+  partialUrl: string;
   createdAt: string;
 }
 

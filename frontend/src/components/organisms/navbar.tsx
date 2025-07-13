@@ -1,4 +1,4 @@
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -32,6 +32,63 @@ export function Navbar() {
   const dispatch = useAppDispatch();
   const handleLogout = () => {
     dispatch(logout());
+  };
+
+  const NotificationWrapper = ({
+    notification,
+    children,
+  }: {
+    notification: Notification;
+    children: React.ReactNode;
+  }) => {
+    const commonClasses = `relative group p-4 border shadow-sm transition-all duration-200 ${
+      notification.read
+        ? 'bg-muted/50 border-transparent'
+        : 'bg-yellow-50 border-yellow-300'
+    } hover:shadow-md hover:bg-yellow-100 ${notification.partialUrl ? 'cursor-pointer' : 'cursor-default'}`;
+
+    const handleClick = () => {
+      if (!notification.read) {
+        dispatch(markNotificationReadThunk(notification.id));
+      }
+      if (notification.partialUrl) {
+        window.open(notification.partialUrl, '_blank', 'noopener,noreferrer');
+      }
+    };
+
+    if (notification.partialUrl) {
+      return (
+        <a
+          href={notification.partialUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`block ${commonClasses}`}
+          onClick={(e) => {
+            e.preventDefault();
+            handleClick();
+          }}
+        >
+          {children}
+        </a>
+      );
+    }
+
+    return (
+      <div
+        className={commonClasses}
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+      >
+        {children}
+      </div>
+    );
   };
 
   return (
@@ -135,26 +192,18 @@ export function Navbar() {
                         notificationState.latestItems.length > 0 ? (
                           notificationState.latestItems.map(
                             (notification: Notification, idx: number) => (
-                              <div
+                              <NotificationWrapper
                                 key={notification.id || idx}
-                                className={`relative group p-4 border shadow-sm transition-all duration-200 ${
-                                  notification.read
-                                    ? 'bg-muted/50 border-transparent'
-                                    : 'bg-yellow-50 border-yellow-300'
-                                } hover:shadow-md hover:bg-yellow-100`}
-                                onClick={() => {
-                                  if (!notification.read) {
-                                    dispatch(
-                                      markNotificationReadThunk(
-                                        notification.id,
-                                      ),
-                                    );
-                                  }
-                                  // TODO: add navigation to the notification
-                                }}
+                                notification={notification}
                               >
-                                <div className="text-sm font-medium">
+                                <div className="flex items-center gap-1 text-sm font-medium">
                                   {notification.title || 'Notification'}
+                                  {notification.partialUrl && (
+                                    <ExternalLink
+                                      className="w-3 h-3 text-muted-foreground"
+                                      aria-label="Link available"
+                                    />
+                                  )}{' '}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {notification.content}
@@ -167,7 +216,7 @@ export function Navbar() {
                                     timeStyle: 'short',
                                   })}
                                 </div>
-                              </div>
+                              </NotificationWrapper>
                             ),
                           )
                         ) : (
