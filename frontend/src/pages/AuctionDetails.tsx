@@ -8,6 +8,7 @@ import { Client } from '@stomp/stompjs';
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
 import AuctionChat from '@/components/organisms/auction-chat';
+import AddToWatchlistButton from '@/components/molecules/AddToWatchlistButton';
 
 interface BidHistory {
   bidder: {
@@ -43,6 +44,7 @@ interface ProductDetails {
   endTime: string;
   startTime: string;
   bidHistory: BidHistory[];
+  isWatchedByUser: boolean;
 }
 
 function calculateBidIncrement(
@@ -107,6 +109,7 @@ const AuctionDetailsPage = () => {
         ...backendData.seller,
         profilePicture: getAvatarUrl(backendData.seller.profilePicture),
       },
+      isWatchedByUser: backendData.isWatchedByUser,
       endTime: backendData.endTime,
       startTime: backendData.startTime,
       bidHistory: backendData.bidHistory.map((bid: any) => ({
@@ -374,13 +377,17 @@ const AuctionDetailsPage = () => {
               <Flag className="h-5 w-5 mb-1" />
               Report
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
             >
               <Heart className="h-5 w-5 mb-1" />
               Add to Watchlist
-            </Button>
+            </Button> */}
+            <AddToWatchlistButton
+              auctionId={product.id}
+              initiallyWatched={product.isWatchedByUser}
+            />
             <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"

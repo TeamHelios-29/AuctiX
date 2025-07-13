@@ -164,7 +164,17 @@ public class AuctionController {
     @GetMapping("/{id}")
     public ResponseEntity<AuctionDetailsDTO> getAuctionById(@PathVariable UUID id) {
         try {
-            AuctionDetailsDTO dto = auctionService.getAuctionDetails(id);
+
+            Authentication authentication = SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            User requestUser = userDetailsService
+                    .getAuthenticatedUser(authentication);
+
+            log.info("USER IS HERE " + requestUser);
+
+            AuctionDetailsDTO dto = auctionService.getAuctionDetails(id, requestUser);
             if (dto == null) {
                 return ResponseEntity.notFound().build();
             }

@@ -3,6 +3,7 @@ package com.helios.auctix.services;
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.AuctionImagePath;
 import com.helios.auctix.domain.chat.ChatRoom;
+import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.BidDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
@@ -12,7 +13,9 @@ import com.helios.auctix.repositories.AuctionImagePathsRepository;
 import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.repositories.AuctionRepository;
 
+import com.helios.auctix.repositories.AuctionWatchListRepository;
 import com.helios.auctix.repositories.chat.ChatRoomRepository;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -32,8 +35,9 @@ public class AuctionService {
     private final UserMapperImpl userMapperImpl;
     private final BidService bidService;
     private final ChatRoomRepository chatRoomRepository;
+    private final AuctionWatchListRepository watchListRepository;
 
-    public AuctionDetailsDTO getAuctionDetails(UUID id) {
+    public AuctionDetailsDTO getAuctionDetails(UUID id, User requestUser) {
         Auction auction = auctionRepository.findById(id).orElse(null);
         if (auction == null) return null;
 
@@ -55,6 +59,11 @@ public class AuctionService {
                 .map(bidService::convertToDTO)
                 .orElse(null);
 
+        boolean isWatching = false;
+        if (requestUser != null) {
+            isWatching = watchListRepository.existsByUserAndAuction(requestUser, auction);
+        }
+
 
         return AuctionDetailsDTO.builder().seller(sellerDto)
                 .id(auction.getId().toString())
@@ -67,6 +76,7 @@ public class AuctionService {
                 .bidHistory(bidHistory)
                 .currentHighestBid(highestBid)
                 .startingPrice(auction.getStartingPrice())
+                .isWatchedByUser(isWatching)
                 .build();
     }
 

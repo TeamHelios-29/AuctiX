@@ -54,6 +54,10 @@ public class WatchListService {
         bulkNotificationPublisher.publish(users, title, message, category, partialUrl);
     }
 
+    public boolean isWatchedByUser(User user, Auction auction) {
+        return watchRepo.existsByUserAndAuction(user, auction);
+    }
+
     @Transactional
     public void subscribe(UUID userId, UUID auctionId) {
         User user = userRepo.findById(userId).orElseThrow();
