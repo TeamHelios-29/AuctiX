@@ -224,7 +224,8 @@ public class NotificationSettingsService {
                     continue;
                 }
 
-                if (category.isNotAllowedTo(role)) {
+                // Check the permissions for the category
+                if (category.isNotAllowedTo(role) || category.isHiddenFrom(role)  || !category.isEditableBy(role)) {
                     continue;
                 }
 

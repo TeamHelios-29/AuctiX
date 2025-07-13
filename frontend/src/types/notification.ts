@@ -36,6 +36,7 @@ export interface NotificationSettingsResponse {
         channelTypes: {
           [channelType: string]: boolean;
         };
+        editable: boolean;
       };
     };
   };

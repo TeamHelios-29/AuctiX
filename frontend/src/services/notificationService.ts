@@ -19,6 +19,10 @@ export function extractEditableSettings(
   for (const category in response.events) {
     const eventGroup = response.events[category];
 
+    if (!eventGroup.editable) {
+      continue;
+    }
+
     for (const eventKey in eventGroup) {
       const event = eventGroup[eventKey];
       const eventChannelTypePreferences: Record<string, boolean> =

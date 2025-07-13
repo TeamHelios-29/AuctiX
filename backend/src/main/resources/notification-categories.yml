@@ -10,7 +10,7 @@ notificationCategories:
   AUCTION_END_SOON:
     allowedRoles: [BIDDER, SELLER]
     alwaysHiddenRoles: []
-    cannotEditRoles: []
+    cannotEditRoles: [BIDDER, SELLER]
     categoryGroup: AUCTION
     description: "Get notified 10 minutes before auction ends"
     title: "Auction Ends soon"

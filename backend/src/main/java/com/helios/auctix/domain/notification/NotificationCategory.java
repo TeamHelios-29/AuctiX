@@ -60,6 +60,14 @@ public enum NotificationCategory {
         return !allowedRoles.contains(role);
     }
 
+    public boolean isEditableBy(UserRoleEnum role) {
+        return !cannotEditRoles.contains(role);
+    }
+
+    public boolean isHiddenFrom(UserRoleEnum role) {
+        return alwaysHiddenRoles.contains(role);
+    }
+
     // Setters for all fields (to be called from loader)
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
