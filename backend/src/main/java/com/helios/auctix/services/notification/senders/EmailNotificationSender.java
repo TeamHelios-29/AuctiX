@@ -4,7 +4,6 @@ import com.helios.auctix.config.AuctixProperties;
 import com.helios.auctix.domain.notification.Notification;
 import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.services.EmailService;
-import com.helios.auctix.services.notification.NotificationPersistenceHelper;
 import com.helios.auctix.services.notification.NotificationSender;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +40,11 @@ public class EmailNotificationSender implements NotificationSender {
         variables.put("notificationContent", notification.getContent());
         variables.put("preferencesUrl", auctixProperties.getFrontendUrl() + "/notifications/preferences");
 
+        String fullUrl = buildFullUrl(notification.getPartialUrl());
+        if (fullUrl != null) {
+            variables.put("notificationUrl", fullUrl);
+        }
+
         try {
             emailService.sendHtmlEmail(
                     notification.getUser().getEmail(),
@@ -58,4 +62,9 @@ public class EmailNotificationSender implements NotificationSender {
             log.error("Unexpected exception while sending email for {}: {}", notification.getUser().getEmail(), e.getMessage());
         }
     }
+
+    private String buildFullUrl(String relativeUrl) {
+        return auctixProperties.convertToFullUrl(relativeUrl);
+    }
+
 }

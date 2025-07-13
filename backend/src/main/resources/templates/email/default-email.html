@@ -11,6 +11,14 @@
         <p th:text="${notificationContent}">
           Looks like we didn't send any content. our mistake don't worry
         </p>
+        <p th:if="${notificationUrl != null}">
+          <a
+            th:href="${notificationUrl}"
+            style="color: #ecb02d; text-decoration: none; font-weight: bold"
+          >
+            View Details
+          </a>
+        </p>
       </section>
     </div>
   </body>

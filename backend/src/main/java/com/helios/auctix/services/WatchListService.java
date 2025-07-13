@@ -12,6 +12,7 @@ import com.helios.auctix.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,13 +45,13 @@ public class WatchListService {
      * @param category the notification category
      */
 
-    public void notifySubscribers(Auction auction, String title, String message, NotificationCategory category) {
+    public void notifySubscribers(Auction auction, String title, String message, NotificationCategory category, @Nullable String partialUrl) {
         if (auction == null) {
             throw new IllegalArgumentException("Auction cannot be null");
         }
         
         List<User> users = watchRepo.findUsersByAuction_Id(auction.getId());
-        bulkNotificationPublisher.publish(users, title, message, category);
+        bulkNotificationPublisher.publish(users, title, message, category, partialUrl);
     }
 
     @Transactional

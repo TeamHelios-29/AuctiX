@@ -22,17 +22,22 @@ public class FirebaseCloudMessageService {
         this.tokenRepository = tokenRepository;
     }
 
-    public void sendNotification(String token, String title, String body) {
+    public void sendNotification(String token, String title, String body, String fullUrl) {
         Notification notification = Notification.builder()
                 .setTitle(title)
                 .setBody(body)
 //                .setImage(imgUrl)
                 .build();
 
-        Message message = Message.builder()
+        Message.Builder messageBuilder = Message.builder()
                 .setToken(token)  // FCM device token
-                .setNotification(notification)
-                .build();
+                .setNotification(notification);
+
+        if (fullUrl != null && !fullUrl.isBlank()) {
+            messageBuilder.putData("url", fullUrl);
+        }
+
+        Message message = messageBuilder.build();
 
         try {
             String response = FirebaseMessaging.getInstance().send(message);
