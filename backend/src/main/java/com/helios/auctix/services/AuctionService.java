@@ -175,8 +175,8 @@ public class AuctionService {
                 .images(imageIds)
                 .endTime(auction.getEndTime().toString())
                 .startTime(auction.getStartTime().toString())
-                .bidHistory(null) // Don't load full history for list view
-                .currentHighestBid(highestBid)
+//                .bidHistory(null) // Don't load full history for list view
+//                .currentHighestBid(highestBid)
                 .startingPrice(auction.getStartingPrice())
                 .build();
     }
