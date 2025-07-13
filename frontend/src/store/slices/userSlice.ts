@@ -1,8 +1,9 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { IUser } from '@/types/IUser';
 import axios from 'axios';
 import { IAuthUser } from '@/types/IAuthUser';
 import { logout } from './authSlice';
+import { assets } from '@/config/assets';
 
 interface UserState extends IUser {
   loading: boolean;
@@ -15,8 +16,8 @@ const initialState: UserState = {
   firstName: null,
   lastName: null,
   fcmTokens: [],
-  profile_photo: '/defaultProfilePhoto.jpg',
-  banner_photo: '/defaultBanner.jpg',
+  profile_photo: assets.default_profile_image,
+  banner_photo: assets.default_banner_image,
   role: null,
   loading: true,
   error: null,
@@ -41,15 +42,15 @@ export const fetchCurrentUser = createAsyncThunk(
         return rejectWithValue('No user data received');
       }
 
-      // Add aditional setup for user data
+      // Add additional setup for user data
       const userData = {
         ...response.data,
         profile_photo_link: response.data.profilePicture?.id
           ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.profilePicture.id}`
-          : '/defaultProfilePhoto.jpg',
+          : assets.default_profile_image,
         banner_photo_link: response.data.seller?.bannerId
           ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.seller.bannerId}`
-          : '/defaultBanner.jpg',
+          : assets.default_banner_image,
         fcmTokens: response.data.fcmTokens || [],
       };
       delete userData.profilePicture;
@@ -87,7 +88,7 @@ const userSlice = createSlice({
         state.lastName = action.payload.lastName;
         state.fcmTokens = action.payload.fcmTokens;
         state.profile_photo =
-          action.payload.profile_photo_link || '/defaultProfilePhoto.jpg';
+          action.payload.profile_photo_link || assets.default_profile_image;
         state.banner_photo = action.payload.banner_photo_link;
         state.role = action.payload.userRole.userRole;
         console.log('User data updated:', action.payload);

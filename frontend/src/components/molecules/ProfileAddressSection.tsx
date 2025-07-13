@@ -258,7 +258,7 @@ export function AddressSection({ form }: AddressSectionProps) {
           control={form.control}
           name="address.number"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="flex flex-col">
               <FormLabel>House/Building Number</FormLabel>
               <FormControl>
                 <Input placeholder="123" {...field} />

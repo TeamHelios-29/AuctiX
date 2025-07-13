@@ -4,11 +4,9 @@ const baseURL = import.meta.env.VITE_API_URL;
 
 export interface IProfileUpdateData {
   bio: string;
-  urls: { value: string }[];
-  username: string;
+  urls: string[];
   firstName: string;
   lastName: string;
-  email: string;
   address: {
     number: string;
     addressLine1: string;
@@ -17,7 +15,7 @@ export interface IProfileUpdateData {
   };
 }
 
-export const updateProfile = async (
+export const updateProfileInfo = async (
   profileData: IProfileUpdateData,
   axiosInstance: AxiosInstance,
 ) => {

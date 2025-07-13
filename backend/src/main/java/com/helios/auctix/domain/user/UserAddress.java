@@ -21,6 +21,9 @@ public class UserAddress {
     @Column(columnDefinition = "UUID")
     private UUID id;
 
+    @Column(length = 50)
+    private String addressNumber;
+
     @Column(length = 100)
     private String addressLine1;
 

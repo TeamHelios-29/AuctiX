@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/roletest/**").authenticated()
                         .requestMatchers("/api/notification/settings").authenticated()
                         .requestMatchers("/api/bids/**").permitAll()
+                        .requestMatchers("/api/watchlist/**").permitAll()
                         .requestMatchers("/ws-auction/**").permitAll()
 
 

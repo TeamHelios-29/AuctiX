@@ -28,9 +28,9 @@ public class ChatRestController  {
         return "Hello World";
     }
 
-    @GetMapping("/{chatRoomId}/messages")
+    @GetMapping("/{auctionId}/messages")
     public ResponseEntity<List<ChatMessageDTO>> getChatMessages(
-            @PathVariable String chatRoomId,
+            @PathVariable String auctionId,
             @RequestParam int page,
             @RequestParam int size,
             @RequestParam(required = false)  LocalDateTime beforeTimestamp) {
@@ -40,7 +40,7 @@ public class ChatRestController  {
         }
 
         List<ChatMessage> messages = chatService.getMessagesBeforeTimestamp(
-                chatRoomId, beforeTimestamp, page, size);
+                auctionId, beforeTimestamp, page, size);
 
         List<ChatMessageDTO> response = messages.stream()
                 .map(chatMessageDTOMapper::mapTo)
