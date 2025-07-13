@@ -1,17 +1,20 @@
-'use client';
-
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
 import { VerificationHeader } from '@/components/molecules/VerificationHeader';
-import { UploadArea } from '@/components/molecules/UploadArea';
-import { FileList } from '@/components/molecules/FileList';
-import { AnimatedButton } from '@/components/atoms/AnimatedButton';
-import { Text } from '@/components/atoms/text';
+import { AxiosInstance } from 'axios';
+import AxiosRequest from '@/services/axiosInspector';
+import { uploadVerificationDocs } from '@/services/userService';
+import UploadAreaBody from '../molecules/UploadAreaBody';
+import { VerificationStatusContent } from '../molecules/VerificationStatusContent';
 
 export function VerificationForm() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
+  const [verificationStatus] = useState<'pending' | 'approved' | 'rejected'>(
+    'rejected',
+  );
 
   const handleFileSelect = (newFiles: File[]) => {
     setSelectedFiles((prev) => [...prev, ...newFiles]);
@@ -25,19 +28,22 @@ export function VerificationForm() {
     if (selectedFiles.length === 0) return;
 
     setIsSubmitting(true);
-    // Simulate upload process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-
-    // Handle successful upload
-    console.log(
-      'Files uploaded:',
-      selectedFiles.map((f) => f.name),
-    );
+    uploadVerificationDocs(selectedFiles, axiosInstance)
+      .then((response) => {
+        console.log('Files uploaded successfully:', response);
+      })
+      .catch((error) => {
+        console.error('Error uploading files:', error);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+    // Reset form
+    setSelectedFiles([]);
   };
 
   const handleBack = () => {
-    // Handle navigation back
+    // TODO: Implement back navigation
     console.log('Navigate back');
   };
 
@@ -57,32 +63,19 @@ export function VerificationForm() {
           transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
           className="space-y-6"
         >
-          <UploadArea
-            onFileSelect={handleFileSelect}
-            hasFiles={selectedFiles.length > 0}
+          {/* <UploadAreaBody
+            handleFileSelect={handleFileSelect}
+            selectedFiles={selectedFiles}
+            handleRemoveFile={handleRemoveFile}
+            handleSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            handleBack={handleBack}
+          /> */}
+
+          <VerificationStatusContent
+            status={verificationStatus}
+            onBack={handleBack}
           />
-
-          <FileList files={selectedFiles} onRemoveFile={handleRemoveFile} />
-
-          <AnimatedButton
-            onClick={handleSubmit}
-            disabled={selectedFiles.length === 0 || isSubmitting}
-            className="bg-yellow-600 hover:bg-yellow-700 text-white h-12 font-medium"
-          >
-            {isSubmitting
-              ? 'Uploading...'
-              : `Submit ${selectedFiles.length > 0 ? `(${selectedFiles.length} files)` : ''}`}
-          </AnimatedButton>
-
-          <motion.button
-            onClick={handleBack}
-            className="flex items-center justify-center w-full gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            whileHover={{ x: -2 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <Text variant="body">Back</Text>
-          </motion.button>
         </motion.div>
       </motion.div>
     </div>

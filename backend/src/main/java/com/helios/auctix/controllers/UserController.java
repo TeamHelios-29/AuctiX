@@ -7,9 +7,7 @@ import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
-import com.helios.auctix.services.fileUpload.FileUploadResponse;
-import com.helios.auctix.services.fileUpload.FileUploadService;
-import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
+import com.helios.auctix.services.fileUpload.*;
 import com.helios.auctix.services.user.*;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
@@ -75,17 +73,32 @@ public class UserController {
     }
 
     @PostMapping("/uploadVerificationDocs")
-    public String uploadVerificationDocs(@RequestParam("file") MultipartFile file) throws AuthenticationException {
+    public ResponseEntity<String> uploadVerificationDocs(@RequestParam("files") MultipartFile[] files) throws AuthenticationException {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
-        FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENT, currentUser.getId(), false);
-        if (res.isSuccess()) {
-            return res.getMessage();
-        } else {
-            log.warning(res.getMessage());
-            return "File upload failed";
+
+        // validate file count
+        if(files.length == 0 || files.length >5){
+            throw new UploadedFileCountMaxLimitExceedException("Uploaded file count is too large. submit less than 6 documents");
         }
+
+        // validate file size
+        for (MultipartFile file : files) {
+            int filesize = (int)file.getSize()/(1024*1024);
+            if (filesize > 5) {
+                throw new UploadedFileSizeMaxLimitExceedException("file size is greater than 5MB");
+            }
+        }
+
+        // upload files
+        for (MultipartFile file : files) {
+            FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENT, currentUser.getId(), false);
+            if(!res.isSuccess()){
+                throw new RuntimeException("Upload failed");
+            }
+        }
+        return ResponseEntity.ok("upload completed");
     }
 
     @Profile("dev")
