@@ -5,6 +5,7 @@ export interface Notification {
   read: boolean;
   notificationCategory: string;
   notificationCategoryGroup: string;
+  partialUrl: string;
   createdAt: string;
 }
 
@@ -35,6 +36,7 @@ export interface NotificationSettingsResponse {
         channelTypes: {
           [channelType: string]: boolean;
         };
+        editable: boolean;
       };
     };
   };

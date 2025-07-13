@@ -7,6 +7,7 @@ interface NotificationCategorySectionProps {
     channelTypes: {
       [channelType: string]: boolean;
     };
+    editable: boolean;
   };
   globalData: {
     [channelType: string]: {
@@ -50,6 +51,8 @@ export default function NotificationCategorySection({
             index,
           );
 
+          const isEnabled = isChannelGloballyEnabled && eventData.editable;
+
           return (
             <div
               key={channelType}
@@ -57,17 +60,27 @@ export default function NotificationCategorySection({
             >
               <div>
                 <span className="text-sm">{globalData[channelType].title}</span>
-                {!isChannelGloballyEnabled && (
+                {/* {!isChannelGloballyEnabled && (
                   <p className="text-xs text-gray-500 italic">
                     Globally disabled
                   </p>
-                )}
+                )} */}
               </div>
-              <Switch
-                checked={checked}
-                onCheckedChange={(checked) => onToggle(channelType, checked)}
-                disabled={!isChannelGloballyEnabled}
-              />
+              <div
+                title={
+                  !isChannelGloballyEnabled
+                    ? 'This channel is disabled globally.'
+                    : !eventData.editable
+                      ? 'You don’t have permission to edit this.'
+                      : ''
+                }
+              >
+                <Switch
+                  checked={checked}
+                  onCheckedChange={(checked) => onToggle(channelType, checked)}
+                  disabled={!isEnabled}
+                />
+              </div>
             </div>
           );
         })}

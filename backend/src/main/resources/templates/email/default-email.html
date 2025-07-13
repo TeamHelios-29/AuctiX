@@ -1,0 +1,25 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{email/email-layout :: head(~{::title})}">
+    <title>Test Email</title>
+  </head>
+  <body>
+    <div th:replace="~{email/email-layout :: layout(~{::section})}">
+      <section>
+        <h2><span th:text="${notificationTitle}">Hello from AuctiX</span></h2>
+        <p>Hello <span th:text="${firstname}">User</span>,</p>
+        <p th:text="${notificationContent}">
+          Looks like we didn't send any content. our mistake don't worry
+        </p>
+        <p th:if="${notificationUrl != null}">
+          <a
+            th:href="${notificationUrl}"
+            style="color: #ecb02d; text-decoration: none; font-weight: bold"
+          >
+            View Details
+          </a>
+        </p>
+      </section>
+    </div>
+  </body>
+</html>
