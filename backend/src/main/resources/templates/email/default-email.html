@@ -6,8 +6,11 @@
   <body>
     <div th:replace="~{email/email-layout :: layout(~{::section})}">
       <section>
-        <h2>Welcome, <span th:text="${username}">User</span>!</h2>
-        <p>This is a test email template.</p>
+        <h2><span th:text="${notificationTitle}">Hello from AuctiX</span></h2>
+        <p>Hello <span th:text="${firstname}">User</span>,</p>
+        <p th:text="${notificationContent}">
+          Looks like we didn't send any content. our mistake don't worry
+        </p>
       </section>
     </div>
   </body>
