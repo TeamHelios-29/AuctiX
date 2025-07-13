@@ -1,18 +1,36 @@
-import AxiosRequest from '@/services/axiosInspector';
+import { AxiosInstance } from 'axios';
 
-const axiosInstance = AxiosRequest().axiosInstance;
-
-export const getWatchList = async (page = 0, size = 10) => {
-  const response = await axiosInstance.get('/api/watchlist', {
+export const getWatchList = async (
+  axiosInstance: AxiosInstance,
+  page = 0,
+  size = 10,
+) => {
+  const response = await axiosInstance.get('/watchlist', {
     params: { page, size },
   });
   return response.data;
 };
 
-export const addActionToWatchList = async (auctionId: string) => {
-  await axiosInstance.post(`/api/watchlist/${auctionId}`);
+export const addActionToWatchList = async (
+  auctionId: string,
+  axiosInstance: AxiosInstance,
+) => {
+  await axiosInstance.post(`/watchlist/${auctionId}`);
 };
 
-export const removeAuctionFromWatchList = async (auctionId: string) => {
-  await axiosInstance.delete(`/api/watchlist/${auctionId}`);
+export const removeAuctionFromWatchList = async (
+  auctionId: string,
+  axiosInstance: AxiosInstance,
+) => {
+  await axiosInstance.delete(`/watchlist/${auctionId}`);
+};
+
+export const checkIfAuctionIsWatched = async (
+  auctionId: string,
+  axiosInstance: AxiosInstance,
+) => {
+  const response = await axiosInstance.get(
+    `/watchlist/${auctionId}/is-watched`,
+  );
+  return response.data;
 };

@@ -14,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -33,6 +34,20 @@ public class WatchListController {
             User user = userDetailsService.getAuthenticatedUser(authentication);
             Page<AuctionDetailsDTO> watchedAuctions = watchListService.getWatchedAuctions(user.getId(), pageable);
             return ResponseEntity.ok(watchedAuctions);
+        } catch (AuthenticationException e) {
+            throw new RuntimeException("User not authenticated");
+        }
+    }
+
+    @GetMapping("/{auctionId}/is-watched")
+    public ResponseEntity<Map<String, Boolean>> isWatched(
+            @PathVariable UUID auctionId,
+            Authentication authentication
+    ) {
+        try {
+            User user = userDetailsService.getAuthenticatedUser(authentication);
+            boolean watched = watchListService.isWatchedByUser(user, auctionId);
+            return ResponseEntity.ok(Map.of("isWatched", watched));
         } catch (AuthenticationException e) {
             throw new RuntimeException("User not authenticated");
         }
