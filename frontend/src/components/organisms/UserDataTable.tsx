@@ -17,6 +17,8 @@ import AxiosReqest from '@/services/axiosInspector';
 import { Skeleton } from '../ui/skeleton';
 import { BanUserModal, IBanUser } from '../molecules/BanUserModal';
 import { Card } from '@/components/ui/card';
+import { assets } from '@/config/assets';
+import RoleFilterDropdown from '../molecules/RoleFilterDropdown';
 
 interface IProfilePhoto {
   category: string;
@@ -41,6 +43,14 @@ export default function UserDataTable() {
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<null | string>(null);
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [filterBy, setFilterBy] = useState<string[]>(['role']);
+  const [filterValue, setFilterValue] = useState<string[][]>([
+    ['BIDDER', 'SELLER', 'ADMIN', 'SUPER_ADMIN'],
+  ]);
+  const [filterByQuery, setFilterByQuery] = useState<string | null>('role');
+  const [filterValueQuery, setFilterValueQuery] = useState<string | null>(
+    '(BIDDER,SELLER,ADMIN)',
+  );
   const [limit, setLimit] = useState<number>(10);
   const [offset, setOffset] = useState<number>(0);
   const [search, setSearch] = useState<string | null>(null);
@@ -58,7 +68,9 @@ export default function UserDataTable() {
       axiosInstance
         .get('/user/getUsers', {
           params: {
-            sortby: sortBy,
+            sortBy: sortBy,
+            filterBy: encodeURIComponent(JSON.stringify(filterBy)),
+            filterValue: encodeURIComponent(JSON.stringify(filterValue)),
             order: order,
             limit: limit,
             offset: offset,
@@ -92,8 +104,9 @@ export default function UserDataTable() {
           setIsLoading(false);
         });
     }
-  }, [sortBy, order, limit, offset, isInSearchDelay]);
+  }, [sortBy, order, limit, offset, filterBy, filterValue, isInSearchDelay]);
 
+  // remove later
   useEffect(() => {
     console.log('userDataTable mounted');
 
@@ -121,6 +134,67 @@ export default function UserDataTable() {
   useEffect(() => {
     console.log('Users:', users);
   }, [users]);
+
+  const filterByHandler = useCallback(
+    (filterByCol: string, filterVal: string, isAdded: boolean) => {
+      console.log('[filterByHandler]', { filterByCol, filterVal, isAdded });
+
+      if (filterByCol === 'NONE' || filterVal === 'NONE') {
+        console.log('[filterByHandler] clearing filters');
+        setFilterBy([]);
+        setFilterValue([]);
+        setFilterByQuery(null);
+        setFilterValueQuery(null);
+        return;
+      }
+
+      const indexFilterBy = filterBy.indexOf(filterByCol);
+      console.log('[filterByHandler] current filterBy:', filterBy);
+      console.log('[filterByHandler] current filterValue:', filterValue);
+
+      if (indexFilterBy === -1 && isAdded) {
+        console.log('[filterByHandler] adding new filter group');
+        setFilterBy((prev) => [...prev, filterByCol]);
+        setFilterValue((prev) => [...prev, [filterVal]]);
+      } else if (indexFilterBy !== -1 && isAdded) {
+        console.log('[filterByHandler] adding value to existing filter group');
+        const newFilterValue = [...filterValue];
+        if (!newFilterValue[indexFilterBy].includes(filterVal)) {
+          newFilterValue[indexFilterBy].push(filterVal);
+          setFilterValue(newFilterValue);
+        }
+      } else if (indexFilterBy !== -1 && !isAdded) {
+        console.log('[filterByHandler] removing value from filter group');
+        const newFilterValue = [...filterValue];
+        newFilterValue[indexFilterBy] = newFilterValue[indexFilterBy].filter(
+          (v) => v !== filterVal,
+        );
+        if (newFilterValue[indexFilterBy].length === 0) {
+          const newFilterBy = [...filterBy];
+          newFilterBy.splice(indexFilterBy, 1);
+          newFilterValue.splice(indexFilterBy, 1);
+          setFilterBy(newFilterBy);
+          setFilterValue(newFilterValue);
+        } else {
+          setFilterValue(newFilterValue);
+        }
+      } else {
+        console.error('[filterByHandler] Invalid filter operation');
+      }
+    },
+    [filterBy, filterValue],
+  );
+
+  const isFilterApplied = useCallback(
+    (filterCol: string, filterVal: string) => {
+      const indexFilterBy = filterBy.indexOf(filterCol);
+      const isApplied =
+        indexFilterBy !== -1 && filterValue[indexFilterBy].includes(filterVal);
+      console.log('[isFilterApplied]', { filterCol, filterVal, isApplied });
+      return isApplied;
+    },
+    [filterBy, filterValue],
+  );
 
   const ProfilePhoto = (id: string | null) => {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -160,7 +234,7 @@ export default function UserDataTable() {
         {!isLoading ? (
           <div className="h-10 w-10 rounded-full overflow-hidden border border-gray-200">
             <img
-              src={imageUrl || '/defaultProfilePhoto.jpg'}
+              src={imageUrl || assets.default_profile_image}
               alt="Profile"
               className="h-full w-full object-cover"
             />
@@ -279,24 +353,16 @@ export default function UserDataTable() {
           </Button>
         );
       },
-      cell: ({ row }) => <div>{row.getValue('email')}</div>,
-      enableSorting: true,
-      enableHiding: true,
     },
     {
       accessorKey: 'role',
       header: ({ column }) => {
+        console.log('[userDataTable] role header rendered');
         return (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setSortBy(column.id);
-              setOrder((prevOrder) => (prevOrder === 'asc' ? 'desc' : 'asc'));
-            }}
-          >
-            Role
-            <ArrowUpDown />
-          </Button>
+          <RoleFilterDropdown
+            isFilterApplied={isFilterApplied}
+            filterByHandler={filterByHandler}
+          />
         );
       },
       cell: ({ row }) => <div>{row.getValue('role')}</div>,
@@ -387,28 +453,6 @@ export default function UserDataTable() {
 
   return (
     <>
-      <div className="p-6 border rounded-lg mb-8">
-        <h3 className="text-lg font-semibold mb-4">User management</h3>
-        <div className="grid grid-cols-4 gap-6 mb-8">
-          <Card className="p-4 border-none shadow-none bg-gray-100">
-            <div className="text-4xl font-bold">12</div>
-            <div className="text-sm text-gray-500">All</div>
-          </Card>
-          <Card className="p-4 border-spacing-1 border-yellow-300 shadow-lg shadow-yellow-100">
-            <div className="text-4xl font-bold">3</div>
-            <div className="text-sm text-gray-500">Admins</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-4xl font-bold">7</div>
-            <div className="text-sm text-gray-500">Sellers</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-4xl font-bold">2</div>
-            <div className="text-sm text-gray-500">Bidders</div>
-          </Card>
-        </div>
-      </div>
-
       <DataTable
         columns={userColumns}
         data={users}

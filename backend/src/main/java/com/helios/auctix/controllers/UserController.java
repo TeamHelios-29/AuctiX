@@ -20,6 +20,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -151,11 +154,14 @@ public class UserController {
     public ResponseEntity<Page<UserDTO>> getUsers(
             @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
             @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
-            @RequestParam(value = "sortby", required = false, defaultValue = "id") String sortBy,
+            @RequestParam(value = "sortBy", required = false, defaultValue = "id") String sortBy,
             @RequestParam(value = "order", required = false, defaultValue = "asc") String order,
+            @RequestParam(value = "filterBy", required = false, defaultValue = "") String filterBy,
+            @RequestParam(value = "filterValue", required = false, defaultValue = "") String filterValue,
             @RequestParam(value = "search", required = false) String search)
-            throws AuthenticationException {
+            throws AuthenticationException, UnsupportedEncodingException { // TODO: add UnsupportedEncodingException to gloabal exception handler
 
+        // user authentication and authorization
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userDetailsService.getAuthenticatedUser(authentication);
         String userRole = user.getRole().getName().toString();
@@ -163,7 +169,25 @@ public class UserController {
         if (!(UserRoleEnum.valueOf(userRole) == UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole) == UserRoleEnum.SUPER_ADMIN)) {
             throw new PermissionDeniedDataAccessException("You don't have permission to access this resource", new Throwable("Permission Denied"));
         }
-        Page<UserDTO> userPage = userDetailsService.getAllUsers(limit, offset, order, sortBy, search);
+
+        // decode from url encoded parameters
+        if (search != null) {
+            search = URLDecoder.decode(search, StandardCharsets.UTF_8.name());
+        }
+        if (filterBy != null) {
+            filterBy = URLDecoder.decode(filterBy, StandardCharsets.UTF_8.name());
+        }
+        if (sortBy != null) {
+            sortBy = URLDecoder.decode(sortBy, StandardCharsets.UTF_8.name());
+        }
+        if (order != null) {
+            order = URLDecoder.decode(order, StandardCharsets.UTF_8.name());
+        }
+        if (filterValue != null) {
+            filterValue = URLDecoder.decode(filterValue, StandardCharsets.UTF_8.name());
+        }
+
+        Page<UserDTO> userPage = userDetailsService.getAllUsers(limit, offset, order, sortBy, search,filterBy,filterValue);
         return ResponseEntity.ok(userPage);
     }
 
