@@ -1,11 +1,13 @@
 package com.helios.auctix.services;
 
+import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.complaint.ActivityType;
 import com.helios.auctix.domain.complaint.Complaint;
 import com.helios.auctix.domain.complaint.ComplaintActivity;
 import com.helios.auctix.domain.complaint.ComplaintStatus;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.ComplaintDTO;
+import com.helios.auctix.repositories.AuctionRepository;
 import com.helios.auctix.repositories.ComplaintActivityRepository;
 import com.helios.auctix.repositories.ComplaintRepository;
 import com.helios.auctix.repositories.UserRepository;
@@ -34,24 +36,39 @@ public class ComplaintService {
     private final ComplaintRepository complaintRepository;
     private final UserRepository userRepository;
     private final UserDetailsService userDetailsService;
+    private final AuctionRepository auctionRepository;
 
-    public ComplaintService(ComplaintRepository complaintRepository, UserRepository userRepository, UserDetailsService userDetailsService) {
+    public ComplaintService(ComplaintRepository complaintRepository, UserRepository userRepository, AuctionRepository auctionRepository, UserDetailsService userDetailsService) {
         this.complaintRepository = complaintRepository;
+        this.auctionRepository = auctionRepository;
         this.userRepository = userRepository;
         this.userDetailsService = userDetailsService;
+
     }
 
     public Complaint createComplaint(@Valid ComplaintDTO complaintDto) throws AuthenticationException {
-        User reportedUser = userRepository.findById(complaintDto.getReportedUserId())
-                .orElseThrow(() -> new RuntimeException("Reported user not found"));
+        switch (complaintDto.getTargetType()) {
+            case USER -> {
+                userRepository.findById(complaintDto.getTargetId())
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+            }
+            case AUCTION -> {
+                auctionRepository.findById(complaintDto.getTargetId())
+                        .orElseThrow(() -> new RuntimeException("Auction not found"));
+            }
+        }
+
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
 
         Complaint complaint = new Complaint();
-        complaint.setReportedUser(reportedUser);
+
+        complaint.setTargetId(complaintDto.getTargetId());
+        complaint.setTargetType(complaintDto.getTargetType());
         complaint.setReportedBy(currentUser);
         complaint.setReason(complaintDto.getReason());
+        complaint.setDescription(complaintDto.getDescription());
         complaint.setDateReported(LocalDateTime.now());
         complaint.setStatus(ComplaintStatus.PENDING);
         Complaint savedComplaint = complaintRepository.save(complaint);
@@ -68,7 +85,7 @@ public class ComplaintService {
         log.info("limit: {}, offset: {}, sortBy: {}, order: {}, search: {}", limit, offset, sortBy, order, search);
         if (search != null && !search.trim().isEmpty()) {
             log.info("search: {}", search);
-            return complaintRepository.findByReportedUser_UsernameContainingIgnoreCaseOrReportedBy_UsernameContainingIgnoreCaseOrReasonContainingIgnoreCase(search,search,search, pageable);
+            return complaintRepository.findByReportedBy_UsernameContainingIgnoreCaseOrReasonContainingIgnoreCase(search,search,search, pageable);
         } else {
             return complaintRepository.findAll(pageable);
         }

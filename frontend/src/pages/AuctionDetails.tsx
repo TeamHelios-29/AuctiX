@@ -7,6 +7,8 @@ import { useParams } from 'react-router-dom';
 
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
+import AuctionReport from '@/components/organisms/AuctionReport';
+import { title } from 'process';
 import AuctionChat from '@/components/organisms/auction-chat';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -267,6 +269,25 @@ const AuctionDetailsPage = () => {
     }
   };
 
+  const [reportOpen, setReportOpen] = useState(false);
+  const handleReportSubmit = async (
+    itemId: string,
+    reason: string,
+    complaint: string,
+  ) => {
+    await axiosInstance.post(`/complaints`, {
+      targetType: 'AUCTION',
+      targetId: itemId,
+      reason: reason,
+      description: complaint,
+    });
+    toast({
+      title: 'Report Submitted',
+      description: `Your report for "${product?.title}" has been submitted.`,
+      variant: 'success',
+    });
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -402,6 +423,7 @@ const AuctionDetailsPage = () => {
             <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
+              onClick={() => setReportOpen(true)}
             >
               <Flag className="h-5 w-5 mb-1" />
               Report
@@ -506,6 +528,13 @@ const AuctionDetailsPage = () => {
           {error}
         </div>
       )}
+
+      <AuctionReport
+        itemId={product.id}
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 };

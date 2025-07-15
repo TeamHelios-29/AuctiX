@@ -5,7 +5,9 @@ import com.helios.auctix.domain.complaint.ComplaintActivity;
 import com.helios.auctix.domain.complaint.ComplaintStatus;
 import com.helios.auctix.dtos.ComplaintActivityDTO;
 import com.helios.auctix.dtos.ComplaintDTO;
+import com.helios.auctix.dtos.ComplaintResponseDTO;
 import com.helios.auctix.services.ComplaintService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -29,10 +31,24 @@ public class ComplainController {
 
     }
 
+
     @PostMapping
-    public ResponseEntity<Complaint> createComplaint(@Valid @RequestBody ComplaintDTO complaintDto) throws AuthenticationException {
-        return ResponseEntity.ok(complaintService.createComplaint(complaintDto));
+    public ResponseEntity<ComplaintResponseDTO> createComplaint(@Valid @RequestBody ComplaintDTO complaintDto) throws AuthenticationException {
+        Complaint complaint = complaintService.createComplaint(complaintDto);
+        ComplaintResponseDTO responseDTO = ComplaintResponseDTO.builder()
+                .id(complaint.getId())
+                .readableId(complaint.getReadableId())
+                .targetType(complaint.getTargetType())
+                .targetId(complaint.getTargetId())
+                .reportedByUsername(complaint.getReportedBy().getUsername())
+                .reason(complaint.getReason())
+                .description(complaint.getDescription())
+                .dateReported(complaint.getDateReported())
+                .status(complaint.getStatus())
+                .build();
+        return ResponseEntity.ok(responseDTO);
     }
+
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
