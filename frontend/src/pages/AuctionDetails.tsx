@@ -8,6 +8,7 @@ import { Client } from '@stomp/stompjs';
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
 import AuctionReport from '@/components/organisms/AuctionReport';
+import { title } from 'process';
 
 interface BidHistory {
   bidder: {
@@ -236,11 +237,20 @@ const AuctionDetailsPage = () => {
   };
 
   const [reportOpen, setReportOpen] = useState(false);
-  const handleReportSubmit = (itemId: string, complaint: string) => {
-    // You can send this to your backend or show a toast
+  const handleReportSubmit = async (
+    itemId: string,
+    reason: string,
+    complaint: string,
+  ) => {
+    await axiosInstance.post(`/complaints`, {
+      targetType: 'AUCTION',
+      targetId: itemId,
+      reason: reason,
+      description: complaint,
+    });
     toast({
       title: 'Report Submitted',
-      description: `Your report for item ${itemId} has been submitted.`,
+      description: `Your report for "${product?.title}" has been submitted.`,
       variant: 'success',
     });
   };

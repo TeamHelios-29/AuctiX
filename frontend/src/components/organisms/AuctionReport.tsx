@@ -19,7 +19,7 @@ type AuctionReportProps = {
   itemId: string;
   open: boolean;
   onClose: () => void;
-  onSubmit: (itemId: string, complaint: string) => void;
+  onSubmit: (itemId: string, reason: string, complaint: string) => void;
 };
 
 const AuctionReport: React.FC<AuctionReportProps> = ({
@@ -80,7 +80,7 @@ const AuctionReport: React.FC<AuctionReportProps> = ({
             }
             rows={5}
             className="w-full"
-            disabled={!isOther && reason !== ''}
+            disabled={reason == ''}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
@@ -88,7 +88,7 @@ const AuctionReport: React.FC<AuctionReportProps> = ({
             </Button>
             <Button
               onClick={() => {
-                onSubmit(itemId, isOther ? complaint : reason);
+                onSubmit(itemId, reason, complaint);
                 setComplaint('');
                 setReason('');
                 onClose();

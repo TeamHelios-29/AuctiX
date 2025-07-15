@@ -120,12 +120,6 @@ export default function ComplaintDataTable() {
       enableHiding: false,
     },
     {
-      accessorKey: 'reportedUser.username',
-      header: 'Reported User',
-      cell: ({ row }) => <div>{row.original.reportedUser.username}</div>,
-      enableHiding: true,
-    },
-    {
       accessorKey: 'reportedBy.username',
       header: 'Reported By',
       cell: ({ row }) => <div>{row.original.reportedBy.username}</div>,
