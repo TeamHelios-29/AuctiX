@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ForceRedirect() {
-  const user = useAppSelector((state) => state.user);
+  const pendingActions = useAppSelector((state) => state.pendingActions);
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAppSelector((state) => state.auth);
@@ -33,12 +33,30 @@ export default function ForceRedirect() {
 
   useEffect(() => {
     // Redirect Conditions
-    if (!user.loading && authUser.token) {
-      if (!user.isProfileComplete) {
-        forceNavigate('/settings/profile', 'Complete your profile to continue');
-      }
+    console.log('Checking pending actions for redirection...');
+    if (!pendingActions.loading && authUser.token) {
+      pendingActions.pendingActions.forEach((action) => {
+        if (action.actionType === 'COMPLETE_PROFILE') {
+          forceNavigate(
+            '/settings/profile',
+            'Complete your profile to continue',
+          );
+        } else if (
+          action.actionType === 'SELLER_VERIFICATION_DOCUMENT_SUBMISSION'
+        ) {
+          forceNavigate(
+            '/settings/seller-verification-submit',
+            'Submit documents to get verified as a seller',
+          );
+        } else if (action.actionType === 'FIRST_LOGIN_CHANGE_PASSWORD') {
+          forceNavigate(
+            '/settings/payment',
+            'Setup your payment method to continue',
+          );
+        }
+      });
     }
-  }, [authUser.token, user.loading, navigate, user.isProfileComplete]);
+  }, [authUser.token, pendingActions.loading, navigate]);
 
   return <></>;
 }

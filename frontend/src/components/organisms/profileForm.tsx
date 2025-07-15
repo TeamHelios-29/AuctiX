@@ -11,8 +11,11 @@ import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
 import { ImageResult } from '../molecules/ImageUploadPopup';
 import {
+  deleteBannerPhoto,
   deleteProfilePhoto,
+  IProfileUpdateData,
   updateBannerPhoto,
+  updateProfileInfo,
   updateProfilePhoto,
 } from '@/services/userService';
 import { AxiosInstance } from 'axios';
@@ -41,11 +44,9 @@ const profileFormSchema = z.object({
     .min(3, {
       message: 'Last name must be at least 3 characters.',
     })
-
     .max(30, {
       message: 'Last name must not be longer than 30 characters.',
-    })
-    .optional(),
+    }),
   bio: z
     .string()
     .max(160, {
@@ -115,7 +116,6 @@ export function ProfileForm() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isProfilePictureLoading, setIsProfilePictureLoading] = useState(false);
   const [isBannerLoading, setIsBannerLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // hooks
   const { toast } = useToast();
@@ -174,8 +174,7 @@ export function ProfileForm() {
 
     form.reset(values);
     setCroppedImg(userData.profile_photo || null);
-    setBannerImg(assets.default_banner_image);
-    //TODO: get the banner image from backend
+    setBannerImg(userData.banner_photo || assets.default_banner_image);
   }, [userData, form]);
 
   function onSubmit(_data: ProfileFormValues) {
@@ -223,7 +222,11 @@ export function ProfileForm() {
             setIsBannerLoading(false);
           })
           .catch((error) => {
-            setErrorMessage('Failed to upload banner image. Please try again.');
+            toast({
+              variant: 'destructive',
+              title: 'Banner not uploaded.',
+              description: 'Failed to upload banner image. Please try again.',
+            });
             console.error('Banner image not uploaded.', error);
           });
       }
@@ -232,8 +235,29 @@ export function ProfileForm() {
   );
 
   const onRemoveBanner = () => {
+    setIsBannerLoading(true);
     setBannerImg(assets.default_banner_image);
     // TODO: API call to remove banner
+    deleteBannerPhoto(userData.username || '', axiosInstance)
+      .then(() => {
+        console.log('Banner image deleted successfully.');
+        toast({
+          title: 'Banner image deleted successfully.',
+          description: 'Your banner image has been removed.',
+        });
+        dispatch(fetchCurrentUser());
+      })
+      .catch((error) => {
+        toast({
+          variant: 'destructive',
+          title: 'Banner not deleted.',
+          description: 'Failed to delete banner image. Please try again.',
+        });
+        console.error('Banner image not deleted.', error);
+      })
+      .finally(() => {
+        setIsBannerLoading(false);
+      });
   };
 
   const onProfilePhotoDelete = useCallback(() => {
@@ -266,14 +290,44 @@ export function ProfileForm() {
     setTimeout(() => {
       const formData = form.getValues();
       console.log('Submitting form data:', formData);
+      let validUrls: string[] = [];
       if (formData.urls && formData.urls.length > 0) {
-        const validUrls = formData.urls.filter(
-          (url) => url.value.trim() !== '',
-        );
+        validUrls = formData.urls
+          .filter((url) => url.value.trim() !== '')
+          .map((url) => url.value);
         console.log('URLs to submit:', validUrls);
       }
 
-      // TODO: Add actual API call to update profile with axiosInstance
+      // Prepare profile data for submission
+      const profileData: IProfileUpdateData = {
+        bio: formData.bio,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        urls: validUrls,
+        address: {
+          number: formData.address.number || '',
+          addressLine1: formData.address.addressLine1 || '',
+          addressLine2: formData.address.addressLine2 || '',
+          country: formData.address.country || '',
+        },
+      };
+
+      updateProfileInfo(profileData, axiosInstance)
+        .then(() => {
+          toast({
+            title: 'Profile details updated successfully',
+            description: 'Your profile details has been updated.',
+          });
+        })
+        .catch((err) => {
+          console.error('Error updating profile details:', err);
+          toast({
+            variant: 'destructive',
+            title: 'Profile details not updated.',
+            description:
+              'There was an error when updating your profile details.',
+          });
+        });
 
       setIsSubmitting(false);
       setIsAlertOpen(false);
@@ -333,32 +387,6 @@ export function ProfileForm() {
         onRemoveBanner={onRemoveBanner}
         isInEditMode={true}
       />
-
-      {/* Error Message */}
-      <AnimatePresence>
-        {errorMessage && (
-          <motion.div
-            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="flex items-center">
-              <X className="h-5 w-5 mr-2" />
-              <p>{errorMessage}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto mt-1 text-red-700 hover:text-red-800 p-0"
-              onClick={() => setErrorMessage(null)}
-            >
-              Dismiss
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <Card className="mt-6">
         <CardContent className="pt-6">

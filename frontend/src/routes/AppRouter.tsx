@@ -25,6 +25,8 @@ import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
 // import WatchList from '@/pages/WatchList';
 import UserProfile from '@/components/organisms/UserProfile';
+import SellerVerificationSubmitPage from '@/pages/SellerVerificationSubmitPage';
+import SecuritySettingsPage from '@/pages/SecuritySettingsPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -116,6 +118,22 @@ export default function AppRouter() {
             }
           />
           <Route
+            path="/seller-verification-submit"
+            element={
+              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/403">
+                <SellerVerificationSubmitPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/security"
+            element={
+              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/403">
+                <SecuritySettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/profile/:id"
             element={
               <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
@@ -127,7 +145,7 @@ export default function AppRouter() {
           <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/complaints/:id" element={<ComplaintDetail />} />
-{/*           <Route path="/watchlist" element={<WatchList />} /> */}
+          {/*           <Route path="/watchlist" element={<WatchList />} /> */}
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
@@ -135,7 +153,7 @@ export default function AppRouter() {
         <Route path="/user-delivery" element={<UserDeliveryPage />} />
         <Route path="/seller-delivery" element={<SellerDeliveryPage />} />
 
-        <Route path="/403" element={<h2>403 Unautherized</h2>} />
+        <Route path="/403" element={<h2>403 Unauthorized</h2>} />
         <Route path="/test-chat" element={<AuctionChat />} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>

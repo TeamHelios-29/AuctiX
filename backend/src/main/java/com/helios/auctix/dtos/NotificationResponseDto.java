@@ -11,6 +11,7 @@ public record NotificationResponseDto(
         UUID id,
         String title,
         String content,
+        String partialUrl,
         boolean read,
         String notificationCategory,
         String notificationCategoryGroup,

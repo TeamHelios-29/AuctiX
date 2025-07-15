@@ -2,12 +2,12 @@ package com.helios.auctix.controllers;
 
 import com.azure.core.util.BinaryData;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRoleEnum;
+import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
-import com.helios.auctix.services.fileUpload.FileUploadResponse;
-import com.helios.auctix.services.fileUpload.FileUploadService;
-import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
+import com.helios.auctix.services.fileUpload.*;
 import com.helios.auctix.services.user.*;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
@@ -20,6 +20,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -73,17 +76,32 @@ public class UserController {
     }
 
     @PostMapping("/uploadVerificationDocs")
-    public String uploadVerificationDocs(@RequestParam("file") MultipartFile file) throws AuthenticationException {
+    public ResponseEntity<String> uploadVerificationDocs(@RequestParam("files") MultipartFile[] files) throws AuthenticationException {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
-        FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENT, currentUser.getId(), false);
-        if (res.isSuccess()) {
-            return res.getMessage();
-        } else {
-            log.warning(res.getMessage());
-            return "File upload failed";
+
+        // validate file count
+        if(files.length == 0 || files.length >5){
+            throw new UploadedFileCountMaxLimitExceedException("Uploaded file count is too large. submit less than 6 documents");
         }
+
+        // validate file size
+        for (MultipartFile file : files) {
+            int filesize = (int)file.getSize()/(1024*1024);
+            if (filesize > 5) {
+                throw new UploadedFileSizeMaxLimitExceedException("file size is greater than 5MB");
+            }
+        }
+
+        // upload files
+        for (MultipartFile file : files) {
+            FileUploadResponse res = uploader.uploadFile(file, FileUploadUseCaseEnum.VERIFICATION_DOCUMENT, currentUser.getId(), false);
+            if(!res.isSuccess()){
+                throw new RuntimeException("Upload failed");
+            }
+        }
+        return ResponseEntity.ok("upload completed");
     }
 
     @Profile("dev")
@@ -136,11 +154,14 @@ public class UserController {
     public ResponseEntity<Page<UserDTO>> getUsers(
             @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
             @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
-            @RequestParam(value = "sortby", required = false, defaultValue = "id") String sortBy,
+            @RequestParam(value = "sortBy", required = false, defaultValue = "id") String sortBy,
             @RequestParam(value = "order", required = false, defaultValue = "asc") String order,
+            @RequestParam(value = "filterBy", required = false, defaultValue = "") String filterBy,
+            @RequestParam(value = "filterValue", required = false, defaultValue = "") String filterValue,
             @RequestParam(value = "search", required = false) String search)
-            throws AuthenticationException {
+            throws AuthenticationException, UnsupportedEncodingException { // TODO: add UnsupportedEncodingException to gloabal exception handler
 
+        // user authentication and authorization
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userDetailsService.getAuthenticatedUser(authentication);
         String userRole = user.getRole().getName().toString();
@@ -148,7 +169,25 @@ public class UserController {
         if (!(UserRoleEnum.valueOf(userRole) == UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole) == UserRoleEnum.SUPER_ADMIN)) {
             throw new PermissionDeniedDataAccessException("You don't have permission to access this resource", new Throwable("Permission Denied"));
         }
-        Page<UserDTO> userPage = userDetailsService.getAllUsers(limit, offset, order, sortBy, search);
+
+        // decode from url encoded parameters
+        if (search != null) {
+            search = URLDecoder.decode(search, StandardCharsets.UTF_8.name());
+        }
+        if (filterBy != null) {
+            filterBy = URLDecoder.decode(filterBy, StandardCharsets.UTF_8.name());
+        }
+        if (sortBy != null) {
+            sortBy = URLDecoder.decode(sortBy, StandardCharsets.UTF_8.name());
+        }
+        if (order != null) {
+            order = URLDecoder.decode(order, StandardCharsets.UTF_8.name());
+        }
+        if (filterValue != null) {
+            filterValue = URLDecoder.decode(filterValue, StandardCharsets.UTF_8.name());
+        }
+
+        Page<UserDTO> userPage = userDetailsService.getAllUsers(limit, offset, order, sortBy, search,filterBy,filterValue);
         return ResponseEntity.ok(userPage);
     }
 
@@ -310,6 +349,49 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
         }
 
+    }
+
+    @DeleteMapping("/deleteBannerPhoto")
+    public ResponseEntity<String> deleteBannerPhoto() throws AuthenticationException {
+
+        // Authenticate user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // only sellers can delete banner photos
+        if (currentUser != null && currentUser.getRole().getName() != UserRoleEnum.SELLER) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You don't have permission to delete banner photo");
+        }
+
+        // Delete file
+        UserServiceResponse res = userUploadsService.UserBannerPhotoDelete(currentUser.getId());
+        if (res.isSuccess()) {
+            return ResponseEntity.ok().body("Banner photo deleted successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+        }
+    }
+
+    @PostMapping("/updateProfile")
+    public ResponseEntity<Boolean> updateProfileInfo(@RequestBody ProfileUpdateDataDTO profileUpdateDataDTO) throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // Update user profile
+        UserServiceResponse response = userDetailsService.updateUserProfile(currentUser, profileUpdateDataDTO);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(true);
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
+
+    @GetMapping("/getUserRequiredActions")
+    public ResponseEntity<List<UserRequiredAction>> getUserRequiredActions() throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        List<UserRequiredAction> requiredActions = userDetailsService.getRequiredActions(currentUser);
+        return ResponseEntity.ok(requiredActions);
     }
 
 }

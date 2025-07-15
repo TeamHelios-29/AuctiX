@@ -2,6 +2,7 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.AuctionImagePath;
+import com.helios.auctix.domain.chat.ChatRoom;
 import com.helios.auctix.dtos.BidDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
@@ -11,6 +12,7 @@ import com.helios.auctix.repositories.AuctionImagePathsRepository;
 import com.helios.auctix.dtos.AuctionDetailsDTO;
 import com.helios.auctix.repositories.AuctionRepository;
 
+import com.helios.auctix.repositories.chat.ChatRoomRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,7 @@ public class AuctionService {
     private final SellerMapperImpl sellerMapper;
     private final UserMapperImpl userMapperImpl;
     private final BidService bidService;
+    private final ChatRoomRepository chatRoomRepository;
 
     public AuctionDetailsDTO getAuctionDetails(UUID id) {
         Auction auction = auctionRepository.findById(id).orElse(null);
@@ -83,7 +86,11 @@ public class AuctionService {
         auction.setCreatedAt(Instant.now());
         auction.setUpdatedAt(Instant.now());
 
-        return auctionRepository.save(auction);
+        Auction savedAuction = auctionRepository.save(auction);
+
+        // create a chat-room for the auction and add join the seller to the chat
+        createChatRoomForAuction(savedAuction);
+        return savedAuction;
     }
 
     public List<Auction> getAllAuctions() {
@@ -168,10 +175,23 @@ public class AuctionService {
                 .images(imageIds)
                 .endTime(auction.getEndTime().toString())
                 .startTime(auction.getStartTime().toString())
-                .bidHistory(null) // Don't load full history for list view
-                .currentHighestBid(highestBid)
+//                .bidHistory(null) // Don't load full history for list view
+//                .currentHighestBid(highestBid)
                 .startingPrice(auction.getStartingPrice())
                 .build();
+    }
+
+
+    private void createChatRoomForAuction(Auction auction) {
+        ChatRoom chatRoom = ChatRoom.builder()
+                .auction(auction)
+                .build();
+
+        ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
+
+        if (auction.getSeller() != null) {
+            chatRoomRepository.addUserToChatRoom(savedChatRoom.getId(), auction.getSeller().getId());
+        }
     }
 
 

@@ -1,0 +1,40 @@
+notificationCategories:
+  AUCTION_COMPLETED:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when auction ends"
+    title: "Auction Completed"
+
+  AUCTION_END_SOON:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: [BIDDER, SELLER]
+    categoryGroup: AUCTION
+    description: "Get notified 10 minutes before auction ends"
+    title: "Auction Ends soon"
+
+  AUCTION_START_SOON:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified 10 minutes before auction starts"
+    title: "Auction Start soon"
+
+  DEFAULT:
+    allowedRoles: [ADMIN, SUPER_ADMIN, BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: DEFAULT
+    description: "All other notifications"
+    title: "Default Notifications"
+
+  PROMO:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: PROMO
+    description: "Marketing notifications about promotions, discounts"
+    title: "Promotional Notifications"

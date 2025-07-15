@@ -34,6 +34,7 @@ public class NotificationPreferencesResponseDto {
         private String description;
         private String categoryGroup;
         private Map<String, Boolean> channelTypes;
+        private boolean editable;
     }
 
 

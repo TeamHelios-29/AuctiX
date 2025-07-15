@@ -3,6 +3,7 @@ package com.helios.auctix.services;
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.Bid;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.BidUpdateMessageDTO;
 import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.dtos.BidDTO;
 import com.helios.auctix.dtos.PlaceBidRequest;
@@ -49,6 +50,7 @@ public class BidService {
     public Optional<Bid> getHighestBidForAuction(UUID auctionId) {
         return bidRepository.findTopByAuctionIdOrderByAmountDesc(auctionId);
     }
+
     // Add this method to get bidder details
     public BidDTO convertToDTO(Bid bid) {
 
@@ -60,9 +62,14 @@ public class BidService {
         return BidDTO.builder()
                 .id(bid.getId())
                 .auctionId(bid.getAuction().getId())
+                .auctionTitle(bid.getAuction().getTitle())
+                .bidderId(bid.getBidderId())
+                .bidderName(bid.getBidderName())
+                .bidderAvatar(bid.getBidderAvatar())
                 .amount(bid.getAmount())
                 .bidTime(bid.getBidTime())
-                .bidder(bidderDto)
+                .createdAt(bid.getCreatedAt())
+                .bidder(bidderDto) // ✅ include full bidder
                 .build();
     }
 
@@ -164,7 +171,22 @@ public class BidService {
 
         Bid savedBid = bidRepository.save(bid);
 
-        return convertToDTO(savedBid);
+        BidDTO bidDTO = convertToDTO(savedBid);
+        List<BidDTO> history = getBidHistoryForAuction(auctionId).stream()
+                .map(this::convertToDTO)
+                .toList();
+
+        BidUpdateMessageDTO message = BidUpdateMessageDTO.builder()
+                .auctionId(auctionId)
+                .newBid(bidDTO)
+                .bidHistory(history)
+                .build();
+
+        // Send to WebSocket topic
+        messagingTemplate.convertAndSend("/topic/auction/" + auctionId, message);
+
+
+        return bidDTO;
 
     }
 

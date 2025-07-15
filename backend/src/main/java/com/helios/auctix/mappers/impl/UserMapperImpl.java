@@ -31,7 +31,7 @@ public class UserMapperImpl implements Mapper<User, UserDTO> {
         userDTO.setEmail(user.getEmail());
         userDTO.setFirstName(user.getFirstName());
         userDTO.setLastName(user.getLastName());
-        userDTO.setProfileComplete(user.isProfileComplete());
+//        userDTO.setProfileComplete(user.isProfileComplete());
 
         UserRole userRole = user.getRole();
         if (userRole != null) {
@@ -97,7 +97,7 @@ public class UserMapperImpl implements Mapper<User, UserDTO> {
                 .email(userDTO.getEmail())
                 .firstName(userDTO.getFirstName())
                 .lastName(userDTO.getLastName())
-                .isProfileComplete(userDTO.isProfileComplete())
+//                .isProfileComplete(userDTO.isProfileComplete())
                 .role(userRole)
                 .admin(admin)
                 .bidder(bidder)

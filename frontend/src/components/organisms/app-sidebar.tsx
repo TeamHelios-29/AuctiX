@@ -85,6 +85,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 title: 'Profile Settings',
                 url: '/settings/profile',
               },
+              {
+                title: 'Security Settings',
+                url: '/settings/security',
+              },
             ],
           },
         ],

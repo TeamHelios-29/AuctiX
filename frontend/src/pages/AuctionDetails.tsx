@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Share, Flag, Heart } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import { Client } from '@stomp/stompjs';
+
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
 import AuctionReport from '@/components/organisms/AuctionReport';
 import { title } from 'process';
+import AuctionChat from '@/components/organisms/auction-chat';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import { useAuctionWebSocket } from '@/hooks/useAuctionWebSocket';
 
 interface BidHistory {
   bidder: {
@@ -146,6 +150,44 @@ const AuctionDetailsPage = () => {
     }
   }, [auctionId]);
 
+  useAuctionWebSocket(auctionId!, (payload) => {
+    const newBid = payload.newBid;
+    const updatedHistory = payload.bidHistory;
+
+    const updatedProduct = { ...product! }; // product is already fetched earlier
+
+    // Update highest bid
+    updatedProduct.currentBid = newBid.amount;
+    updatedProduct.currentBidder = newBid.bidder
+      ? {
+          id: newBid.bidder.username,
+          name: `${newBid.bidder.firstName} ${newBid.bidder.lastName}`,
+          avatar: newBid.bidder.profilePicture?.id
+            ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${newBid.bidder.profilePicture.id}`
+            : '/defaultProfilePhoto.jpg',
+        }
+      : {
+          id: '',
+          name: 'No bidder yet',
+          avatar: '/defaultProfilePhoto.jpg',
+        };
+
+    // Update bid history
+    updatedProduct.bidHistory = updatedHistory.map((bid: any) => ({
+      bidder: {
+        id: bid.bidder.username,
+        name: `${bid.bidder.firstName} ${bid.bidder.lastName}`,
+        avatar: bid.bidder.profilePicture?.id
+          ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${bid.bidder.profilePicture.id}`
+          : '/defaultProfilePhoto.jpg',
+      },
+      amount: bid.amount,
+      timestamp: bid.bidTime,
+    }));
+
+    setProduct(updatedProduct);
+  });
+
   useEffect(() => {
     if (!product) return;
 
@@ -191,17 +233,8 @@ const AuctionDetailsPage = () => {
     if (bidAmount - product.bidIncrement >= minAllowedBid) {
       setBidAmount(bidAmount - product.bidIncrement);
     } else {
-      // Optionally, set it to the minimum allowed bid if they try to go lower
-      // Or, you could disable the decrement button if it would go below minAllowedBid
       setBidAmount(minAllowedBid);
     }
-
-    // if (
-    //   bidAmount - product.bidIncrement >=
-    //   product.currentBid + product.bidIncrement
-    // ) {
-    //   setBidAmount(bidAmount - product.bidIncrement);
-    // }
   };
 
   const handlePlaceBid = async () => {
@@ -482,7 +515,11 @@ const AuctionDetailsPage = () => {
       <div className="border rounded-md p-4 mt-6">
         <h2 className="text-lg font-semibold mb-4">Live Chat</h2>
         <p className="text-sm text-gray-500">
-          Live chat will be integrated here.
+          {auctionId ? (
+            <AuctionChat auctionId={auctionId} />
+          ) : (
+            <div>Sorry chat is unvaliable</div>
+          )}
         </p>
       </div>
 

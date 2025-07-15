@@ -122,7 +122,8 @@ public class AuctionSchedulerService {
                                     "Auction Won!",
                                     "Congratulations! You won the auction for " + auction.getTitle() + " with a bid of " + winningBid.getAmount(),
                                     NotificationCategory.AUCTION_WON,
-                                    bidder
+                                    bidder,
+                                    "/auction-details/" + auction.getId()
                             );
                         } catch (Exception e) {
                             logger.warning("Failed to send buyer notification, but continuing: " + e.getMessage());
@@ -134,7 +135,8 @@ public class AuctionSchedulerService {
                                 "Auction Completed",
                                 "Your auction " + auction.getTitle() + " has completed successfully with a winning bid of " + winningBid.getAmount(),
                                 NotificationCategory.AUCTION_COMPLETED,
-                                seller
+                                seller,
+                                "/auction-details/" + auction.getId()
                         );
                     } catch (Exception e) {
                         logger.warning("Failed to send seller notification, but continuing: " + e.getMessage());
@@ -161,7 +163,9 @@ public class AuctionSchedulerService {
                             "Auction Ended Without Bids",
                             "Your auction " + auction.getTitle() + " has ended without any bids.",
                             NotificationCategory.AUCTION_COMPLETED,
-                            auction.getSeller().getUser()
+                            auction.getSeller().getUser(),
+                            "/auction-details/" + auction.getId()
+
                     );
                 } catch (Exception e) {
                     logger.warning("Failed to send notification, but continuing: " + e.getMessage());

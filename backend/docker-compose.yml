@@ -24,5 +24,15 @@ services:
       - azurite_data:/data
     command: azurite --location /data --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP
+    volumes:
+      - ./mailpit-data:/data
+    environment:
+      - MP_DATA_FILE=/data/mailpit.db
+
 volumes:
   azurite_data:

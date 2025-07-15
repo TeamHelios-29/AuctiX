@@ -131,8 +131,9 @@ public class HelloController {
 				"Hi from AuctiX",
                 message,
 				NotificationCategory.DEFAULT,
-				user
-        );
+				user,
+              "/explore-auctions/"
+      );
 
 
         return "i think we sent it?";
@@ -169,7 +170,8 @@ public class HelloController {
                 title,
                 message,
                 notificationCategory,
-                user
+                user,
+                "/explore-auctions/"
         );
 
         return "sent";

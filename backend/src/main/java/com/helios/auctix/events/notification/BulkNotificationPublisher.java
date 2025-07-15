@@ -4,6 +4,7 @@ import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,12 +15,12 @@ public class BulkNotificationPublisher {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public void publish(List<User> users, String title, String message, NotificationCategory category) {
+    public void publish(List<User> users, String title, String message, NotificationCategory category, @Nullable String partialUrl) {
         if (users == null || users.isEmpty()) {
             return;
         }
 
-        BulkNotificationEvent event = new BulkNotificationEvent(this, users, title, message, category);
+        BulkNotificationEvent event = new BulkNotificationEvent(this, users, title, message, category, partialUrl);
         eventPublisher.publishEvent(event);
     }
 }
