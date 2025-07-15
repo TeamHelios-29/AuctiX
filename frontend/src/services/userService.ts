@@ -44,6 +44,27 @@ export const updateProfilePhoto = async (
   return response.data;
 };
 
+export const uploadVerificationDocs = async (
+  files: File[],
+  axiosInstance: AxiosInstance,
+) => {
+  const formData = new FormData();
+  files.forEach((file, index) => {
+    formData.append('files', file);
+  });
+
+  const response = await axiosInstance.post(
+    `${baseURL}/user/uploadVerificationDocs`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    },
+  );
+  return response.data;
+};
+
 export const deleteProfilePhoto = async (
   username: string,
   axiosInstance: AxiosInstance,
