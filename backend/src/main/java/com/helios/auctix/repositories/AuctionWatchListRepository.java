@@ -6,6 +6,8 @@ import com.helios.auctix.domain.watchlist.AuctionWatchList;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +18,23 @@ public interface AuctionWatchListRepository extends JpaRepository<AuctionWatchLi
 
     Optional<AuctionWatchList> findByUserAndAuction(User user, Auction auction);
 
-    Page<AuctionWatchList> findAllByUser_Id(UUID userId, Pageable pageable);
-
     List<User> findUsersByAuction_Id(UUID auctionId);
+
+    @Query("""
+        SELECT wl FROM AuctionWatchList wl
+        JOIN wl.auction a
+        WHERE wl.user.id = :userId
+          AND (
+            LOWER(a.title) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(a.description) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """)
+    Page<AuctionWatchList> findWatchedAuctionsWithSearch(
+            @Param("userId") UUID userId,
+            @Param("search") String search,
+            Pageable pageable
+    );
+
+    Page<AuctionWatchList> findByUserId(UUID userId, Pageable pageable);
+
 }

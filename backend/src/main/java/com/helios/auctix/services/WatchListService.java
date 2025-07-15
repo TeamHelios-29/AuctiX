@@ -11,7 +11,9 @@ import com.helios.auctix.repositories.AuctionWatchListRepository;
 import com.helios.auctix.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -90,13 +92,19 @@ public class WatchListService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AuctionDetailsDTO> getWatchedAuctions(UUID userId, Pageable pageable) {
-        return watchRepo.findAllByUser_Id(userId, pageable)
-                .map(AuctionWatchList::getAuction)
-                .map(this::toDto);
+    public Page<AuctionDetailsDTO> getWatchedAuctions(UUID userId, String search, Pageable pageable) {
+        Page<AuctionWatchList> page;
+
+        if (search != null && !search.trim().isEmpty()) {
+            page = watchRepo.findWatchedAuctionsWithSearch(userId, search, pageable);
+        } else {
+            page = watchRepo.findByUserId(userId, pageable);
+        }
+
+        return page.map(wl -> toDto(wl.getAuction()));
     }
 
     private AuctionDetailsDTO toDto(Auction auction) {
-       return auctionService.convertToDTO(auction);
+        return auctionService.convertToDTO(auction);
     }
 }

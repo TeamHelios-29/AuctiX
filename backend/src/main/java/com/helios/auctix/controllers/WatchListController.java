@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,19 +26,21 @@ public class WatchListController {
     private final WatchListService watchListService;
     private final UserDetailsService userDetailsService;
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<Page<AuctionDetailsDTO>> getMyWatchList(
-            Pageable pageable
+            Pageable pageable,
+            @RequestParam(required = false) String search
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         try {
             User user = userDetailsService.getAuthenticatedUser(authentication);
-            Page<AuctionDetailsDTO> watchedAuctions = watchListService.getWatchedAuctions(user.getId(), pageable);
+            Page<AuctionDetailsDTO> watchedAuctions = watchListService.getWatchedAuctions(user.getId(), search, pageable);
             return ResponseEntity.ok(watchedAuctions);
         } catch (AuthenticationException e) {
-            throw new RuntimeException("User not authenticated");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
+
 
     @GetMapping("/{auctionId}/is-watched")
     public ResponseEntity<Map<String, Boolean>> isWatched(

@@ -42,11 +42,18 @@ export default function AppRouter() {
           />
           <Route path="/create-auction" element={<CreateAuction />} />
           <Route path="/explore-auctions" element={<AuctionsPage />} />
-          <Route path="/test-chat" element={<WatchlistPage />} />
         </Route>
 
         {/* Routes using DashboardLayout */}
         <Route element={<DashboardLayout />}>
+          <Route
+            path="/watchlist"
+            element={
+              <ProtectedRoute allowedUsers={['BIDDER']} redirectPath="/403">
+                <WatchlistPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/manage-auctions" element={<ManageAuctions />} />;
           <Route
             path="/dashboard"
