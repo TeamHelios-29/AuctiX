@@ -129,10 +129,14 @@ export default function WatchlistPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">My Watchlist</h1>
+    <div className="container py-8 px-2 mx-auto">
+      <h1 className="text-3xl font-bold text-gray-800 mb-1">My Watchlist</h1>
+      <p className=" mb-4">
+        Stay informed by adding auctions to your watchlist, recieve
+        notifications on the auction
+      </p>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-6">
         <input
           type="text"
           placeholder="Search auctions..."
@@ -211,7 +215,7 @@ export default function WatchlistPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 justify-items-start">
               {watchlistItems.map((auction) => (
                 <WatchlistGridItem
                   key={auction.id}
