@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, ArrowDownCircle, EyeOffIcon } from 'lucide-react'; // Removed Clock icon
+import { CheckCircle, ArrowDownCircle, EyeOffIcon, Image } from 'lucide-react'; // Removed Clock icon
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
+import { ImageSlider } from './ImageSlider';
 
 interface WatchlistGridItemProps {
   auction: {
@@ -135,13 +136,14 @@ export function WatchlistGridItem({
   return (
     <Card className="w-full sm:max-w-[280px] rounded-lg overflow-hidden shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 flex flex-col">
       <div className="relative w-full h-28 bg-gray-100 overflow-hidden">
+        {/* <ImageSlider images={auction.images} /> */}
         <img
           src={auction.images[0] || '/placeholder.svg?height=112&width=280'}
           alt={auction.title}
           width={280}
           height={112}
           className="w-full h-full object-cover"
-        />
+        />{' '}
         <div
           className={`absolute top-2 left-2 ${timer.bgColor} text-xs font-medium py-1 px-2 rounded-md text-black`}
         >
@@ -150,7 +152,6 @@ export function WatchlistGridItem({
       </div>
 
       <CardContent className="p-2 flex flex-col flex-grow">
-        {/* Product Info Block */}
         <div className="mb-2">
           <h3 className="font-semibold text-base line-clamp-2 mb-0.5">
             {auction.title}
@@ -177,8 +178,8 @@ export function WatchlistGridItem({
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-gray-500">Bids</div>
-              <div className="font-medium text-sm">{auction.bidCount}</div>
+              {/* <div className="text-xs text-gray-500">Bids</div>
+              <div className="font-medium text-sm">{auction.bidCount}</div> */}
             </div>
           </div>
 

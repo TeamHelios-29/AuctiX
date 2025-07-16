@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { WatchlistGridItem } from '@/components/molecules/WatchlistGridItem';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+// import {
+//   DropdownMenu,
+//   DropdownMenuCheckboxItem,
+//   DropdownMenuContent,
+//   DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu';
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from '@/components/ui/select';
+// import { Button } from '@/components/ui/button';
 
 import {
   getWatchList,
@@ -141,6 +141,8 @@ export default function WatchlistPage() {
           className="border border-gray-300 rounded px-3 py-2 w-full sm:w-1/3"
         />
 
+        {/*
+
         <Select
           onValueChange={(value) => handleSortChange(value)}
           value={`${sortBy}:${order}`}
@@ -181,48 +183,56 @@ export default function WatchlistPage() {
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        */}
       </div>
 
-      {isLoading ? (
-        <div className="text-center text-gray-600">
-          Loading your watchlist...
-        </div>
-      ) : error ? (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {error}</span>
-        </div>
-      ) : watchlistItems.length === 0 ? (
-        <div className="bg-white rounded-md p-6 text-center text-gray-600 border border-gray-200">
-          <p className="text-lg font-medium mb-2">Your watchlist is empty!</p>
-          <p>Start browsing auctions to add items you're interested in.</p>
-          <a href="/" className="text-blue-600 hover:underline mt-4 block">
-            Browse Auctions
-          </a>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
-            {watchlistItems.map((auction) => (
-              <WatchlistGridItem
-                key={auction.id}
-                auction={auction}
-                onRemove={handleRemoveItem}
-                userBidAmount={auction.userBidAmount}
-                isUserHighBidder={auction.isHighestBidder}
-              />
-            ))}
+      <div className="relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-60 flex items-center justify-center z-10">
+            <div className="text-gray-600">Loading...</div>
           </div>
+        )}
 
-          <div className="mt-8 flex flex-col items-center">
-            <PaginationNav
-              pages={totalPages}
-              currentPage={currentPage + 1}
-              handlePage={(page) => setCurrentPage(page - 1)}
-            />
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+            <strong className="font-bold">Error!</strong>
+            <span className="block sm:inline"> {error}</span>
           </div>
-        </>
-      )}
+        )}
+
+        {watchlistItems.length === 0 ? (
+          <div className="bg-white rounded-md p-6 text-center text-gray-600 border border-gray-200">
+            <p className="text-lg font-medium mb-2">Your watchlist is empty!</p>
+            <p>Start browsing auctions to add items you're interested in.</p>
+            <a href="/" className="text-blue-600 hover:underline mt-4 block">
+              Browse Auctions
+            </a>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
+              {watchlistItems.map((auction) => (
+                <WatchlistGridItem
+                  key={auction.id}
+                  auction={auction}
+                  onRemove={handleRemoveItem}
+                  userBidAmount={auction.userBidAmount}
+                  isUserHighBidder={auction.isHighestBidder}
+                />
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-col items-center">
+              <PaginationNav
+                pages={totalPages}
+                currentPage={currentPage + 1}
+                handlePage={(page) => setCurrentPage(page - 1)}
+              />
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

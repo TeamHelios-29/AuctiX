@@ -8,6 +8,7 @@ import {
 } from '@/services/watchlistService';
 import AxiosRequest from '@/services/axiosInspector';
 import { toast } from 'sonner';
+import { useAppSelector } from '@/hooks/hooks';
 
 type Props = {
   auctionId: string;
@@ -25,9 +26,10 @@ export default function AddToWatchlistButton({
   );
 
   const axiosInstance = AxiosRequest().axiosInstance;
+  const isLoggedIn = useAppSelector((state) => state.auth.isUserLoggedIn);
 
   useEffect(() => {
-    if (initiallyWatched === undefined) {
+    if (initiallyWatched === undefined && isLoggedIn) {
       const fetchWatchStatus = async () => {
         try {
           const res = await checkIfAuctionIsWatched(auctionId, axiosInstance);
@@ -41,7 +43,7 @@ export default function AddToWatchlistButton({
 
       fetchWatchStatus();
     }
-  }, [auctionId, axiosInstance, initiallyWatched]);
+  }, [auctionId, isLoggedIn, initiallyWatched]);
 
   const handleClick = async () => {
     try {

@@ -8,7 +8,7 @@ interface ImageSliderProps {
 
 export function ImageSlider({
   images,
-  size = 40,
+  size = 200,
   altText = 'image',
 }: ImageSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
