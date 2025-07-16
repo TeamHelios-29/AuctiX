@@ -38,6 +38,9 @@ public class NotificationPreferenceResponseDTOMapper {
                     ? objectMapper.readValue(event.getSettings(), new TypeReference<>() {})
                     : defaultProperties.getEvents();
 
+            System.out.println("GLOBAL RAW" + globalRaw);
+            System.out.println("EVENTS RAW" + eventsRaw);
+
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to deserialize preferences", e);
         }
@@ -45,7 +48,7 @@ public class NotificationPreferenceResponseDTOMapper {
         // Global settings with metadata
         Map<String, NotificationPreferencesResponseDto.GlobalChannelSetting> globalMap = new HashMap<>();
         for (NotificationType type : NotificationType.values()) {
-            boolean enabled = globalRaw.getOrDefault(type.name(), false);
+            boolean enabled = globalRaw.getOrDefault(type.name(), true);
             globalMap.put(type.name(), NotificationPreferencesResponseDto.GlobalChannelSetting.builder()
                     .enabled(enabled)
                     .title(type.getTitle())
@@ -69,7 +72,7 @@ public class NotificationPreferenceResponseDTOMapper {
             // Channels for this category
             Map<String, Boolean> channelsMap = new HashMap<>();
             for (NotificationType type : NotificationType.values()) {
-                channelsMap.put(type.name(), channelPrefs.getOrDefault(type.name(), false));
+                channelsMap.put(type.name(), channelPrefs.getOrDefault(type.name(), true));
             }
 
             NotificationPreferencesResponseDto.EventSetting eventSetting =
@@ -84,6 +87,9 @@ public class NotificationPreferenceResponseDTOMapper {
             groupedEvents.computeIfAbsent(group, g -> new HashMap<>())
                     .put(categoryId, eventSetting);
         }
+
+        System.out.println("GLOBAL MAP" + globalMap);
+        System.out.println("GROUPED EVENTS" + groupedEvents);
 
         return NotificationPreferencesResponseDto.builder()
                 .global(globalMap)

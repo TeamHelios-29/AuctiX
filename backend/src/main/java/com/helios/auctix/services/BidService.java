@@ -2,8 +2,11 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.Bid;
+import com.helios.auctix.domain.notification.NotificationCategory;
+import com.helios.auctix.domain.user.Bidder;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.BidUpdateMessageDTO;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.dtos.BidDTO;
 import com.helios.auctix.dtos.PlaceBidRequest;
@@ -16,6 +19,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -36,6 +41,7 @@ public class BidService {
     private final UserMapperImpl userMapperImpl;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationEventPublisher notificationEventPublisher;
 
 
     // Get bid history for an auction
@@ -137,6 +143,24 @@ public class BidService {
                             highestBid.get().getAmount(),
                             "Outbid on auction " + auctionId
                     );
+
+//                    // WIP TODO fix this outbid notification
+//                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+//                        @Override
+//                        public void afterCommit() {
+//                            String title = "You've been outbid";
+//                            String message = "Your bid on auction " + auction.getTitle() + " was outbid by " + bidder.getFirstName();
+//
+//                            notificationEventPublisher.publishNotificationEvent(
+//                                    title,
+//                                    message,
+//                                    NotificationCategory.OUTBID,
+//                                    ,
+//                                    "/auctions/" + auction.getId()
+//                            );
+//                        }
+//                    });
+
                 } catch (Exception e) {
                     log.severe("Failed to unfreeze previous bidder's funds: " + e.getMessage());
                     throw new IllegalStateException("Failed to unfreeze previous bidder's funds: " + e.getMessage());

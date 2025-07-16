@@ -22,11 +22,24 @@ public enum NotificationCategory {
 
     DEFAULT,
     PROMO,
+
     AUCTION_START_SOON,
     AUCTION_END_SOON,
     AUCTION_COMPLETED,
+    AUCTION_STARTED,
     AUCTION_WON,
-    USER_REPORTED;
+    AUCTION_UPDATED,
+    AUCTION_CANCELED,
+    OUTBID,
+    ITEM_SOLD,
+    NEW_BID_RECEIVED,
+
+    WELCOME_MESSAGE,
+    ACCOUNT_SUSPENDED,
+    ACCOUNT_REINSTATED,
+
+    WALLET_RECHARGE_SUCCESS,
+    WITHDRAWAL_SUCCESS;
 
     private String title;
     private String description;
