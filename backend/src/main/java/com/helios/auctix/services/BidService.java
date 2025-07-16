@@ -212,4 +212,27 @@ public class BidService {
             // Logic to transfer funds to seller would go here in a production app
         }
     }
+
+    // Add these methods to your existing BidService
+
+    /**
+     * Check if an auction has received any bids
+     */
+    public boolean hasAuctionReceivedBids(UUID auctionId) {
+        return bidRepository.existsByAuctionId(auctionId);
+    }
+
+    /**
+     * Get bid count for an auction
+     */
+    public int getBidCountForAuction(UUID auctionId) {
+        return bidRepository.countByAuctionId(auctionId);
+    }
+
+    /**
+     * Get users who have bid on an auction (for visibility when unlisted)
+     */
+    public List<UUID> getBiddersForAuction(UUID auctionId) {
+        return bidRepository.findDistinctBidderIdsByAuctionId(auctionId);
+    }
 }

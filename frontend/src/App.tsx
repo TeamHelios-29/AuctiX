@@ -17,8 +17,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const fetchNotifications = () => {
-      dispatch(fetchLatestNotifications());
-      dispatch(fetchUnreadCount());
+      // dispatch(fetchLatestNotifications());
+      // dispatch(fetchUnreadCount());
     };
 
     dispatch(restoreUser());

@@ -3,8 +3,9 @@ package com.helios.auctix.controllers;
 import com.azure.core.util.BinaryData;
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.user.User;
-import com.helios.auctix.dtos.AuctionDetailsDTO;
+import com.helios.auctix.dtos.*;
 import com.helios.auctix.services.AuctionService;
+import com.helios.auctix.services.BidService;
 import com.helios.auctix.services.fileUpload.FileUploadResponse;
 import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/auctions")
 public class AuctionController {
     private final AuctionService auctionService;
+    private final BidService bidService;
     private final Logger log = Logger.getLogger(AuctionController.class.getName());
     private final UserDetailsService userDetailsService;
     private static final int SELLER_ROLE_ID = 4;
@@ -205,40 +207,207 @@ public class AuctionController {
         }
     }
 
-//    // Update an auction
-//    @PutMapping("/{id}")
-//    public Auction updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
-//        return auctionService.updateAuction(id, updatedAuction);
-//    }
-//
-//    // Delete an auction
-//    @DeleteMapping("/{id}")
-//    public void deleteAuction(@PathVariable Long id) {
-//        auctionService.deleteAuction(id);
-//    }
+    // Add these new endpoints to your existing AuctionController
 
-//    // Retrieve all auctions
-//    @GetMapping
-//    public ResponseEntity<List<Auction>> getAllAuctions() {
-//        try {
-//            List<Auction> auctions = auctionService.getAllAuctions();
-//            return ResponseEntity.ok(auctions);
-//        } catch (Exception e) {
-//            log.warning("Error fetching all auctions: " + e.getMessage());
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-//
-//    // Retrieve active auctions for displaying on the main page
-//    @GetMapping("/active")
-//    public ResponseEntity<List<Auction>> getActiveAuctions() {
-//        try {
-//            List<Auction> activeAuctions = auctionService.getActiveAuctions();
-//            return ResponseEntity.ok(activeAuctions);
-//        } catch (Exception e) {
-//            log.warning("Error fetching active auctions: " + e.getMessage());
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
+    /**
+     * Get all auctions for the authenticated seller with filtering
+     * @param filter - total, ongoing/active, upcoming, completed/ended, unlisted, deleted
+     * @param searchTerm - optional search term for title or ID
+     * @return List of seller's auctions
+     */
+    @GetMapping("/seller/auctions")
+    public ResponseEntity<List<SellerAuctionDTO>> getSellerAuctions(
+            @RequestParam(value = "filter", defaultValue = "total") String filter,
+            @RequestParam(value = "search", required = false) String searchTerm) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User seller = userDetailsService.getAuthenticatedUser(authentication);
+
+            if (seller.getRole().getId() != SELLER_ROLE_ID) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            }
+
+            // Map frontend filter names to backend filter names
+            String mappedFilter = mapFrontendFilterToBackend(filter);
+
+            List<SellerAuctionDTO> auctions = auctionService.getSellerAuctions(
+                    seller.getSeller().getId(), mappedFilter, searchTerm);
+
+            return ResponseEntity.ok(auctions);
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            log.warning("Error fetching seller auctions: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Map frontend filter names to backend filter names
+     */
+    private String mapFrontendFilterToBackend(String frontendFilter) {
+        switch (frontendFilter.toLowerCase()) {
+            case "active":
+                return "ongoing";
+            case "ended":
+                return "completed";
+            default:
+                return frontendFilter;
+        }
+    }
+
+    /**
+     * Get auction statistics for the authenticated seller
+     * @return Statistics object with counts
+     */
+    @GetMapping("/seller/stats")
+    public ResponseEntity<SellerAuctionStatsDTO> getSellerAuctionStats() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User seller = userDetailsService.getAuthenticatedUser(authentication);
+
+            if (seller.getRole().getId() != SELLER_ROLE_ID) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            }
+
+            SellerAuctionStatsDTO stats = auctionService.getSellerAuctionStats(seller.getSeller().getId());
+            return ResponseEntity.ok(stats);
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            log.warning("Error fetching seller auction stats: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateAuction(
+            @PathVariable UUID id,
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("startingPrice") double startingPrice,
+            @RequestParam("startTime") String startTime,
+            @RequestParam("endTime") String endTime,
+            @RequestParam("isPublic") boolean isPublic,
+            @RequestParam("category") String category,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images) {
+
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User seller = userDetailsService.getAuthenticatedUser(authentication);
+
+            if (seller.getRole().getId() != SELLER_ROLE_ID) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only sellers can update auctions");
+            }
+
+            // Check if auction exists and belongs to seller
+            Auction existingAuction = auctionService.getAuctionById(id);
+            if (existingAuction == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (!existingAuction.getSeller().getId().equals(seller.getSeller().getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can only update your own auctions");
+            }
+
+            // Check if auction has bids
+            boolean hasBids = bidService.hasAuctionReceivedBids(id);
+
+            AuctionUpdateRequestDTO updateRequest = AuctionUpdateRequestDTO.builder()
+                    .title(title)
+                    .description(description)
+                    .startingPrice(startingPrice)
+                    .startTime(startTime)
+                    .endTime(endTime)
+                    .isPublic(isPublic)
+                    .category(category)
+                    .images(images)
+                    .build();
+
+            Auction updatedAuction = auctionService.updateAuction(id, updateRequest, hasBids);
+            return ResponseEntity.ok(updatedAuction);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            log.warning("Error updating auction: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Delete an auction (with restrictions based on bid status)
+     * @param id Auction ID
+     * @return Response message
+     */
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteAuction(@PathVariable UUID id) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User seller = userDetailsService.getAuthenticatedUser(authentication);
+
+            if (seller.getRole().getId() != SELLER_ROLE_ID) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only sellers can delete auctions");
+            }
+
+            // Check if auction exists and belongs to seller
+            Auction existingAuction = auctionService.getAuctionById(id);
+            if (existingAuction == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (!existingAuction.getSeller().getId().equals(seller.getSeller().getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can only delete your own auctions");
+            }
+
+            // Check if auction has bids
+            boolean hasBids = bidService.hasAuctionReceivedBids(id);
+
+            String result = auctionService.deleteAuction(id, hasBids);
+            return ResponseEntity.ok(result);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            log.warning("Error deleting auction: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get auction data for update form
+     * @param id Auction ID
+     * @return Auction data for form
+     */
+    @GetMapping("/update/{id}")
+    public ResponseEntity<AuctionUpdateFormDTO> getAuctionForUpdate(@PathVariable UUID id) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User seller = userDetailsService.getAuthenticatedUser(authentication);
+
+            if (seller.getRole().getId() != SELLER_ROLE_ID) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            }
+
+            AuctionUpdateFormDTO formData = auctionService.getAuctionForUpdate(id, seller.getSeller().getId());
+            if (formData == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok(formData);
+
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            log.warning("Error fetching auction for update: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 
 }

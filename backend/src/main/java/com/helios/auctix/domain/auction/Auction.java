@@ -3,10 +3,8 @@ package com.helios.auctix.domain.auction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.helios.auctix.domain.user.Seller;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.*;
+
 import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
@@ -85,4 +83,57 @@ public class Auction {
     protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
+
+    // New fields for deletion management
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "deletion_status")
+    private String deletionStatus; // DELETED, PENDING_ADMIN_APPROVAL
+
+    @Column(name = "penalty_fee")
+    private Double penaltyFee;
+
+    // ... existing fields and methods ...
+
+    // Add getters and setters for new fields
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public String getDeletionStatus() {
+        return deletionStatus;
+    }
+
+    public void setDeletionStatus(String deletionStatus) {
+        this.deletionStatus = deletionStatus;
+    }
+
+    public Double getPenaltyFee() {
+        return penaltyFee;
+    }
+
+    public void setPenaltyFee(Double penaltyFee) {
+        this.penaltyFee = penaltyFee;
+    }
+
+    public boolean isPublic() {
+        return this.isPublic;
+    }
+
 }

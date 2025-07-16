@@ -40,13 +40,28 @@ export default function AppRouter() {
             path="/auction-details/:auctionId"
             element={<AuctionDetailsPage />}
           />
-          <Route path="/create-auction" element={<CreateAuction />} />
+          {/* <Route path="/create-auction" element={<CreateAuction />} /> */}
+          <Route path="/auctions/new" element={<CreateAuction />} />
+          <Route path="/auctions/edit/:id" element={<CreateAuction />} />
+
           <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>
 
         {/* Routes using DashboardLayout */}
+
         <Route element={<DashboardLayout />}>
-          <Route path="/manage-auctions" element={<ManageAuctions />} />;
+          <Route
+            path="/manage-auctions"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <ManageAuctions />
+              </ProtectedRoute>
+            }
+          />
+          ;
           <Route
             path="/dashboard"
             element={
