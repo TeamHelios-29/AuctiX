@@ -12,6 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { NavLink } from 'react-router-dom';
 
 interface NavItem {
   title: string;
@@ -23,11 +24,11 @@ interface NavItem {
 export function CollapsibleNavItem({ item }: { item: NavItem }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!item.items) {
+  if (!item.items && item.url) {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton asChild isActive={item.isActive}>
-          <a href={item.url}>{item.title}</a>
+          <NavLink to={item.url}>{item.title}</NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -48,9 +49,10 @@ export function CollapsibleNavItem({ item }: { item: NavItem }) {
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-1">
           <SidebarMenu className="ml-4 w-auto">
-            {item.items.map((subItem) => (
-              <CollapsibleNavItem key={subItem.title} item={subItem} />
-            ))}
+            {item.items &&
+              item.items.map((subItem) => (
+                <CollapsibleNavItem key={subItem.title} item={subItem} />
+              ))}
           </SidebarMenu>
         </CollapsibleContent>
       </Collapsible>
