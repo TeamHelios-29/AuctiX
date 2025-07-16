@@ -152,7 +152,7 @@ public class AuctionService {
     }
 
     // Helper method to convert Auction entity to AuctionDetailsDTO (package private so other services can use)
-    AuctionDetailsDTO convertToDTO(Auction auction) {
+    public AuctionDetailsDTO convertToDTO(Auction auction) {
         List<String> imageIds = auctionImagePathsRepository.findById_AuctionId(auction.getId())
                 .stream()
                 .map(AuctionImagePath::getImageId)
@@ -176,7 +176,7 @@ public class AuctionService {
                 .endTime(auction.getEndTime().toString())
                 .startTime(auction.getStartTime().toString())
 //                .bidHistory(null) // Don't load full history for list view
-//                .currentHighestBid(highestBid)
+                .currentHighestBid(highestBid)
                 .startingPrice(auction.getStartingPrice())
                 .build();
     }

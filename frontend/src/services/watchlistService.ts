@@ -29,7 +29,6 @@ interface GetWatchListParams {
   filterHighestBidder?: boolean;
   filterNoBid?: boolean;
 }
-
 export const getWatchList = async ({
   axiosInstance,
   sortBy = null,
@@ -62,25 +61,29 @@ export const getWatchList = async ({
     });
 
     const raw = response.data.content || [];
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data: WatchListAuctionItem[] = raw.map((auction: any) => ({
-      id: auction.id,
-      category: auction.category,
-      title: auction.title,
-      description: auction.description,
-      images: (auction.images || []).map(getImageUrl),
-      sellerName: auction.seller?.username || '',
-      startingPrice: auction.startingPrice,
-      startTime: auction.startTime,
-      endTime: auction.endTime,
-      currentHighestBidAmount: auction.currentHighestBid?.amount || 0,
-      currentHighestBidderName: auction.currentHighestBid?.bidderName || '',
-      bidCount: auction.bidHistory?.length || 0,
-      // These are now expected directly from the API response for each watchlist item
-      isOutbid: auction.isOutbid || false,
-      isHighestBidder: auction.isHighestBidder || false,
-      userBidAmount: auction.userBidAmount || null, // Changed from 0 to null for clarity if no bid
-    }));
+    const data: WatchListAuctionItem[] = raw.map((item: any) => {
+      const auction = item.auction;
+
+      return {
+        id: auction.id,
+        category: auction.category,
+        title: auction.title,
+        description: auction.description,
+        images: (auction.images || []).map(getImageUrl),
+        sellerName: auction.seller?.username || '',
+        startingPrice: auction.startingPrice,
+        startTime: auction.startTime,
+        endTime: auction.endTime,
+        currentHighestBidAmount: auction.currentHighestBid?.amount || 0,
+        currentHighestBidderName: auction.currentHighestBid?.bidderName || '',
+        bidCount: auction.bidHistory?.length || 0,
+        isOutbid: item.outbid || false,
+        isHighestBidder: item.highestBidder || false,
+        userBidAmount: item.userBidAmount ?? null,
+      };
+    });
 
     return {
       data,

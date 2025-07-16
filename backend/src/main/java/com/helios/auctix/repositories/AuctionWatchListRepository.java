@@ -25,8 +25,9 @@ public interface AuctionWatchListRepository extends JpaRepository<AuctionWatchLi
         JOIN wl.auction a
         WHERE wl.user.id = :userId
           AND (
-            LOWER(a.title) LIKE LOWER(CONCAT('%', :search, '%')) OR
-            LOWER(a.description) LIKE LOWER(CONCAT('%', :search, '%'))
+            :search IS NULL OR :search = ''
+            OR LOWER(a.title) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(a.description) LIKE LOWER(CONCAT('%', :search, '%'))
           )
     """)
     Page<AuctionWatchList> findWatchedAuctionsWithSearch(

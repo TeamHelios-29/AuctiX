@@ -2,6 +2,7 @@ package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.AuctionDetailsDTO;
+import com.helios.auctix.dtos.WatchListAuctionDTO;
 import com.helios.auctix.services.WatchListService;
 import com.helios.auctix.services.user.UserDetailsService;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +28,14 @@ public class WatchListController {
     private final UserDetailsService userDetailsService;
 
     @GetMapping("/")
-    public ResponseEntity<Page<AuctionDetailsDTO>> getMyWatchList(
+    public ResponseEntity<Page<WatchListAuctionDTO>> getMyWatchList(
             Pageable pageable,
             @RequestParam(required = false) String search
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         try {
             User user = userDetailsService.getAuthenticatedUser(authentication);
-            Page<AuctionDetailsDTO> watchedAuctions = watchListService.getWatchedAuctions(user.getId(), search, pageable);
+            Page<WatchListAuctionDTO> watchedAuctions = watchListService.getWatchList(user.getId(), search, pageable);
             return ResponseEntity.ok(watchedAuctions);
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
