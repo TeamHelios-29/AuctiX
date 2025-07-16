@@ -17,4 +17,6 @@ public interface BidRepository extends JpaRepository<Bid, UUID> {
 
     // Find bid history for an auction, ordered by time (newest first)
     List<Bid> findByAuctionIdOrderByBidTimeDesc(UUID auctionId);
+
+    Optional<Bid> findTopByAuctionIdAndBidderIdOrderByAmountDesc(UUID id, UUID userId);
 }

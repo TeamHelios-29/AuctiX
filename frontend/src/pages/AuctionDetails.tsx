@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import AuctionReport from '@/components/organisms/AuctionReport';
 import { title } from 'process';
 import AuctionChat from '@/components/organisms/auction-chat';
+import AddToWatchlistButton from '@/components/molecules/AddToWatchlistButton';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { useAuctionWebSocket } from '@/hooks/useAuctionWebSocket';
@@ -428,13 +429,14 @@ const AuctionDetailsPage = () => {
               <Flag className="h-5 w-5 mb-1" />
               Report
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
             >
               <Heart className="h-5 w-5 mb-1" />
               Add to Watchlist
-            </Button>
+            </Button> */}
+            <AddToWatchlistButton auctionId={product.id} />
             <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
