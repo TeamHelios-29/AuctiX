@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Trash2 } from 'lucide-react';
+import { ExternalLink, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface NotificationCardProps {
   notification: Notification;
@@ -123,39 +124,58 @@ export const NotificationCard = ({
               </span>
             </CardDescription>
           </div>
-          <div className="flex justify-end gap-2 pt-0">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-0 items-center">
+            {notification.partialUrl && (
+              <a
+                href={notification.partialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto"
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1 px-2 py-1 w-full sm:w-auto"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span className="hidden sm:inline">View Details</span>
+                </Button>
+              </a>
+            )}
+
             {!notification.read ? (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 disabled={isLoading}
                 onClick={handleMarkAsRead}
-                className="text-sm"
+                className="flex items-center gap-1 px-2 py-1 w-full sm:w-auto"
               >
-                <Eye className="mr-1 h-4 w-4" />
-                Mark as read
+                <Eye className="w-4 h-4" />
+                <span className="hidden sm:inline">Mark as read</span>
               </Button>
             ) : (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 disabled={isLoading}
                 onClick={handleMarkAsUnread}
-                className="text-sm"
+                className="flex items-center gap-1 px-2 py-1 w-full sm:w-auto"
               >
-                <EyeOff className="mr-1 h-4 w-4" />
-                Mark as unread
+                <EyeOff className="w-4 h-4" />
+                <span className="hidden sm:inline">Mark as unread</span>
               </Button>
             )}
 
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               disabled={isLoading}
               onClick={handleDelete}
-              className="text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 w-full sm:w-auto"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="w-4 h-4 mx-auto" />
+              <span className="hidden sm:inline">Delete</span>
             </Button>
           </div>
         </div>

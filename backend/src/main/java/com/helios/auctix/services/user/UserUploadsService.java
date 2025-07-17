@@ -97,11 +97,11 @@ public class UserUploadsService {
     /**
      * Deletes the profile photo of a user by their email.
      *
-     * @param email The email of the user whose profile photo is to be deleted.
+     * @param username The username of the user whose profile photo is to be deleted.
      * @return A UserServiceResponse indicating success or failure of the operation.
      */
-    public UserServiceResponse UserProfilePhotoDelete(String email) {
-        User user = userRepository.findByEmail(email);
+    public UserServiceResponse UserProfilePhotoDelete(String username) {
+        User user = userRepository.findByUsername(username);
         return UserProfilePhotoDelete(user);
     }
 

@@ -19,6 +19,7 @@ public interface BidRepository extends JpaRepository<Bid, UUID> {
     // Find bid history for an auction, ordered by time (newest first)
     List<Bid> findByAuctionIdOrderByBidTimeDesc(UUID auctionId);
 
+
     // Add these methods to your existing BidRepository
 
     /**
@@ -36,4 +37,7 @@ public interface BidRepository extends JpaRepository<Bid, UUID> {
      */
     @Query("SELECT DISTINCT b.bidderId FROM Bid b WHERE b.auction.id = :auctionId")
     List<UUID> findDistinctBidderIdsByAuctionId(@Param("auctionId") UUID auctionId);
+
+  
+
 }

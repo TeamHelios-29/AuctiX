@@ -1,4 +1,4 @@
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -34,6 +34,63 @@ export function Navbar() {
     dispatch(logout());
   };
 
+  const NotificationWrapper = ({
+    notification,
+    children,
+  }: {
+    notification: Notification;
+    children: React.ReactNode;
+  }) => {
+    const commonClasses = `relative group p-4 border shadow-sm transition-all duration-200 ${
+      notification.read
+        ? 'bg-muted/50 border-transparent'
+        : 'bg-yellow-50 border-yellow-300'
+    } hover:shadow-md hover:bg-yellow-100 ${notification.partialUrl ? 'cursor-pointer' : 'cursor-default'}`;
+
+    const handleClick = () => {
+      if (!notification.read) {
+        dispatch(markNotificationReadThunk(notification.id));
+      }
+      if (notification.partialUrl) {
+        window.open(notification.partialUrl, '_blank', 'noopener,noreferrer');
+      }
+    };
+
+    if (notification.partialUrl) {
+      return (
+        <a
+          href={notification.partialUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`block ${commonClasses}`}
+          onClick={(e) => {
+            e.preventDefault();
+            handleClick();
+          }}
+        >
+          {children}
+        </a>
+      );
+    }
+
+    return (
+      <div
+        className={commonClasses}
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+      >
+        {children}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 w-full border-b bg-background z-50">
       <div className="container mx-auto flex h-16 items-center px-4 justify-between">
@@ -56,26 +113,11 @@ export function Navbar() {
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuTrigger>Explore</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-48 p-2">
-                    <Link to="/categories">
-                      <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                        Categories
-                      </NavigationMenuLink>
-                    </Link>
-                    <Link to="/featured">
-                      <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                        Featured
-                      </NavigationMenuLink>
-                    </Link>
-                    <Link to="/new-arrivals">
-                      <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                        New Arrivals
-                      </NavigationMenuLink>
-                    </Link>
-                  </div>
-                </NavigationMenuContent>
+                <Link to="/explore-auctions">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                    Explore
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <Link to="/dashboard">
@@ -135,26 +177,18 @@ export function Navbar() {
                         notificationState.latestItems.length > 0 ? (
                           notificationState.latestItems.map(
                             (notification: Notification, idx: number) => (
-                              <div
+                              <NotificationWrapper
                                 key={notification.id || idx}
-                                className={`relative group p-4 border shadow-sm transition-all duration-200 ${
-                                  notification.read
-                                    ? 'bg-muted/50 border-transparent'
-                                    : 'bg-yellow-50 border-yellow-300'
-                                } hover:shadow-md hover:bg-yellow-100`}
-                                onClick={() => {
-                                  if (!notification.read) {
-                                    dispatch(
-                                      markNotificationReadThunk(
-                                        notification.id,
-                                      ),
-                                    );
-                                  }
-                                  // TODO: add navigation to the notification
-                                }}
+                                notification={notification}
                               >
-                                <div className="text-sm font-medium">
+                                <div className="flex items-center gap-1 text-sm font-medium">
                                   {notification.title || 'Notification'}
+                                  {notification.partialUrl && (
+                                    <ExternalLink
+                                      className="w-3 h-3 text-muted-foreground"
+                                      aria-label="Link available"
+                                    />
+                                  )}{' '}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {notification.content}
@@ -167,7 +201,7 @@ export function Navbar() {
                                     timeStyle: 'short',
                                   })}
                                 </div>
-                              </div>
+                              </NotificationWrapper>
                             ),
                           )
                         ) : (
@@ -196,9 +230,7 @@ export function Navbar() {
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium">
-                  {(userData?.firstName ?? '') +
-                    ' ' +
-                    (userData?.lastName ?? '')}
+                  {userData?.username ?? ''}
                 </span>
               </Link>
 

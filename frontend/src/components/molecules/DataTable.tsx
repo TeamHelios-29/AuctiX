@@ -35,6 +35,7 @@ interface DataTableProps<TData, TValue> {
   setPageSize: (pageSize: number) => void;
   setSearchText: (searchText: string) => void;
   searchText: string | null;
+  searchPlaceholderText?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -47,6 +48,7 @@ export function DataTable<TData, TValue>({
   setPageSize,
   setSearchText,
   searchText,
+  searchPlaceholderText,
 }: DataTableProps<TData, TValue>) {
   const currentPageHandler = React.useCallback(
     (page: number) => {
@@ -91,7 +93,7 @@ export function DataTable<TData, TValue>({
     <div className="w-full p-4">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter emails..."
+          placeholder={searchPlaceholderText || 'Search...'}
           value={searchText ?? ''}
           onChange={(event) => setSearchText(event.target.value)}
           className="max-w-sm"

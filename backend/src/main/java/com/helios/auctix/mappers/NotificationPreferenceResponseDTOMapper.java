@@ -58,7 +58,7 @@ public class NotificationPreferenceResponseDTOMapper {
         Map<String, Map<String, NotificationPreferencesResponseDto.EventSetting>> groupedEvents = new HashMap<>();
         for (NotificationCategory category : NotificationCategory.values()) {
 
-            if (category.isNotAllowedTo(userRole)) {
+            if (category.isNotAllowedTo(userRole) || category.isHiddenFrom(userRole)) {
                 continue;
             }
 
@@ -78,6 +78,7 @@ public class NotificationPreferenceResponseDTOMapper {
                             .description(category.getDescription())
                             .categoryGroup(group)
                             .channelTypes(channelsMap)
+                            .editable(category.isEditableBy(userRole))
                             .build();
 
             groupedEvents.computeIfAbsent(group, g -> new HashMap<>())

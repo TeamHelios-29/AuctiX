@@ -1,5 +1,7 @@
 package com.helios.auctix.controllers.exception;
 
+import com.helios.auctix.services.fileUpload.UploadedFileCountMaxLimitExceedException;
+import com.helios.auctix.services.fileUpload.UploadedFileSizeMaxLimitExceedException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.dao.PermissionDeniedDataAccessException;
@@ -58,6 +60,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handlePermissionDenied(PermissionDeniedDataAccessException e) {
         log.error("Permission denied: {}", e.getMessage());
         return buildErrorResponse("Permission denied", HttpStatus.FORBIDDEN);
+    }
+
+    // handle UploadedFileCountMaxLimitExceedException
+    @ExceptionHandler(UploadedFileCountMaxLimitExceedException.class)
+    public ResponseEntity<Map<String, Object>> handleUploadedFileCountMaxLimitExceedException(UploadedFileCountMaxLimitExceedException e) {
+        log.error("Uploaded file count exceeds maximum limit: {}", e.getMessage());
+        return buildErrorResponse("Uploaded file count exceeds maximum limit", HttpStatus.BAD_REQUEST);
+    }
+
+    // handle UploadedFileSizeMaxLimitExceedException
+    @ExceptionHandler(UploadedFileSizeMaxLimitExceedException.class)
+    public ResponseEntity<Map<String, Object>> handleUploadedFileSizeMaxLimitExceedException(UploadedFileSizeMaxLimitExceedException e) {
+        log.error("Uploaded file size exceeds maximum limit: {}", e.getMessage());
+        return buildErrorResponse("Uploaded file size exceeds maximum limit", HttpStatus.BAD_REQUEST);
     }
 
 
