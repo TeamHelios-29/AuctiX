@@ -128,7 +128,7 @@ export default function AppRouter() {
           <Route
             path="/settings/security"
             element={
-              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/403">
+              <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
                 <SecuritySettingsPage />
               </ProtectedRoute>
             }

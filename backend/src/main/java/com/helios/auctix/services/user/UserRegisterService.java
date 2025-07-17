@@ -227,7 +227,8 @@ public class UserRegisterService {
                     .build();
 
             log.info("Saving supper admin account");
-            userRepository.save(user);
+            user = userRepository.save(user);
+
             return true;
         }
         catch(Exception e){

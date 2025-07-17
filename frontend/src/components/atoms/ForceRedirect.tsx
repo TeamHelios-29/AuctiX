@@ -50,8 +50,8 @@ export default function ForceRedirect() {
           );
         } else if (action.actionType === 'FIRST_LOGIN_CHANGE_PASSWORD') {
           forceNavigate(
-            '/settings/payment',
-            'Setup your payment method to continue',
+            '/settings/security',
+            'change your password to continue',
           );
         }
       });
