@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Share, Flag, Heart } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-
 import AxiosRequest from '@/services/axiosInspector';
 import { useToast } from '@/hooks/use-toast';
 import AuctionReport from '@/components/organisms/AuctionReport';
@@ -319,7 +318,7 @@ const AuctionDetailsPage = () => {
         <div className="lg:col-span-2">
           <div className="mb-4">
             <p className="text-sm text-gray-500">{product.category}</p>
-            <h1 className="text-2xl font-bold">{product.title}</h1>
+            <h1 className="text-3xl font-semibold">{product.title}</h1>
           </div>
 
           <div className="mb-6">
@@ -354,14 +353,17 @@ const AuctionDetailsPage = () => {
         </div>
 
         <div>
-          <div className="border-b pb-4">
-            <p className="text-sm text-gray-500 mb-1">Closes in</p>
-            <p className="text-lg font-semibold">{timeLeft}</p>
+          <div className="pb-4 border-b-4 border-yellow-400">
+            <br></br>
+            <p className="text-2xl ">
+              <span className="text-gray-400">Closes in </span>
+              <span className="">{timeLeft}</span>
+            </p>
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-md mt-4">
-            <p className="text-sm text-gray-500 mb-1">Current Highest Bid</p>
-            <p className="text-3xl font-bold mb-2">
+          <div className="bg-gray-100 p-4 rounded-md mt-4">
+            <p className="text-sm text-gray-700 ">Current Highest Bid</p>
+            <p className="text-4xl font-bold mb-2">
               LKR {product.currentBid?.toLocaleString()}
             </p>
             <div className="flex items-center text-sm">
@@ -373,7 +375,7 @@ const AuctionDetailsPage = () => {
                     : '/defaultProfilePhoto.jpg'
                 }
                 alt={product.currentBidder?.name}
-                className="w-6 h-6 rounded-full mx-2"
+                className="w-6 h-6 rounded-full ml-2 mr-1"
               />
               <p>{product.currentBidder?.name}</p>
             </div>
@@ -386,8 +388,8 @@ const AuctionDetailsPage = () => {
 
             <div className="flex items-center mb-4">
               <Button
-                variant="outline"
-                className="px-4"
+                variant="secondary"
+                className="px-4 bg-gray-100"
                 onClick={handleDecrementBid}
               >
                 −
@@ -404,8 +406,8 @@ const AuctionDetailsPage = () => {
                 className="text-center mx-2"
               />
               <Button
-                variant="outline"
-                className="px-4"
+                variant="secondary"
+                className="px-4 bg-gray-100"
                 onClick={handleIncrementBid}
               >
                 +
@@ -448,14 +450,18 @@ const AuctionDetailsPage = () => {
 
           <div className="flex items-center mt-6">
             <p className="text-sm mr-2">By</p>
-            <img
-              src={product.seller.profilePicture || '/defaultProfilePhoto.jpg'}
-              alt={`${product.seller.firstName} ${product.seller.lastName}`}
-              className="w-6 h-6 rounded-full mr-2"
-            />
-            <p className="text-sm">
-              {product.seller.firstName} {product.seller.lastName}
-            </p>
+            <span className="border rounded-full p-1 pr-2 flex items-center">
+              <img
+                src={
+                  product.seller.profilePicture || '/defaultProfilePhoto.jpg'
+                }
+                alt={`${product.seller.firstName} ${product.seller.lastName}`}
+                className="w-6 h-6 rounded-full mr-1"
+              />
+              <p className="text-sm">
+                {product.seller.firstName} {product.seller.lastName}
+              </p>
+            </span>
           </div>
         </div>
       </div>

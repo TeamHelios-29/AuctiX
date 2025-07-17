@@ -113,26 +113,11 @@ export function Navbar() {
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuTrigger>Explore</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-48 p-2">
-                    <Link to="/categories">
-                      <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                        Categories
-                      </NavigationMenuLink>
-                    </Link>
-                    <Link to="/featured">
-                      <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                        Featured
-                      </NavigationMenuLink>
-                    </Link>
-                    <Link to="/new-arrivals">
-                      <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                        New Arrivals
-                      </NavigationMenuLink>
-                    </Link>
-                  </div>
-                </NavigationMenuContent>
+                <Link to="/explore-auctions">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                    Explore
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <Link to="/dashboard">
@@ -245,9 +230,7 @@ export function Navbar() {
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium">
-                  {(userData?.firstName ?? '') +
-                    ' ' +
-                    (userData?.lastName ?? '')}
+                  {userData?.username ?? ''}
                 </span>
               </Link>
 
