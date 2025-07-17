@@ -8,9 +8,9 @@ import { useAppSelector } from '@/hooks/hooks';
 const ManageAuctions = () => {
   type FilterKey =
     | 'total'
-    | 'active' // Changed from 'ongoing' to 'active'
+    | 'active'
     | 'upcoming'
-    | 'ended' // Changed from 'completed' to 'ended'
+    | 'ended'
     | 'unlisted'
     | 'deleted';
 
@@ -23,19 +23,19 @@ const ManageAuctions = () => {
   // Map frontend filter keys to backend filter values
   const filterMap: Record<FilterKey, string> = {
     total: 'total',
-    active: 'active', // Maps to 'ongoing' in backend
+    active: 'active',
     upcoming: 'upcoming',
-    ended: 'ended', // Maps to 'completed' in backend
+    ended: 'ended',
     unlisted: 'unlisted',
     deleted: 'deleted',
   };
 
   // Map backend status to frontend display
   const statusDisplayMap: Record<string, string> = {
-    ongoing: 'Active', // Changed display text
+    ongoing: 'Active',
     active: 'Active',
     upcoming: 'Upcoming',
-    ended: 'Ended', // Changed display text
+    ended: 'Ended',
     completed: 'Ended',
     unlisted: 'Unlisted',
     deleted: 'Deleted',
@@ -68,9 +68,9 @@ const ManageAuctions = () => {
       // Map frontend filter to backend filter
       let backendFilter = filterMap[filter];
       if (filter === 'active') {
-        backendFilter = 'ongoing'; // Backend uses 'ongoing' for active
+        backendFilter = 'ongoing';
       } else if (filter === 'ended') {
-        backendFilter = 'completed'; // Backend uses 'completed' for ended
+        backendFilter = 'completed';
       }
 
       params.append('filter', backendFilter);
@@ -80,7 +80,6 @@ const ManageAuctions = () => {
 
       const url = `/auctions/seller/auctions?${params.toString()}`;
       console.log('Fetching from URL:', url);
-      console.log('Token:', token);
 
       const response = await axiosInstance.get(url, {
         headers: {
@@ -92,7 +91,6 @@ const ManageAuctions = () => {
       setAllAuctions(response.data);
     } catch (error: any) {
       console.error('Failed to fetch auctions:', error);
-      console.error('Error response:', error.response);
       if (error.response?.status === 401) {
         toast.error('Session expired. Please log in again.');
       } else if (error.response?.status === 403) {
@@ -138,7 +136,7 @@ const ManageAuctions = () => {
 
   // Filter auctions on frontend (backup filtering)
   const filteredAuctions = useMemo(() => {
-    return allAuctions; // Backend should handle filtering, so we use response as-is
+    return allAuctions;
   }, [allAuctions]);
 
   // Calculate pagination
@@ -162,9 +160,9 @@ const ManageAuctions = () => {
       key: 'total',
     },
     {
-      title: 'Active Auctions', // Changed from 'Ongoing'
+      title: 'Active Auctions',
       count: stats?.ongoingAuctions || 0,
-      key: 'active', // Changed key
+      key: 'active',
     },
     {
       title: 'Upcoming Auctions',
@@ -172,9 +170,9 @@ const ManageAuctions = () => {
       key: 'upcoming',
     },
     {
-      title: 'Ended Auctions', // Changed from 'Completed'
+      title: 'Ended Auctions',
       count: stats?.completedAuctions || 0,
-      key: 'ended', // Changed key
+      key: 'ended',
     },
     {
       title: 'Unlisted Auctions',
@@ -182,7 +180,7 @@ const ManageAuctions = () => {
       key: 'unlisted',
     },
     {
-      title: 'Deleted Auctions', // Added deleted filter
+      title: 'Deleted Auctions',
       count: stats?.deletedAuctions || 0,
       key: 'deleted',
     },
@@ -193,7 +191,8 @@ const ManageAuctions = () => {
     auctionId: string,
   ) => {
     if (action === 'update') {
-      navigate(`/update/${auctionId}`);
+      // Fixed: Navigate to the correct update route
+      navigate(`/auctions/update/${auctionId}`);
     }
     if (action === 'delete') {
       const confirmed = window.confirm(
@@ -258,6 +257,21 @@ const ManageAuctions = () => {
     return `LKR ${price?.toLocaleString() || 0}`;
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showDropdown &&
+        !(event.target as Element).closest('.dropdown-container')
+      ) {
+        setShowDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDropdown]);
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="mb-4">
@@ -274,7 +288,6 @@ const ManageAuctions = () => {
         </p>
       </div>
 
-      {/* Updated grid to show 6 items instead of 5 */}
       <div className="grid grid-cols-6 gap-4 mb-6">
         {calculatedStats.map((item, idx) => (
           <div
@@ -297,7 +310,7 @@ const ManageAuctions = () => {
           <h2 className="text-xl font-bold">Manage Auctions</h2>
           <button
             className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-            onClick={() => navigate('/create-auction')}
+            onClick={() => navigate('/auctions/new')}
           >
             Add Auction +
           </button>
@@ -311,7 +324,7 @@ const ManageAuctions = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <div className="relative">
+          <div className="relative dropdown-container">
             <button
               className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
               onClick={() =>
@@ -414,8 +427,8 @@ const ManageAuctions = () => {
                               auction.status}
                           </span>
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="relative">
+                        <td className="py-3 px-4 relative">
+                          <div className="dropdown-container">
                             <button
                               className="p-1 hover:bg-gray-200 rounded"
                               onClick={() =>
@@ -429,7 +442,7 @@ const ManageAuctions = () => {
                               <MoreHorizontal className="h-4 w-4" />
                             </button>
                             {showDropdown === auction.id && (
-                              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                              <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                                 <div className="py-1">
                                   <div
                                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"

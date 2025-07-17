@@ -42,7 +42,7 @@ export default function AppRouter() {
           />
           {/* <Route path="/create-auction" element={<CreateAuction />} /> */}
           <Route path="/auctions/new" element={<CreateAuction />} />
-          <Route path="/auctions/edit/:id" element={<CreateAuction />} />
+          <Route path="/auctions/update/:id" element={<CreateAuction />} />
 
           <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>

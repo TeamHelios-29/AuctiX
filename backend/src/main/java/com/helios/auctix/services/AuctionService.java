@@ -7,7 +7,7 @@ import com.helios.auctix.dtos.*;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.AuctionImagePathsRepository;
-
+import java.util.logging.Logger;
 import com.helios.auctix.repositories.AuctionRepository;
 
 import com.helios.auctix.repositories.chat.ChatRoomRepository;
@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.UUID;
 
+//import static com.helios.auctix.services.fileUpload.FileUploadService.log;
+
 @AllArgsConstructor
 @Service
 public class AuctionService {
@@ -38,7 +40,7 @@ public class AuctionService {
     private final ChatRoomRepository chatRoomRepository;
     @Autowired
     private FileUploadService uploader;
-
+    private static final Logger log = Logger.getLogger(AuctionService.class.getName());
     public AuctionDetailsDTO getAuctionDetails(UUID id) {
         Auction auction = auctionRepository.findById(id).orElse(null);
         if (auction == null) return null;
@@ -286,7 +288,7 @@ public class AuctionService {
         if (hasBids) {
             // Only update description and add edited timestamp
             auction.setDescription(updateRequest.getDescription() + "\n\n[Edited on: " + Instant.now().toString() + "]");
-            auction.setIsPublic(updateRequest.isPublic()); // Allow visibility changes
+//            auction.setIsPublic(updateRequest.isPublic()); // Allow visibility changes
         } else {
             // Full update allowed if no bids
             auction.setTitle(updateRequest.getTitle());
@@ -350,37 +352,62 @@ public class AuctionService {
         }
     }
 
-    /**
-     * Get auction data for update form
-     */
+    // Updated getAuctionForUpdate method in AuctionService.java
+
     public AuctionUpdateFormDTO getAuctionForUpdate(UUID auctionId, UUID sellerId) {
+        log.info("=== BACKEND DEBUG - getAuctionForUpdate ===");
+        log.info("Starting getAuctionForUpdate for auction: " + auctionId);
+
         Auction auction = auctionRepository.findById(auctionId).orElse(null);
+        log.info("Found auction: " + (auction != null));
 
         if (auction == null || !auction.getSeller().getId().equals(sellerId)) {
+            log.warning("Auction not found or seller mismatch");
             return null;
         }
 
+        log.info("Fetching image paths...");
         List<String> imageIds = auctionImagePathsRepository.findById_AuctionId(auctionId)
                 .stream()
                 .map(AuctionImagePath::getImageId)
                 .map(UUID::toString)
                 .collect(Collectors.toList());
 
+        log.info("Checking for bids...");
         boolean hasBids = bidService.hasAuctionReceivedBids(auctionId);
 
-        return AuctionUpdateFormDTO.builder()
+        // CRITICAL: Ensure boolean values are properly handled
+        boolean isPublicValue = auction.isPublic();
+        boolean canFullyEditValue = !hasBids;
+
+        log.info("=== BACKEND BOOLEAN VALUES ===");
+        log.info("Raw auction.isPublic(): " + isPublicValue);
+        log.info("isPublic type: " + ((Object) isPublicValue).getClass().getSimpleName());
+        log.info("hasBids: " + hasBids);
+        log.info("canFullyEdit: " + canFullyEditValue);
+
+        log.info("Building response DTO...");
+        AuctionUpdateFormDTO dto = AuctionUpdateFormDTO.builder()
                 .id(auction.getId().toString())
                 .title(auction.getTitle())
                 .description(auction.getDescription())
                 .startingPrice(auction.getStartingPrice())
                 .startTime(auction.getStartTime().toString())
                 .endTime(auction.getEndTime().toString())
-                .isPublic(auction.isPublic())
+                .isPublic(isPublicValue) // Explicitly use boolean variable
                 .category(auction.getCategory())
                 .images(imageIds)
                 .hasBids(hasBids)
-                .canFullyEdit(!hasBids)
+                .canFullyEdit(canFullyEditValue) // Explicitly use boolean variable
                 .build();
+
+        // VERIFY DTO values before returning
+        log.info("=== DTO VERIFICATION ===");
+        log.info("DTO isPublic(): " + dto.isPublic());
+        log.info("DTO canFullyEdit(): " + dto.isCanFullyEdit());
+        log.info("DTO hasBids(): " + dto.isHasBids());
+
+        return dto;
     }
 
     /**
