@@ -370,7 +370,8 @@ public class AuctionController {
             return ResponseEntity.ok(result);
 
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            log.warning("Invalid request parameters: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Invalid request parameters.");
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
