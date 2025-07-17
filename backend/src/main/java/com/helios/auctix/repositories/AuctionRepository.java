@@ -52,4 +52,8 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
     // Find auctions by seller
     @Query("SELECT a FROM Auction a WHERE a.seller.id = :sellerId ORDER BY a.createdAt DESC")
     List<Auction> findBySellerId(@Param("sellerId") UUID sellerId);
+
+    List<Auction> findByStartTimeBetween(Instant from, Instant to);
+
+    List<Auction> findByEndTimeBetween(Instant from, Instant to);
 }

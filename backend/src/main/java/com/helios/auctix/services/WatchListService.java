@@ -41,32 +41,6 @@ public class WatchListService {
     private final UserRepository userRepo;
     private final AuctionService auctionService;
     private final BidRepository bidRepository;
-    private final BulkNotificationPublisher bulkNotificationPublisher;
-
-    /**
-     * Notifies all users who have subscribed (watchlisted) the given auction.
-     * <p>
-     * This method retrieves the list of users watching the auction and publishes
-     * a bulk notification event to inform them about updates such as changes in
-     * auction status, time, or other important events.
-     * <p>
-     * The bulk notification event is saved in bulk by NotificationManagerService,
-     * and then user preferences are resolved and notifications are sent in parallel.
-     *
-     * @param auction  the auction whose subscribers should be notified
-     * @param title    the title of the notification
-     * @param message  the detailed message content to be sent
-     * @param category the notification category
-     */
-
-    public void notifySubscribers(Auction auction, String title, String message, NotificationCategory category, @Nullable String partialUrl) {
-        if (auction == null) {
-            throw new IllegalArgumentException("Auction cannot be null");
-        }
-        
-        List<User> users = watchRepo.findUsersByAuction_Id(auction.getId());
-        bulkNotificationPublisher.publish(users, title, message, category, partialUrl);
-    }
 
     public boolean isWatchedByUser(User user, UUID auctionId) {
         Optional<Auction> auctionOpt = auctionRepo.findById(auctionId);

@@ -12,6 +12,7 @@ export interface Notification {
 export const NOTIFICATION_CATEGORY_GROUP_LABELS = {
   PROMO: 'Promotional',
   AUCTION: 'Auction',
+  WALLET: 'Wallet',
   DEFAULT: 'General',
 } as const;
 

@@ -2,8 +2,10 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.Bid;
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.BidUpdateMessageDTO;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.dtos.BidDTO;
 import com.helios.auctix.dtos.PlaceBidRequest;
@@ -16,8 +18,11 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,7 +41,8 @@ public class BidService {
     private final UserMapperImpl userMapperImpl;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
-
+    private final NotificationEventPublisher notificationEventPublisher;
+    private final WatchListNotifyService watchListNotifyService;
 
     // Get bid history for an auction
     public List<Bid> getBidHistoryForAuction(UUID auctionId) {
@@ -79,6 +85,7 @@ public class BidService {
 
         UUID auctionId = request.getAuctionId();
         Double amount = request.getAmount();
+        List<User> excludedFromWatchlistNotify = new ArrayList<>();
 
         UUID bidderId = bidder.getId();
         String bidderName = bidder.getFirstName() + " " + bidder.getLastName();
@@ -137,6 +144,28 @@ public class BidService {
                             highestBid.get().getAmount(),
                             "Outbid on auction " + auctionId
                     );
+
+
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            String title = "You've been outbid";
+                            String message = "Your bid of LKR " +
+                                    highestBid.get().getAmount()  + " on auction " +
+                                    auction.getTitle() + " was outbid by a user placing a bid of LKR" + amount + " ! " +
+                                    "Reclaim the highest bid to secure the win!" ;
+                            User userToNotify = userDetailsService.getUserById(highestBid.get().getBidderId());
+                            excludedFromWatchlistNotify.add(userToNotify);
+                            notificationEventPublisher.publishNotificationEvent(
+                                    title,
+                                    message,
+                                    NotificationCategory.OUTBID,
+                                    userToNotify,
+                                    "/auctions/" + auction.getId()
+                            );
+                        }
+                    });
+
                 } catch (Exception e) {
                     log.severe("Failed to unfreeze previous bidder's funds: " + e.getMessage());
                     throw new IllegalStateException("Failed to unfreeze previous bidder's funds: " + e.getMessage());
@@ -168,6 +197,37 @@ public class BidService {
                 .amount(amount)
                 .bidTime(now)
                 .build();
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                String title = "New bid placed on auction " + auction.getTitle() ;
+                String message = "A bidder has placed a bid of " + bid.getAmount() + " on the auction " + auction.getTitle()  + "check it out on AuctiX" ;
+
+                // notify seller
+                notificationEventPublisher.publishNotificationEvent(
+                        title,
+                        message,
+                        NotificationCategory.NEW_BID_RECEIVED_SELLER,
+                        auction.getSeller().getUser(),
+                        "/auctions/" + auction.getId()
+                );
+
+                // notify watchlist users
+                excludedFromWatchlistNotify.add(bidder);
+
+                
+                watchListNotifyService.notifySubscribers(
+                        auction,
+                        excludedFromWatchlistNotify,
+                        title,
+                        message,
+                        NotificationCategory.NEW_BID_RECEIVED_WATCHER,
+                        "/auctions/" + auction.getId()
+                );
+
+            }
+        });
 
         Bid savedBid = bidRepository.save(bid);
 

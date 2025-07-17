@@ -41,6 +41,59 @@
 ## File Uploads Delete Service
 > files will be marked as deleted once they are deleted using deleteFile and those files can't be access. Those files are deleted by a sheduled job which runs at given time.
 
+
+# Notification Service
+
+## Adding a new NotificationCategory to the system
+
+Example for notification category would be like BID_WON, AUCTION_STARTED, AUCTION_ENDED, etc.
+
+Each of these will have a NotifcationCategoryGroup such as AUCTION, PROMO, etc
+
+### Steps
+1. Create a new enum `NotificationCategory` for the desired category.
+2. Configure the metadata for it in the yaml file located at `backend/src/main/resources/notification-categories.yml`.
+
+    ```yml
+    notificationCategories:
+    AUCTION_COMPLETED:
+        allowedRoles: [BIDDER, SELLER]
+        alwaysHiddenRoles: []
+        cannotEditRoles: []
+        categoryGroup: AUCTION
+        description: "Get notified when auction ends"
+        title: "Auction Completed"
+
+    AUCTION_END_SOON:
+        allowedRoles: [BIDDER, SELLER]
+        alwaysHiddenRoles: []
+        cannotEditRoles: [BIDDER, SELLER]
+        categoryGroup: AUCTION
+        description: "Get notified 10 minutes before auction ends"
+        title: "Auction Ends soon"
+
+    ```
+
+3. Configure notification channel type defaults if you want in the application.properties ( can be overridden by user preferences later )
+
+    ```
+
+    # Global notification defaults
+    notification.defaults.global.EMAIL=true
+    notification.defaults.global.PUSH=true
+
+    # Event-specific defaults
+    notification.defaults.events.PROMO.EMAIL=true
+    notification.defaults.events.PROMO.PUSH=false
+
+    notification.defaults.events.BID_WIN.EMAIL=true
+    notification.defaults.events.BID_WIN.PUSH=false
+
+    ```
+```
+
+
+
 # User API Documentation
 
 ## Usable Methods
