@@ -24,7 +24,7 @@
         padding: 20px;
         border-radius: 8px;
         box-shadow: 0px 0px 10px #ccc;
-        max-width: 600px;
+        max-width: 800px;
         margin: 0 auto;
       }
       .header {
@@ -96,6 +96,37 @@
           nulla in aliquet. Donec vel congue urna. Fusce vel varius ex.
         </p>
       </div>
+
+      <!-- Left-aligned thank you -->
+      <p style="font-size: 13px; color: #333">
+        Thanks,<br />
+        The AuctiX Team
+      </p>
+
+      <hr style="margin: 30px 0; border: none; border-top: 1px solid #ccc" />
+      <p style="font-size: 12px; color: #555">
+        Need help? Contact our support team at
+        <a
+          href="mailto:support@auctix.com"
+          style="color: #ecb02d; text-decoration: none"
+          >support@auctix.com</a
+        >
+        or
+        <a
+          th:href="${preferencesUrl}"
+          style="color: #ecb02d; text-decoration: none"
+          >manage your notification preferences</a
+        >.
+      </p>
+
+      <hr style="margin: 30px 0; border: none; border-top: 1px solid #ccc" />
+      <p style="font-size: 11px; color: #999; text-align: center">
+        <em>This is an automated message, please do not reply.</em>
+      </p>
+
+      <!--      <p style="font-size: 11px; color: #999; text-align: center; line-height: 1.4; margin-top: 10px;">-->
+      <!--        You can <a href="[[${preferencesUrl}]]" style="color: #ecb02d; text-decoration: none;">adjust your notification preferences</a> or <a href="[[${unsubscribeUrl}]]" style="color: #ecb02d; text-decoration: none;">unsubscribe</a> from these emails.-->
+      <!--      </p>-->
     </div>
   </body>
 </html>

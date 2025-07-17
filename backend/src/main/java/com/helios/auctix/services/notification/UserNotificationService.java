@@ -78,6 +78,7 @@ public class UserNotificationService {
                 .id(n.getId())
                 .title(n.getTitle())
                 .content(n.getContent())
+                .partialUrl(n.getPartialUrl())
                 .read(n.isRead())
                 .notificationCategory(n.getNotificationCategory().getTitle())
                 .notificationCategoryGroup(n.getNotificationCategory().getCategoryGroup().name())

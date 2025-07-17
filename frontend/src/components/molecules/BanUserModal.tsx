@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -33,6 +31,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { IUser } from '@/types/IUser';
 
 // Quick message templates for common ban reasons
 const quickMessages = [
@@ -59,20 +58,20 @@ const banFormSchema = z.object({
 
 type BanFormValues = z.infer<typeof banFormSchema>;
 
-export interface IBanUser {
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'BIDDER' | 'SELLER' | 'ADMIN';
-  profilePicture?: string;
-}
+// export interface IBanUser {
+//   username: string;
+//   firstName: string;
+//   lastName: string;
+//   email: string;
+//   role: 'BIDDER' | 'SELLER' | 'ADMIN';
+//   profilePicture?: string;
+// }
 
 interface BanUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (userId: string, reason: string) => void;
-  user: IBanUser;
+  user: IUser;
 }
 
 export function BanUserModal({
@@ -92,12 +91,14 @@ export function BanUserModal({
 
   const handleQuickMessage = (message: string) => {
     const currentReason = form.getValues('reason');
-    // If there's already text, add a space before the new message
     const newReason = currentReason ? `${currentReason} ${message}` : message;
     form.setValue('reason', newReason, { shouldValidate: true });
   };
 
   const onSubmit = async (data: BanFormValues) => {
+    if (user.username == null || user.email == null) {
+      return;
+    }
     setIsSubmitting(true);
     try {
       await onConfirm(user.username, data.reason);
@@ -110,9 +111,8 @@ export function BanUserModal({
     }
   };
 
-  // Get user initials for avatar fallback
   const getInitials = () => {
-    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    return user.profile_photo;
   };
 
   return (
@@ -135,7 +135,7 @@ export function BanUserModal({
                   <div className="relative">
                     <Avatar className="h-16 w-16 border-2 border-red-100">
                       <AvatarImage
-                        src={user.profilePicture || '/placeholder.svg'}
+                        src={user.profile_photo}
                         alt={`${user.firstName} ${user.lastName}`}
                       />
                       <AvatarFallback className="text-lg bg-red-50 text-red-700">
@@ -166,14 +166,6 @@ export function BanUserModal({
                     {user.firstName} {user.lastName}
                   </DialogDescription>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-4 top-4"
-                  onClick={onClose}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </DialogHeader>
 
               <div className="py-4">

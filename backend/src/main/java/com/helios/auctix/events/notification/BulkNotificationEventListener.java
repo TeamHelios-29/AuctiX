@@ -1,8 +1,6 @@
 package com.helios.auctix.events.notification;
 
 import com.helios.auctix.domain.notification.Notification;
-import com.helios.auctix.domain.user.User;
-import com.helios.auctix.events.notification.BulkNotificationEvent;
 import com.helios.auctix.services.notification.NotificationManagerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -28,6 +26,7 @@ public class BulkNotificationEventListener {
                         .title(event.getTitle())
                         .content(event.getMessage())
                         .notificationCategory(event.getNotificationCategory())
+                        .partialUrl(event.getPartialUrl())
                         .build()
                 )
                 .toList();

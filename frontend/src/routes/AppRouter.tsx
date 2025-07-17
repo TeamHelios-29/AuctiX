@@ -10,7 +10,6 @@ import LoginPage from '@/pages/Login';
 import Home from '@/pages/Home';
 import CreateAuction from '@/pages/CreateAuction';
 import SellerProfile from '@/pages/SellerProfile';
-import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/AuctionDetails';
 import Report from '@/pages/Report';
 import ProfileSettings from '@/pages/ProfileSettings';
@@ -25,6 +24,9 @@ import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
 import NotificationsPage from '@/pages/NotificationPage';
 // import WatchList from '@/pages/WatchList';
 import UserProfile from '@/components/organisms/UserProfile';
+import WatchlistPage from '@/pages/WatchlistPage';
+import SellerVerificationSubmitPage from '@/pages/SellerVerificationSubmitPage';
+import SecuritySettingsPage from '@/pages/SecuritySettingsPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -51,6 +53,7 @@ export default function AppRouter() {
 
         <Route element={<DashboardLayout />}>
           <Route
+
             path="/manage-auctions"
             element={
               <ProtectedRoute
@@ -62,6 +65,16 @@ export default function AppRouter() {
             }
           />
           ;
+
+            path="/watchlist"
+            element={
+              <ProtectedRoute allowedUsers={['BIDDER']} redirectPath="/403">
+                <WatchlistPage />
+              </ProtectedRoute>
+            }
+          />
+         
+
           <Route
             path="/dashboard"
             element={
@@ -131,6 +144,22 @@ export default function AppRouter() {
             }
           />
           <Route
+            path="/seller-verification-submit"
+            element={
+              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/403">
+                <SellerVerificationSubmitPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/security"
+            element={
+              <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
+                <SecuritySettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/profile/:id"
             element={
               <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
@@ -151,7 +180,6 @@ export default function AppRouter() {
         <Route path="/seller-delivery" element={<SellerDeliveryPage />} />
 
         <Route path="/403" element={<h2>403 Unauthorized</h2>} />
-        <Route path="/test-chat" element={<AuctionChat />} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>
     </BrowserRouter>

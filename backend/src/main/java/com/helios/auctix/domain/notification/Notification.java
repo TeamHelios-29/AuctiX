@@ -40,6 +40,9 @@ public class Notification {
 
     private String content;
 
+    @Column(name="partial_url", length = 1000, nullable = true)
+    private String partialUrl; // e.g. "/auction-details/123-123123"
+
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
 

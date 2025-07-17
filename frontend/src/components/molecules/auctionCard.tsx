@@ -26,7 +26,7 @@ export default function AuctionCard({
   const isEndingSoon = timeRemaining.startsWith('0d');
 
   return (
-    <Card className="w-72 overflow-hidden">
+    <Card className="overflow-hidden shadow-none">
       {/* Image with Timer Badge */}
       <div className="relative">
         <img
@@ -37,23 +37,23 @@ export default function AuctionCard({
         <Badge
           className={`absolute top-0 left-0 ${
             isEndingSoon
-              ? 'bg-red-500 text-white'
-              : 'bg-yellow-400 text-gray-900'
-          } font-bold px-3 py-1 rounded-none rounded-br-md text-sm flex items-center`}
+              ? 'bg-red-500 text-white hover:bg-red-500 hover:text-white'
+              : 'bg-yellow-400 text-gray-900 hover:bg-yellow-400 hover:text-gray-900'
+          } font-bold px-3 py-1 rounded-none rounded-br-md text-sm flex items-center shadow-none`}
         >
           <Clock className="w-4 h-4 mr-1" /> {timeRemaining}
         </Badge>
       </div>
 
       {/* Card Content */}
-      <CardContent className="p-4">
-        <h3 className="text-lg font-bold text-gray-900">{productName}</h3>
+      <CardContent className="p-3">
+        <h3 className="text-xl font-semibold text-gray-900">{productName}</h3>
         <p className="text-gray-600 text-sm">{category}</p>
 
         {/* Seller Info */}
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-1 mt-1">
           <span>By</span>
-          <Avatar className="w-6 h-6">
+          <Avatar className="w-5 h-5">
             <AvatarImage src={sellerAvatar} />
             <AvatarFallback>?</AvatarFallback>
           </Avatar>
@@ -61,9 +61,9 @@ export default function AuctionCard({
         </div>
 
         {/* Price */}
-        <div className="mt-3 flex justify-between items-center">
+        <div className="mt-8 flex justify-between items-center">
           <p className="text-sm text-gray-700">Starting Price:</p>
-          <p className="text-lg font-bold text-gray-700">LKR {startingPrice}</p>
+          <p className="text-xl font-bold text-gray-700">LKR {startingPrice}</p>
         </div>
       </CardContent>
     </Card>

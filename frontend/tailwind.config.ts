@@ -4,7 +4,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        productsans: ["'Product Sans'", 'sans-serif'],
+        sans: ['Geist', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',
