@@ -58,10 +58,15 @@ public class AuctionSchedulerService {
     private static final String ITEM_SOLD_TITLE_TEMPLATE = "Item sold! - %s auction";
     private static final String ITEM_SOLD_MESSAGE_TEMPLATE = "The item for the auction %s was sold with a bid of %s to the bidder %s";
 
-    private static final String AUCTION_ENDED_NO_BIDS_TITLE = "Auction Ended Without Bids";
+    // Auction completed with winning bids ( for watchers)
+    private static final String AUCTION_COMPLETED_WITH_WINNING_BID_TITLE_TEMPLATE = "Auction %s completed with a winning bid";
+    private static final String AUCTION_COMPLETED_WITH_WINNING_BID_MESSAGE_TEMPLATE = "The auction %s you are watching completed with a winning bid of %s .";
 
-    private static final String AUCTION_ENDED_NO_BIDS_MESSAGE_TEMPLATE =
+    private static final String AUCTION_ENDED_NO_BIDS_TITLE = "Auction %s Ended Without Bids";
+    private static final String AUCTION_ENDED_NO_BIDS_SELLER_MESSAGE_TEMPLATE =
             "Your auction %s has ended without any bids.";
+    private static final String AUCTION_ENDED_NO_BIDS_WATCHER_MESSAGE_TEMPLATE =
+            "The auction %s you're watching has ended without any bids.";
 
     private static final String START_SOON_TITLE_TEMPLATE = "Auction %s starts in %d minutes";
     private static final String START_SOON_MESSAGE_TEMPLATE = "The %s you're watching is starting soon at %s. Be ready to bid and win!";
@@ -199,37 +204,23 @@ public class AuctionSchedulerService {
                                     // Prevent notifying winner again via watchlist
                                     excludedFromWatchlistNotify.add(bidder);
 
+                                    String watcherTitle = String.format(AUCTION_COMPLETED_WITH_WINNING_BID_TITLE_TEMPLATE, auctionTitle);
+                                    String watcherMessage = String.format(AUCTION_COMPLETED_WITH_WINNING_BID_MESSAGE_TEMPLATE, auctionTitle, winningAmount);
 
+                                    watchListNotifyService.notifySubscribers(
+                                            auction,
+                                            excludedFromWatchlistNotify,
+                                            watcherTitle,
+                                            watcherMessage,
+                                            NotificationCategory.AUCTION_COMPLETED,
+                                            auctionUrl
+                                    );
                                 }
                             });
 
                         } catch (Exception e) {
-                            logger.warning("Failed to send buyer notification, but continuing: " + e.getMessage());
+                            logger.warning("Failed to send buyer and seller - complete with win notification, but continuing: " + e.getMessage());
                         }
-                    }
-
-                    try {
-
-                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                            @Override
-                            public void afterCommit() {
-
-                                String auctionTitle = auction.getTitle();
-                                String auctionUrl = String.format(AUCTION_DETAILS_PATH_TEMPLATE, auction.getId());
-                                String message = String.format(AUCTION_ENDED_NO_BIDS_MESSAGE_TEMPLATE, auctionTitle);
-
-                                notificationEventPublisher.publishNotificationEvent(
-                                        AUCTION_ENDED_NO_BIDS_TITLE,
-                                        message,
-                                        NotificationCategory.AUCTION_COMPLETED,
-                                        auction.getSeller().getUser(),
-                                        auctionUrl
-                                );
-                            }
-                        });
-
-                    } catch (Exception e) {
-                        logger.warning("Failed to send seller notification, but continuing: " + e.getMessage());
                     }
 
                     // 4. Mark the auction as completed
@@ -249,14 +240,35 @@ public class AuctionSchedulerService {
 
                 // Notify the seller that auction ended without bids
                 try {
-                    notificationEventPublisher.publishNotificationEvent(
-                            "Auction Ended Without Bids",
-                            "Your auction " + auction.getTitle() + " has ended without any bids.",
-                            NotificationCategory.AUCTION_COMPLETED,
-                            auction.getSeller().getUser(),
-                            "/auction-details/" + auction.getId()
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
 
-                    );
+                            String auctionTitle = auction.getTitle();
+                            String auctionUrl = String.format(AUCTION_DETAILS_PATH_TEMPLATE, auction.getId());
+                            String messageSeller = String.format(AUCTION_ENDED_NO_BIDS_SELLER_MESSAGE_TEMPLATE, auctionTitle);
+
+                            notificationEventPublisher.publishNotificationEvent(
+                                    AUCTION_ENDED_NO_BIDS_TITLE,
+                                    messageSeller,
+                                    NotificationCategory.AUCTION_COMPLETED,
+                                    auction.getSeller().getUser(),
+                                    auctionUrl
+                            );
+
+                            // Notify the watchers
+                            String messageWatcher = String.format(AUCTION_ENDED_NO_BIDS_WATCHER_MESSAGE_TEMPLATE, auctionTitle);
+                            watchListNotifyService.notifySubscribers(
+                                    auction,
+                                    null,
+                                    AUCTION_ENDED_NO_BIDS_TITLE,
+                                    messageWatcher,
+                                    NotificationCategory.AUCTION_COMPLETED,
+                                    auctionUrl
+                            );
+                        }
+                    });
+
                 } catch (Exception e) {
                     logger.warning("Failed to send notification, but continuing: " + e.getMessage());
                 }
