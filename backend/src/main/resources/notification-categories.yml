@@ -108,7 +108,7 @@ notificationCategories:
     alwaysHiddenRoles: [BIDDER, SELLER]
     cannotEditRoles: [BIDDER, SELLER]
     categoryGroup: SYSTEM
-    description: "You have been suspended due to policy violations or suspicious activity"
+    description: "Your account has been suspended due to policy violations or suspicious activity"
     title: "Account suspended"
 
   ACCOUNT_REINSTATED:
@@ -127,7 +127,7 @@ notificationCategories:
     description: "Get notified when your wallet recharge is successful"
     title: "Wallet recharge successful"
 
-  WITHDRAWAL_SUCCESS:
+  WALLET_WITHDRAWAL_SUCCESS:
     allowedRoles: [BIDDER, SELLER]
     alwaysHiddenRoles: []
     cannotEditRoles: []

@@ -40,7 +40,7 @@ public enum NotificationCategory {
     ACCOUNT_REINSTATED,
 
     WALLET_RECHARGE_SUCCESS,
-    WITHDRAWAL_SUCCESS;
+    WALLET_WITHDRAWAL_SUCCESS;
 
     private String title;
     private String description;
