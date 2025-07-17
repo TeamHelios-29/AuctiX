@@ -38,6 +38,6 @@ public interface BidRepository extends JpaRepository<Bid, UUID> {
     @Query("SELECT DISTINCT b.bidderId FROM Bid b WHERE b.auction.id = :auctionId")
     List<UUID> findDistinctBidderIdsByAuctionId(@Param("auctionId") UUID auctionId);
 
-  
 
+    Optional<Bid> findTopByAuctionIdAndBidderIdOrderByAmountDesc(UUID id, UUID userId);
 }

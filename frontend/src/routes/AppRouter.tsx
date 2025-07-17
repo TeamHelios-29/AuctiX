@@ -53,7 +53,6 @@ export default function AppRouter() {
 
         <Route element={<DashboardLayout />}>
           <Route
-
             path="/manage-auctions"
             element={
               <ProtectedRoute
@@ -64,8 +63,7 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-          ;
-
+          <Route
             path="/watchlist"
             element={
               <ProtectedRoute allowedUsers={['BIDDER']} redirectPath="/403">
@@ -73,7 +71,6 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-         
 
           <Route
             path="/dashboard"
