@@ -1,293 +1,716 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AxiosInstance } from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import AxiosRequest from '@/services/axiosInspector';
 
+interface AuctionUpdateFormDTO {
+  id: string;
+  title: string;
+  description: string;
+  startingPrice: number;
+  startTime: string;
+  endTime: string;
+  isPublic?: boolean;
+  category: string;
+  images: string[];
+  hasBids: boolean;
+  canFullyEdit: boolean;
+}
+
+interface ValidationErrors {
+  title?: string;
+  description?: string;
+  startingPrice?: string;
+  startTime?: string;
+  endTime?: string;
+  category?: string;
+  images?: string;
+}
+
 const AuctionForm: React.FC = () => {
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [startingPrice, setStartingPrice] = useState<number>(0);
-  const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [images, setImages] = useState<File[]>([]);
-  const [isPublic, setIsPublic] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [category, setCategory] = useState<string>('');
+  const [existingImageIds, setExistingImageIds] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
+  const [category, setCategory] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [canFullyEdit, setCanFullyEdit] = useState(true);
+  const [hasBids, setHasBids] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {},
+  );
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const { id } = useParams();
   const navigate = useNavigate();
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
+
+  // Helper function to convert ISO string to human-readable format
+  const formatTimestamp = (isoString: string): string => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch (error) {
+      console.error('Error formatting timestamp:', error);
+      return isoString;
+    }
+  };
+
+  // Helper function to convert ISO string to datetime-local format
+  const convertToDatetimeLocal = (isoString: string): string => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      return date.toISOString().slice(0, 16);
+    } catch (error) {
+      console.error('Error converting date:', error);
+      return '';
+    }
+  };
+
+  // Validation functions
+  const validateTitle = (value: string): string => {
+    if (!value.trim()) return 'Title is required';
+    const wordCount = value
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
+    if (wordCount < 5) return 'Title must be at least 5 words long';
+    if (value.length > 100) return 'Title cannot exceed 100 characters';
+    return '';
+  };
+
+  const validateDescription = (value: string): string => {
+    if (!value.trim()) return 'Description is required';
+    if (value.length < 20)
+      return 'Description must be at least 20 characters long';
+    if (value.length > 1000) return 'Description cannot exceed 1000 characters';
+    return '';
+  };
+
+  const validateStartingPrice = (value: number): string => {
+    if (value === null || value === undefined || isNaN(value))
+      return 'Starting price is required';
+    if (value < 0) return 'Starting price cannot be negative';
+    if (value > 10000000) return 'Starting price cannot exceed 10,000,000 LKR';
+    return '';
+  };
+
+  const validateStartTime = (value: string): string => {
+    if (!value) return 'Start time is required';
+    const startDate = new Date(value);
+    const now = new Date();
+    if (startDate < now) return 'Start time must be in the future';
+    return '';
+  };
+
+  const validateEndTime = (value: string, startTimeValue: string): string => {
+    if (!value) return 'End time is required';
+    if (!startTimeValue) return '';
+    const startDate = new Date(startTimeValue);
+    const endDate = new Date(value);
+    if (endDate <= startDate) return 'End time must be after start time';
+    const minDuration = 60 * 60 * 1000; // 1 hour in milliseconds
+    if (endDate.getTime() - startDate.getTime() < minDuration) {
+      return 'Auction must run for at least 1 hour';
+    }
+    return '';
+  };
+
+  const validateCategory = (value: string): string => {
+    if (!value) return 'Category is required';
+    return '';
+  };
+
+  const validateImages = (
+    newImages: File[],
+    existingImages: string[],
+  ): string => {
+    const total = newImages.length + existingImages.length;
+    if (total === 0) return 'At least one image is required';
+    if (total > 5) return 'Maximum 5 images allowed';
+
+    // Check file sizes (max 5MB per image)
+    for (const file of newImages) {
+      if (file.size > 5 * 1024 * 1024) {
+        return 'Each image must be less than 5MB';
+      }
+    }
+    return '';
+  };
+
+  // Real-time validation
+  const validateField = (field: string, value: any) => {
+    let error = '';
+    switch (field) {
+      case 'title':
+        error = validateTitle(value);
+        break;
+      case 'description':
+        error = validateDescription(value);
+        break;
+      case 'startingPrice':
+        error = validateStartingPrice(value);
+        break;
+      case 'startTime':
+        error = validateStartTime(value);
+        break;
+      case 'endTime':
+        error = validateEndTime(value, startTime);
+        break;
+      case 'category':
+        error = validateCategory(value);
+        break;
+      case 'images':
+        error = validateImages(images, existingImageIds);
+        break;
+    }
+
+    setValidationErrors((prev) => ({
+      ...prev,
+      [field]: error,
+    }));
+
+    return error === '';
+  };
+
+  // Field blur handlers
+  const handleFieldBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTitle(value);
+    if (touched.title || !isEditMode) {
+      validateField('title', value);
+    }
+  };
+
+  const handleDescriptionChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const value = e.target.value;
+    setDescription(value);
+    if (touched.description || !isEditMode) {
+      validateField('description', value);
+    }
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    let numValue = 0;
+    if (value !== '' && value !== null && value !== undefined) {
+      numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue < 0) {
+        numValue = 0;
+      }
+    }
+    setStartingPrice(numValue);
+    if (touched.startingPrice || !isEditMode) {
+      validateField('startingPrice', numValue);
+    }
+  };
+
+  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setStartTime(value);
+    if (touched.startTime || !isEditMode) {
+      validateField('startTime', value);
+    }
+    // Also revalidate end time when start time changes
+    if (endTime && (touched.endTime || !isEditMode)) {
+      validateField('endTime', endTime);
+    }
+  };
+
+  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEndTime(value);
+    if (touched.endTime || !isEditMode) {
+      validateField('endTime', value);
+    }
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setCategory(value);
+    if (touched.category || !isEditMode) {
+      validateField('category', value);
+    }
+  };
+
+  const handlePublicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsPublic(e.target.checked);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const newImages = [...images, ...files];
+      setImages(newImages);
+      validateField('images', newImages);
+      setTouched((prev) => ({ ...prev, images: true }));
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    validateField('images', newImages);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title || title.trim().length < 5) {
-      toast.error('Title must be at least 5 characters long.');
-      return;
-    }
+    // Mark all fields as touched for validation display
+    setTouched({
+      title: true,
+      description: true,
+      startingPrice: true,
+      startTime: true,
+      endTime: true,
+      category: true,
+      images: true,
+    });
 
-    if (!description || description.trim().length < 20) {
-      toast.error('Description must be at least 20 characters long.');
-      return;
-    }
+    // Run all validations
+    const titleValid = validateField('title', title);
+    const descriptionValid = validateField('description', description);
+    const priceValid = validateField('startingPrice', startingPrice);
+    const startTimeValid = validateField('startTime', startTime);
+    const endTimeValid = validateField('endTime', endTime);
+    const categoryValid = validateField('category', category);
+    const imagesValid = validateField('images', images);
 
-    if (!category) {
-      toast.error('Please select a category.');
-      return;
-    }
-
-    const now = new Date();
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-
-    if (!startTime || isNaN(start.getTime()) || start <= now) {
-      toast.error('Start time must be a future date and time.');
-      return;
-    }
-
-    if (!endTime || isNaN(end.getTime()) || end <= start) {
-      toast.error('End time must be after start time.');
-      return;
-    }
-
-    if (!startingPrice || startingPrice <= 0) {
-      toast.error('Starting price must be greater than 0.');
-      return;
-    }
-
-    if (images.length === 0) {
-      toast.error('Please upload at least one image.');
-      return;
-    }
-
-    if (images.length > 5) {
-      toast.error('You can upload a maximum of 5 images.');
+    if (
+      !titleValid ||
+      !descriptionValid ||
+      !priceValid ||
+      !startTimeValid ||
+      !endTimeValid ||
+      !categoryValid ||
+      !imagesValid
+    ) {
+      toast.error('Please fix all validation errors before submitting');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description);
-      formData.append('startingPrice', startingPrice.toString());
+      formData.append('startingPrice', String(startingPrice));
       formData.append('startTime', new Date(startTime).toISOString());
       formData.append('endTime', new Date(endTime).toISOString());
       formData.append('isPublic', isPublic.toString());
       formData.append('category', category);
-      images.forEach((image) => formData.append('images', image));
 
-      const response = await axiosInstance.post('/auctions/create', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      if (images.length > 0) {
+        images.forEach((image) => formData.append('images', image));
+      }
+
+      const endpoint = isEditMode
+        ? `/auctions/update/${id}`
+        : '/auctions/create';
+      const method = isEditMode ? 'put' : 'post';
+
+      const response = await axiosInstance.request({
+        method,
+        url: endpoint,
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (response.status === 201) {
-        toast.success('Auction created successfully!');
-        setTimeout(() => navigate('/'), 2000);
-      }
+      toast.success(
+        isEditMode
+          ? 'Auction updated successfully!'
+          : 'Auction created successfully!',
+      );
+
+      setTimeout(() => {
+        navigate('/manage-auctions');
+      }, 1500);
     } catch (error: any) {
-      console.error('Error creating auction:', error);
-
-      if (error.response) {
-        const { status } = error.response;
-
-        if (status === 403) {
-          toast.error('Only sellers can create auctions.');
-        } else if (status === 400) {
-          toast.error('Bad request. Please check your input.');
-        } else if (status === 500) {
-          toast.error('Server error. Please try again later.');
-        } else {
-          toast.error('Failed to create auction. Please try again.');
-        }
+      console.error('Error submitting form:', error);
+      if (error.response?.data) {
+        toast.error(error.response.data);
       } else {
-        toast.error('Something went wrong. Please check your connection.');
+        toast.error('Something went wrong.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      if (files.length + images.length > 5) {
-        toast.error('You can upload a maximum of 5 images');
-        return;
-      }
-      setImages((prevImages) => [...prevImages, ...files]);
-    }
+  // Process description to format timestamps
+  const processDescription = (desc: string): string => {
+    // Pattern to match the timestamp format [Edited on: 2025-07-17T16:30:44.455596300Z]
+    const timestampPattern =
+      /\[Edited on: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\]/g;
+
+    return desc.replace(timestampPattern, (match, timestamp) => {
+      const humanReadable = formatTimestamp(timestamp);
+      return `[Edited on: ${humanReadable}]`;
+    });
   };
 
-  const removeImage = (index: number) => {
-    setImages((prevImages) => prevImages.filter((_, i) => i !== index));
-  };
+  useEffect(() => {
+    if (id && !dataLoaded) {
+      setIsEditMode(true);
+      setLoading(true);
+
+      axiosInstance
+        .get(`/auctions/update/${id}`, { timeout: 30000 })
+        .then((res) => {
+          const data: AuctionUpdateFormDTO = res.data;
+
+          setTitle(data.title || '');
+          setDescription(processDescription(data.description || ''));
+          setStartingPrice(data.startingPrice || 0);
+          setStartTime(convertToDatetimeLocal(data.startTime));
+          setEndTime(convertToDatetimeLocal(data.endTime));
+          setCategory(data.category || '');
+          setExistingImageIds(data.images || []);
+          setCanFullyEdit(data.canFullyEdit ?? true);
+          setHasBids(data.hasBids ?? false);
+
+          const isPublicValue =
+            data.isPublic ??
+            (data as any).public ??
+            (data as any).is_public ??
+            false;
+          setIsPublic(Boolean(isPublicValue));
+
+          setDataLoaded(true);
+        })
+        .catch((error) => {
+          console.error('Error fetching auction data:', error);
+          if (error.code === 'ECONNABORTED') {
+            toast.error('Request timed out. Please try again.');
+          } else {
+            toast.error('Failed to load auction data');
+          }
+          navigate('/manage-auctions');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [id, axiosInstance, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg">Loading auction data...</div>
+      </div>
+    );
+  }
+
+  const FormField = ({
+    label,
+    children,
+    fieldName,
+    required = false,
+    constraint = '',
+  }: {
+    label: string;
+    children: React.ReactNode;
+    fieldName: string;
+    required?: boolean;
+    constraint?: string;
+  }) => (
+    <div>
+      <label className="block font-medium mb-2">
+        {label}
+        {required && !isEditMode && (
+          <span className="text-red-500 ml-1">*</span>
+        )}
+      </label>
+      {children}
+      {constraint && !isEditMode && (
+        <p className="text-sm text-gray-600 mt-1">{constraint}</p>
+      )}
+      {touched[fieldName] && validationErrors[fieldName] && (
+        <p className="text-sm text-red-500 mt-1">
+          {validationErrors[fieldName]}
+        </p>
+      )}
+    </div>
+  );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="title" className="block font-medium mb-2">
-          Product Name
-        </label>
-        <Input
-          id="title"
-          placeholder="Enter product name"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">
+          {isEditMode ? 'Update Auction' : 'Create New Auction'}
+        </h1>
+        {!isEditMode && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
+            <strong>Note:</strong> All fields marked with{' '}
+            <span className="text-red-500">*</span> are required. Please review
+            the constraints for each field.
+          </div>
+        )}
+        {isEditMode && hasBids && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+            <strong>Note:</strong> This auction has received bids. You can only
+            update the description.
+          </div>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="category" className="block font-medium mb-2">
-          Auction Category
-        </label>
-        <select
-          id="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full p-3 border rounded-md"
-          required
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormField
+          label="Product Name"
+          fieldName="title"
+          required={true}
+          constraint="Must be at least 5 words long and not exceed 100 characters"
         >
-          <option value="">Select a category</option>
-          <option value="Electronics">Electronics</option>
-          <option value="Fashion">Fashion</option>
-          <option value="Home & Garden">Home & Garden</option>
-          <option value="Art">Art</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="start-time" className="block font-medium mb-2">
-            Start Time
-          </label>
           <Input
-            id="start-time"
-            type="datetime-local"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            required
+            value={title}
+            onChange={handleTitleChange}
+            onBlur={() => handleFieldBlur('title')}
+            disabled={isEditMode && !canFullyEdit}
+            placeholder="Enter product name (at least 5 words)"
+            className={
+              touched.title && validationErrors.title ? 'border-red-500' : ''
+            }
           />
+        </FormField>
+
+        <FormField
+          label="Auction Category"
+          fieldName="category"
+          required={true}
+          constraint="Select from available categories"
+        >
+          <select
+            value={category}
+            onChange={handleCategoryChange}
+            onBlur={() => handleFieldBlur('category')}
+            disabled={isEditMode && !canFullyEdit}
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              touched.category && validationErrors.category
+                ? 'border-red-500'
+                : ''
+            }`}
+          >
+            <option value="">Select a category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Fashion">Fashion</option>
+            <option value="Home & Garden">Home & Garden</option>
+            <option value="Art">Art</option>
+            <option value="Other">Other</option>
+          </select>
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            label="Start Time"
+            fieldName="startTime"
+            required={true}
+            constraint="Must be in the future"
+          >
+            <Input
+              type="datetime-local"
+              value={startTime}
+              onChange={handleStartTimeChange}
+              onBlur={() => handleFieldBlur('startTime')}
+              disabled={isEditMode && !canFullyEdit}
+              className={
+                touched.startTime && validationErrors.startTime
+                  ? 'border-red-500'
+                  : ''
+              }
+            />
+          </FormField>
+
+          <FormField
+            label="End Time"
+            fieldName="endTime"
+            required={true}
+            constraint="Must be after start time, minimum 1 hour duration"
+          >
+            <Input
+              type="datetime-local"
+              value={endTime}
+              onChange={handleEndTimeChange}
+              onBlur={() => handleFieldBlur('endTime')}
+              disabled={isEditMode && !canFullyEdit}
+              className={
+                touched.endTime && validationErrors.endTime
+                  ? 'border-red-500'
+                  : ''
+              }
+            />
+          </FormField>
         </div>
 
-        <div>
-          <label htmlFor="end-time" className="block font-medium mb-2">
-            End Time
-          </label>
+        <FormField
+          label="Starting Price (LKR)"
+          fieldName="startingPrice"
+          required={true}
+          constraint="Must be a positive number, maximum 10,000,000 LKR"
+        >
           <Input
-            id="end-time"
-            type="datetime-local"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            required
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="starting-price" className="block font-medium mb-2">
-            Starting Price
-          </label>
-          <Input
-            id="starting-price"
             type="number"
-            placeholder="Enter starting price"
             value={startingPrice}
-            onChange={(e) => setStartingPrice(parseFloat(e.target.value))}
-            required
+            onChange={handlePriceChange}
+            onBlur={() => handleFieldBlur('startingPrice')}
+            disabled={isEditMode && !canFullyEdit}
+            min="0"
+            step="0.01"
+            placeholder="Enter starting price"
+            className={
+              touched.startingPrice && validationErrors.startingPrice
+                ? 'border-red-500'
+                : ''
+            }
           />
-        </div>
-        <div>
-          <label htmlFor="images" className="block font-medium mb-2">
-            Images (Max 5)
-          </label>
+        </FormField>
+
+        <FormField
+          label="Images"
+          fieldName="images"
+          required={true}
+          constraint="1-5 images required, each under 5MB, supported formats: JPG, PNG, GIF"
+        >
           <input
-            id="images"
             type="file"
             multiple
             onChange={handleImageUpload}
             accept="image/*"
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:border-gray-300"
+            disabled={isEditMode && !canFullyEdit}
+            className="w-full p-2 border rounded-md"
           />
-          <div className="mt-2 flex flex-wrap gap-2">
-            {images.map((image, index) => (
-              <div key={index} className="relative">
+          <p className="text-sm text-gray-500 mt-1">
+            Current: {existingImageIds.length + images.length}/5 images
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {existingImageIds.map((id, idx) => (
+              <div key={`existing-${idx}`} className="relative">
                 <img
-                  src={URL.createObjectURL(image)}
-                  alt={`Uploaded ${index + 1}`}
-                  className="w-16 h-16 object-cover rounded-md"
+                  src={`http://localhost:8080/api/auctions/getAuctionImages?file_uuid=${id}`}
+                  alt="existing"
+                  className="w-20 h-20 object-cover rounded-md border"
+                />
+                <span className="absolute top-0 left-0 bg-blue-500 text-white text-xs px-1 rounded">
+                  Existing
+                </span>
+              </div>
+            ))}
+
+            {images.map((file, idx) => (
+              <div key={`upload-${idx}`} className="relative">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="preview"
+                  className="w-20 h-20 object-cover rounded-md border"
                 />
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                  onClick={() => removeImage(idx)}
                 >
                   ×
                 </button>
+                <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 rounded">
+                  New
+                </span>
               </div>
             ))}
           </div>
+        </FormField>
+
+        <FormField
+          label="Description"
+          fieldName="description"
+          required={true}
+          constraint="Must be 20-1000 characters long"
+        >
+          <textarea
+            value={description}
+            onChange={handleDescriptionChange}
+            onBlur={() => handleFieldBlur('description')}
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              touched.description && validationErrors.description
+                ? 'border-red-500'
+                : ''
+            }`}
+            rows={5}
+            placeholder="Enter detailed description (minimum 20 characters)"
+          />
+          <div className="flex justify-between text-sm text-gray-500 mt-1">
+            <span>Characters: {description.length}/1000</span>
+            {isEditMode && hasBids && (
+              <span>Note: Updated descriptions will include a timestamp</span>
+            )}
+          </div>
+        </FormField>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="isPublic"
+            checked={isPublic}
+            onChange={handlePublicChange}
+            disabled={isEditMode && !canFullyEdit}
+            className="w-4 h-4"
+          />
+          <label htmlFor="isPublic" className="font-medium">
+            Make Public
+            {!isEditMode && (
+              <span className="text-sm text-gray-600 ml-2">
+                (Public auctions are visible to all users)
+              </span>
+            )}
+            {isEditMode && !canFullyEdit && (
+              <span className="text-sm text-gray-500 ml-2">
+                (Cannot be changed after bids are placed)
+              </span>
+            )}
+          </label>
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="description" className="block font-medium mb-2">
-          Description
-        </label>
-        <textarea
-          id="description"
-          placeholder="Enter description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-3 border rounded-md"
-          required
-        ></textarea>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <input
-          id="make-public"
-          type="checkbox"
-          checked={isPublic}
-          onChange={(e) => setIsPublic(e.target.checked)}
-          className="rounded"
-        />
-        <label htmlFor="make-public" className="text-sm text-gray-700">
-          Make Listing Public
-          <p className="text-xs text-gray-500">
-            By making the listing public, users can view and participate in the
-            auction.
-          </p>
-        </label>
-      </div>
-
-      <div className="flex justify-between mt-4">
-        <Button
-          variant="outline"
-          type="button"
-          className="w-1/3"
-          onClick={() => navigate('/')}
-        >
-          Cancel
-        </Button>
-        <Button
-          className="w-1/3"
-          variant="default"
-          type="submit"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Submitting...' : 'Add Auction'}
-        </Button>
-      </div>
-    </form>
+        <div className="flex space-x-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate('/manage-auctions')}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting
+              ? 'Submitting...'
+              : isEditMode
+                ? 'Update Auction'
+                : 'Create Auction'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

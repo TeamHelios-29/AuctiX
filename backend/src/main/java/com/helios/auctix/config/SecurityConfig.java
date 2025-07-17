@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/bids/**").permitAll()
                         .requestMatchers("/api/watchlist/**").permitAll()
                         .requestMatchers("/ws-auction/**").permitAll()
+                        .requestMatchers("/api/auctions/**").permitAll()
+
 
 
 

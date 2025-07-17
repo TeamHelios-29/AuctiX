@@ -42,13 +42,30 @@ export default function AppRouter() {
             path="/auction-details/:auctionId"
             element={<AuctionDetailsPage />}
           />
-          <Route path="/create-auction" element={<CreateAuction />} />
+          {/* <Route path="/create-auction" element={<CreateAuction />} /> */}
+          <Route path="/auctions/new" element={<CreateAuction />} />
+          <Route path="/auctions/update/:id" element={<CreateAuction />} />
+
           <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>
 
         {/* Routes using DashboardLayout */}
+
         <Route element={<DashboardLayout />}>
           <Route
+
+            path="/manage-auctions"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <ManageAuctions />
+              </ProtectedRoute>
+            }
+          />
+          ;
+
             path="/watchlist"
             element={
               <ProtectedRoute allowedUsers={['BIDDER']} redirectPath="/403">
@@ -56,7 +73,8 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
-          <Route path="/manage-auctions" element={<ManageAuctions />} />;
+         
+
           <Route
             path="/dashboard"
             element={
