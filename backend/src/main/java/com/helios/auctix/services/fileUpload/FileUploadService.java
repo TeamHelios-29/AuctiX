@@ -307,12 +307,12 @@ public class FileUploadService {
 
         log.info("checking file delete permissions");
         if(deleteRequestedUser == null) {
-            return new FileUploadResponse(false,"Unautherized");
+            return new FileUploadResponse(false,"Unauthorized");
         }
-        if(deleteRequestedUser.getId()== null && !deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN)) {
+        if(deleteRequestedUser.getId()== null && !(deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.ADMIN) || deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.SUPER_ADMIN))) {
             return new FileUploadResponse(false,"Only admins can delete the files without ownership");
         }
-        if(!(deleteRequestedUser.getId().equals(fileToDelete.getOwnerId()) || deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN))) {
+        if(!(deleteRequestedUser.getId().equals(fileToDelete.getOwnerId()) || deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.ADMIN) || deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.SUPER_ADMIN))) {
             return new FileUploadResponse(false,"Only file owner or admins can delete this file");
         }
         log.info("marking the file as deleted");

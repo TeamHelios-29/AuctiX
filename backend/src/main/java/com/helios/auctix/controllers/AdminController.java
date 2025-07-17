@@ -1,9 +1,20 @@
 package com.helios.auctix.controllers;
 
+import com.helios.auctix.domain.user.AdminAction;
+import com.helios.auctix.domain.user.AdminActionsEnum;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRoleEnum;
+import com.helios.auctix.dtos.AdminActionDTO;
+import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.AuctionSchedulerService;
+import com.helios.auctix.services.user.AdminActionService;
 import com.helios.auctix.services.user.UserDetailsService;
+import com.helios.auctix.services.user.UserServiceResponse;
+import com.helios.auctix.services.user.UserUploadsService;
+import org.apache.tomcat.websocket.AuthenticationException;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -21,11 +33,17 @@ public class AdminController {
     private final AuctionSchedulerService auctionSchedulerService;
     private final UserDetailsService userDetailsService;
     private static final Logger logger = Logger.getLogger(AdminController.class.getName());
+    private final UserUploadsService userUploadsService;
+    private final AdminActionService adminActionService;
+    private final UserRepository userRepository;
 
     @Autowired
-    public AdminController(AuctionSchedulerService auctionSchedulerService, UserDetailsService userDetailsService) {
+    public AdminController(AuctionSchedulerService auctionSchedulerService, UserDetailsService userDetailsService, UserUploadsService userUploadsService, AdminActionService adminActionService, UserRepository userRepository) {
         this.auctionSchedulerService = auctionSchedulerService;
         this.userDetailsService = userDetailsService;
+        this.userUploadsService = userUploadsService;
+        this.adminActionService = adminActionService;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -75,4 +93,67 @@ public class AdminController {
                     .body("Error processing completed auctions: " + e.getMessage());
         }
     }
+
+    @DeleteMapping("/deleteUserProfilePhoto")
+    public ResponseEntity<String> deleteUserProfilePhoto(@RequestParam("username") String username) throws AuthenticationException {
+
+        // Authenticate user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+        logger.info("File upload by user " + currentUser.getEmail());
+
+        if(!(currentUser.getRoleEnum().equals(UserRoleEnum.ADMIN) || currentUser.getRoleEnum().equals(UserRoleEnum.SUPER_ADMIN))) {
+            throw new AuthenticationException("Invalid role");
+        }
+
+        User targetUser = userRepository.findByUsername(username);
+        if(targetUser == null) {
+            return ResponseEntity.badRequest().body("Username is required");
+        }
+        UserServiceResponse res = userUploadsService.UserProfilePhotoDelete(targetUser);
+        if (res.isSuccess()) {
+            adminActionService.logAdminAction(currentUser,targetUser, AdminActionsEnum.USER_PROFILE_PHOTO_REMOVE, "Admin deleted profile photo for user: " + targetUser.getUsername());
+            return ResponseEntity.ok().body("Profile photo deleted successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+        }
+
+    }
+
+    @GetMapping("/getAdminActionsLog")
+    public ResponseEntity<?> getAdminActionsLog() throws AuthenticationException {
+        // Get the current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        logger.info("Retrieving admin actions log");
+        if (!currentUser.getRoleEnum().equals(UserRoleEnum.SUPER_ADMIN)) {
+            throw new AuthenticationException("Invalid role");
+        }
+        List<AdminAction> actions = adminActionService.findAllByUser(currentUser);
+        return ResponseEntity.ok(actions);
+    }
+
+    @GetMapping("/getFilteredAdminActionsLog")
+    public ResponseEntity<Page<AdminActionDTO>> getFilteredAdminActionsLog(
+            @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+            @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "actionTypeFilter", required = false, defaultValue = "") String actionTypeFilter,
+            @RequestParam(value = "order", required = false, defaultValue = "asc") String order
+    ) throws AuthenticationException {
+        // Get the current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        logger.info("Retrieving filtered admin actions log");
+        if (!currentUser.getRoleEnum().equals(UserRoleEnum.SUPER_ADMIN)) {
+            throw new AuthenticationException("Invalid role");
+        }
+        Page<AdminActionDTO> pageData = adminActionService.getAllAdminActions(limit, offset, search, actionTypeFilter, order);
+        return ResponseEntity.ok(pageData);
+
+    }
+
+
 }

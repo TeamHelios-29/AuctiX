@@ -172,19 +172,19 @@ public class UserController {
 
         // decode from url encoded parameters
         if (search != null) {
-            search = URLDecoder.decode(search, StandardCharsets.UTF_8.name());
+            search = URLDecoder.decode(search, StandardCharsets.UTF_8);
         }
         if (filterBy != null) {
-            filterBy = URLDecoder.decode(filterBy, StandardCharsets.UTF_8.name());
+            filterBy = URLDecoder.decode(filterBy, StandardCharsets.UTF_8);
         }
         if (sortBy != null) {
-            sortBy = URLDecoder.decode(sortBy, StandardCharsets.UTF_8.name());
+            sortBy = URLDecoder.decode(sortBy, StandardCharsets.UTF_8);
         }
         if (order != null) {
-            order = URLDecoder.decode(order, StandardCharsets.UTF_8.name());
+            order = URLDecoder.decode(order, StandardCharsets.UTF_8);
         }
         if (filterValue != null) {
-            filterValue = URLDecoder.decode(filterValue, StandardCharsets.UTF_8.name());
+            filterValue = URLDecoder.decode(filterValue, StandardCharsets.UTF_8);
         }
 
         Page<UserDTO> userPage = userDetailsService.getAllUsers(limit, offset, order, sortBy, search,filterBy,filterValue);
@@ -342,7 +342,7 @@ public class UserController {
         log.info("File upload by user " + currentUser.getEmail());
 
         // Delete file
-        UserServiceResponse res = userUploadsService.UserProfilePhotoDelete(currentUser.getEmail());
+        UserServiceResponse res = userUploadsService.UserProfilePhotoDelete(currentUser);
         if (res.isSuccess()) {
             return ResponseEntity.ok().body("Profile photo deleted successfully");
         } else {
