@@ -6,7 +6,7 @@ export default function SellerProfile() {
   const auctions = [
     {
       imageUrl: 'buyerRegister.jpg',
-      productName: 'Product Name',
+      productName: 'leanado davinci statue',
       category: 'Category',
       sellerName: 'Sam Perera',
       sellerAvatar: 'exampleAvatar.png',
@@ -15,7 +15,7 @@ export default function SellerProfile() {
     },
     {
       imageUrl: 'example.jpg',
-      productName: 'Product Name',
+      productName: 'Product Name jaya sanka 1:26 scale model automatic car',
       category: 'Category',
       sellerName: 'Sam Perera',
       sellerAvatar: 'exampleAvatar.png',
@@ -25,25 +25,25 @@ export default function SellerProfile() {
 
     {
       imageUrl: 'example.jpg',
-      productName: 'Product Name',
+      productName: 'Mig aircraft',
       category: 'Category',
       sellerName: 'Sam Perera',
       sellerAvatar: 'exampleAvatar.png',
-      startingPrice: '5,000',
+      startingPrice: '1,000,000',
       timeRemaining: '0d 4h 4m 59s', // This should be red
     },
     {
       imageUrl: 'example.jpg',
-      productName: 'Product Name',
+      productName: 'Class M6 locomotive model',
       category: 'Category',
       sellerName: 'Sam Perera',
       sellerAvatar: 'exampleAvatar.png',
-      startingPrice: '5,000',
+      startingPrice: '10,000',
       timeRemaining: '3d 3h 34m 59s',
     },
     {
       imageUrl: 'example.jpg',
-      productName: 'Product Name',
+      productName: 'Vintage 1980s arcade machine - "Galactic Invaders"',
       category: 'Category',
       sellerName: 'sam Perera',
       sellerAvatar: 'exampleAvatar.png',
