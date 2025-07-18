@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -28,11 +29,12 @@ public class Seller {
     @Column(name="banner_id", nullable = true)
     private UUID bannerId;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "id", nullable = false)
+
+    @OneToMany(mappedBy = "seller", fetch = FetchType.LAZY)
+    private List<SellerVerificationRequest> sellerVerificationRequests;
+
+    @OneToOne(mappedBy = "seller", optional = false)
     @JsonIgnore
     private User user;
-
 
 }
