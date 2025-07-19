@@ -33,8 +33,17 @@ public class Seller {
     @OneToMany(mappedBy = "seller", fetch = FetchType.LAZY)
     private List<SellerVerificationRequest> sellerVerificationRequests;
 
-    @OneToOne(mappedBy = "seller", optional = false)
+    @OneToOne
+    @MapsId
     @JsonIgnore
+    @JoinColumn(name = "id")
     private User user;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
 
 }
