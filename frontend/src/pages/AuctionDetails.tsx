@@ -14,6 +14,185 @@ import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { useAuctionWebSocket } from '@/hooks/useAuctionWebSocket';
 
+// Import the timer utilities from your auction page or create them here
+interface TimeRemaining {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+export type AuctionStatus = 'upcoming' | 'active' | 'expired';
+
+export function useAuctionTimer(
+  startTime: string,
+  endTime: string,
+): [TimeRemaining, AuctionStatus] {
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  const [status, setStatus] = useState<AuctionStatus>('active');
+  const [serverOffset, setServerOffset] = useState<number>(0);
+  const [isOffsetReady, setIsOffsetReady] = useState<boolean>(false);
+
+  // Fetch server time offset once on mount
+  useEffect(() => {
+    const fetchServerOffset = async () => {
+      try {
+        // TEMPORARILY SKIP SERVER TIME SYNC FOR TESTING
+        setServerOffset(0);
+        setIsOffsetReady(true);
+        console.log('Using client time for testing');
+
+        /* UNCOMMENT THIS WHEN TESTING SERVER TIME SYNC
+      const clientTime = Date.now();
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auctions/server-time`,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch server time');
+      }
+
+      const data = await response.json();
+      const serverTime = data.timestamp;
+      const offset = serverTime - clientTime;
+
+      setServerOffset(offset);
+      setIsOffsetReady(true);
+
+      console.log('Server time synced:', {
+        offset: offset,
+        serverTime: new Date(serverTime).toISOString(),
+        clientTime: new Date(clientTime).toISOString(),
+        offsetMinutes: Math.round(offset / 1000 / 60),
+      });
+      */
+      } catch (error) {
+        console.error('Failed to sync server time, using client time:', error);
+        setServerOffset(0);
+        setIsOffsetReady(true);
+      }
+    };
+
+    fetchServerOffset();
+  }, []);
+
+  useEffect(() => {
+    const calculateTimeRemaining = () => {
+      // Don't calculate until we have server offset (or failed to get it)
+      if (!isOffsetReady) return;
+
+      // Get current time with server offset
+      const now = Date.now() + serverOffset;
+
+      let start: number;
+      let end: number;
+
+      try {
+        start = new Date(startTime).getTime();
+        end = new Date(endTime).getTime();
+
+        if (isNaN(start) || isNaN(end)) {
+          console.error('Invalid date format:', { startTime, endTime });
+          setStatus('active');
+          return;
+        }
+
+        if (end <= start) {
+          console.error('End time must be after start time:', {
+            startTime,
+            endTime,
+          });
+          setStatus('expired');
+          return;
+        }
+      } catch (error) {
+        console.error('Date parsing error:', error);
+        setStatus('active');
+        return;
+      }
+
+      // Add small buffer to prevent flickering during transitions
+      const BUFFER_MS = 2000; // 2 second buffer
+
+      // Debug logging
+      console.log('Auction Timer Debug:', {
+        now: new Date(now).toISOString(),
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        serverOffset: serverOffset,
+        minutesToStart: Math.round((start - now) / 1000 / 60),
+        minutesToEnd: Math.round((end - now) / 1000 / 60),
+        currentStatus: status,
+      });
+
+      // Determine status with buffer zones
+      if (now < start - BUFFER_MS) {
+        // Auction hasn't started yet
+        const diff = start - now;
+        setStatus('upcoming');
+        setTimeRemaining(calculateTimeComponents(diff));
+      } else if (now > end + BUFFER_MS) {
+        // Auction has ended
+        setStatus('expired');
+        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        // Auction is active (includes buffer zones around start/end)
+        const diff = end - now;
+        setStatus('active');
+        setTimeRemaining(
+          diff > 0
+            ? calculateTimeComponents(diff)
+            : { days: 0, hours: 0, minutes: 0, seconds: 0 },
+        );
+      }
+    };
+
+    const calculateTimeComponents = (milliseconds: number): TimeRemaining => {
+      if (milliseconds <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
+
+      return {
+        days: Math.floor(milliseconds / (1000 * 60 * 60 * 24)),
+        hours: Math.floor(
+          (milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+        ),
+        minutes: Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((milliseconds % (1000 * 60)) / 1000),
+      };
+    };
+
+    if (startTime && endTime && isOffsetReady) {
+      calculateTimeRemaining();
+      const interval = setInterval(calculateTimeRemaining, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [startTime, endTime, serverOffset, isOffsetReady]);
+
+  return [timeRemaining, status];
+}
+
+// Keep your existing getAuctionTimerText function unchanged
+export function getAuctionTimerText(
+  time: TimeRemaining,
+  status: AuctionStatus,
+) {
+  const { days, hours, minutes, seconds } = time;
+
+  if (status === 'expired') {
+    return 'Expired';
+  }
+
+  const timeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  return timeString;
+}
+
 interface BidHistory {
   bidder: {
     id: string;
@@ -65,10 +244,16 @@ const AuctionDetailsPage = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [bidAmount, setBidAmount] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<boolean>(true);
   const axiosInstance = AxiosRequest().axiosInstance;
   const { toast } = useToast();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Use the auction timer hook
+  const [timeRemaining, auctionStatus] = useAuctionTimer(
+    product?.startTime || '',
+    product?.endTime || '',
+  );
+  const timerText = getAuctionTimerText(timeRemaining, auctionStatus);
 
   function transformBidData(backendData: any) {
     const getAvatarUrl = (profilePicture: { id: any }) => {
@@ -189,32 +374,15 @@ const AuctionDetailsPage = () => {
   });
 
   useEffect(() => {
-    if (!product) return;
-
-    const calculateTimeRemaining = () => {
-      const now = new Date();
-      const endTime = new Date(product.endTime);
-      const timeDiff = endTime.getTime() - now.getTime();
-
-      if (timeDiff <= 0) {
-        setTimeLeft('Auction ended');
-        return;
-      }
-
-      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor(
-        (timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      );
-      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-      setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-    };
-
-    calculateTimeRemaining();
-    const interval = setInterval(calculateTimeRemaining, 1000);
-
-    return () => clearInterval(interval);
+    if (product) {
+      console.log('Auction dates received:', {
+        startTime: product.startTime,
+        endTime: product.endTime,
+        startTimeParsed: new Date(product.startTime).toString(),
+        endTimeParsed: new Date(product.endTime).toString(),
+        now: new Date().toString(),
+      });
+    }
   }, [product]);
 
   const handleIncrementBid = () => {
@@ -288,6 +456,20 @@ const AuctionDetailsPage = () => {
     });
   };
 
+  // Function to get the appropriate label based on auction status
+  const getTimerLabel = (status: AuctionStatus) => {
+    switch (status) {
+      case 'upcoming':
+        return 'Starts in';
+      case 'active':
+        return 'Closes in';
+      case 'expired':
+        return 'Ended';
+      default:
+        return 'Closes in';
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -355,10 +537,18 @@ const AuctionDetailsPage = () => {
         <div>
           <div className="pb-4 border-b-4 border-yellow-400">
             <br></br>
-            <p className="text-2xl ">
-              <span className="text-gray-400">Closes in </span>
-              <span className="">{timeLeft}</span>
+            <p className="text-2xl">
+              <span className="text-gray-400">
+                {getTimerLabel(auctionStatus)}{' '}
+              </span>
+              <span className="">
+                {timerText === '0d 0h 0m 0s' && auctionStatus !== 'expired'
+                  ? 'Loading...'
+                  : timerText}
+              </span>
             </p>
+            {/* Enhanced debug info - remove after testing */}
+            {/* <p className="text-xs text-gray-500">Status: {auctionStatus}</p> */}
           </div>
 
           <div className="bg-gray-100 p-4 rounded-md mt-4">
@@ -386,40 +576,54 @@ const AuctionDetailsPage = () => {
               Starting Price: LKR {product.startingPrice?.toLocaleString()}
             </p>
 
-            <div className="flex items-center mb-4">
+            {auctionStatus === 'active' ? (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDecrementBid}
+                    className="w-8 h-8 p-0"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(Number(e.target.value))}
+                    className="text-center"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleIncrementBid}
+                    className="w-8 h-8 p-0"
+                  >
+                    +
+                  </Button>
+                </div>
+                <Button
+                  onClick={handlePlaceBid}
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-black"
+                >
+                  Place Bid - LKR {bidAmount.toLocaleString()}
+                </Button>
+              </>
+            ) : auctionStatus === 'upcoming' ? (
               <Button
-                variant="secondary"
-                className="px-4 bg-gray-100"
-                onClick={handleDecrementBid}
+                className="w-full bg-yellow-200 text-gray-600 cursor-not-allowed"
+                disabled
               >
-                −
+                Auction not started
               </Button>
-              <Input
-                type="text"
-                value={`LKR ${bidAmount.toLocaleString()}`}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value) {
-                    setBidAmount(Number(value));
-                  }
-                }}
-                className="text-center mx-2"
-              />
+            ) : (
               <Button
-                variant="secondary"
-                className="px-4 bg-gray-100"
-                onClick={handleIncrementBid}
+                className="w-full bg-gray-200 text-gray-600 cursor-not-allowed"
+                disabled
               >
-                +
+                Auction ended
               </Button>
-            </div>
-
-            <Button
-              className="w-full bg-yellow-400 hover:bg-yellow-500 text-black"
-              onClick={handlePlaceBid}
-            >
-              Place Bid
-            </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4 pt-4">
@@ -526,7 +730,7 @@ const AuctionDetailsPage = () => {
           {auctionId ? (
             <AuctionChat auctionId={auctionId} />
           ) : (
-            <div>Sorry chat is unvaliable</div>
+            <div>Sorry chat is unavailable</div>
           )}
         </p>
       </div>
