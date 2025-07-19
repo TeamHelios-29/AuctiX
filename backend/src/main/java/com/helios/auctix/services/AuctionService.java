@@ -71,7 +71,7 @@ public class AuctionService {
                 .description(auction.getDescription())
                 .images(imageIds) // <-- Only image IDs
                 .endTime(auction.getEndTime().toString())
-                .startTime(auction.getEndTime().toString())
+                .startTime(auction.getStartTime().toString())
                 .bidHistory(bidHistory)
                 .currentHighestBid(highestBid)
                 .startingPrice(auction.getStartingPrice())

@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
@@ -173,6 +175,23 @@ public class AuctionController {
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             log.warning("Error fetching auction by id " + id + ": " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get current server time for client synchronization
+     * @return Current server timestamp in milliseconds
+     */
+    @GetMapping("/server-time")
+    public ResponseEntity<Map<String, Long>> getServerTime() {
+        try {
+            Map<String, Long> response = new HashMap<>();
+            response.put("timestamp", Instant.now().toEpochMilli());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.warning("Error getting server time: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
