@@ -112,6 +112,10 @@ export interface NotificationFetchParams {
 
 export interface NotificationPaginatedResponse {
   content: Notification[];
-  number: number;
-  totalPages: number;
+  page: {
+    number: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  };
 }
