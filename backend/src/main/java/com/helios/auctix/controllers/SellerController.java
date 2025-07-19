@@ -2,6 +2,7 @@ package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.user.SellerVerificationStatusEnum;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.VerificationStatusDTO;
 import com.helios.auctix.services.user.SellerService;
 import com.helios.auctix.services.user.UserDetailsService;
 import lombok.AllArgsConstructor;
@@ -25,7 +26,7 @@ public class SellerController {
     }
 
     @GetMapping("/sellerVerificationStatus")
-    public SellerVerificationStatusEnum getSellerVerificationStatus() throws AuthenticationException {
+    public VerificationStatusDTO getSellerVerificationStatus() throws AuthenticationException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userDetailsService.getAuthenticatedUser(authentication);
 

@@ -1,6 +1,10 @@
 package com.helios.auctix.services.user;
 
 import com.helios.auctix.domain.user.*;
+import com.helios.auctix.dtos.VerificationRequestDTO;
+import com.helios.auctix.dtos.VerificationStatusDTO;
+import com.helios.auctix.mappers.impl.VerificationRequestMapperImpl;
+import com.helios.auctix.mappers.impl.VerificationStatusMapperImpl;
 import com.helios.auctix.repositories.SellerRepository;
 import com.helios.auctix.repositories.SellerVerificationRequestRepository;
 import com.helios.auctix.services.fileUpload.*;
@@ -20,6 +24,7 @@ public class SellerService {
     private final SellerRepository sellerRepository;
     private final SellerVerificationRequestRepository sellerVerificationRequestRepository;
     private final FileUploadService fileUploadService;
+    private final VerificationStatusMapperImpl verificationStatusMapperImpl;
 
     public SellerVerificationStatusEnum submitSellerVerifications(User user, MultipartFile[] files) {
         if (user == null) {
@@ -56,6 +61,7 @@ public class SellerService {
                     .seller(seller)
                     .description("no review notes")
                     .verificationStatus(SellerVerificationStatusEnum.PENDING)
+                    .document(res.getUpload())
                     .build();
 
             submitedReqs.add(sellerVerificationRequest);
@@ -75,7 +81,8 @@ public class SellerService {
 
     }
 
-    public SellerVerificationStatusEnum sellerVerifiedStatus(User currentUser) {
+    public VerificationStatusDTO sellerVerifiedStatus(User currentUser) {
+
         if (currentUser == null) {
             throw new IllegalArgumentException("User cannot be null");
         }
@@ -87,16 +94,7 @@ public class SellerService {
         SellerVerificationStatusEnum status = SellerVerificationStatusEnum.NO_VERIFICATION_REQUESTED;
         List<SellerVerificationRequest> requests = sellerVerificationRequestRepository.findAllBySellerId(seller.getId());
 
-        for (var request:requests) {
-            if (request.getVerificationStatus().ordinal() == SellerVerificationStatusEnum.APPROVED.ordinal() && status.ordinal() < request.getVerificationStatus().ordinal()) {
-                status = SellerVerificationStatusEnum.APPROVED;
-            } else if (request.getVerificationStatus().ordinal() == SellerVerificationStatusEnum.PENDING.ordinal() && status.ordinal() < request.getVerificationStatus().ordinal()) {
-                status = SellerVerificationStatusEnum.PENDING;
-            } else if (request.getVerificationStatus().ordinal() == SellerVerificationStatusEnum.REJECTED.ordinal() && status.ordinal() < request.getVerificationStatus().ordinal()) {
-                status = SellerVerificationStatusEnum.REJECTED;
-            }
-        }
-        return status;
+        return verificationStatusMapperImpl.mapTo(requests);
     }
 
     public List<SellerVerificationRequest> getSellerVerificationRequests(User user) {
