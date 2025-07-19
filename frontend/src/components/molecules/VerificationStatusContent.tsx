@@ -3,51 +3,28 @@ import { AnimatePresence } from 'framer-motion';
 import { StatusNotice } from '@/components/molecules/StatusNotice';
 import { SubmittedFilesList } from '@/components/molecules/SubmittedFilesList';
 import { IssuesList } from '@/components/molecules/IssuesList';
+import { VerificationStatus } from '../organisms/VerificationForm';
 
+export interface VerificationSubmission {
+  sellerUsername: string;
+  status: string;
+  docId: string;
+  docType: string;
+  docTitle: string;
+  docSize: number;
+  description: string;
+  createdAt: string;
+  reviewedAt: string;
+}
 interface VerificationStatusContentProps {
-  status: 'pending' | 'approved' | 'rejected';
+  status: VerificationStatus;
+  submissions: VerificationSubmission[];
   onBack: () => void;
 }
 
-// TODO: Replace mock data with actual API calls
-const mockFiles = [
-  {
-    id: '1',
-    name: 'national_id_front.jpg',
-    size: 2048000,
-    uploadedAt: '2 hours ago',
-    status: 'pending' as const,
-  },
-  {
-    id: '2',
-    name: 'passport_photo.pdf',
-    size: 1536000,
-    uploadedAt: '2 hours ago',
-    status: 'pending' as const,
-  },
-];
-
-const mockIssues = [
-  {
-    id: '1',
-    title: 'Document Quality Issue',
-    description:
-      'The uploaded image is too blurry. Please upload a clearer photo of your document.',
-    severity: 'high' as const,
-    fileName: 'national_id_front.jpg',
-  },
-  {
-    id: '2',
-    title: 'Missing Information',
-    description:
-      'The document appears to be cropped. Please ensure all corners and edges are visible.',
-    severity: 'medium' as const,
-    fileName: 'passport_photo.pdf',
-  },
-];
-
 export function VerificationStatusContent({
   status,
+  submissions,
   onBack,
 }: VerificationStatusContentProps) {
   const [currentView, setCurrentView] = useState<'status' | 'files' | 'issues'>(
@@ -55,7 +32,7 @@ export function VerificationStatusContent({
   );
 
   const handleViewClick = () => {
-    setCurrentView(status === 'rejected' ? 'issues' : 'files');
+    setCurrentView(status === VerificationStatus.REJECTED ? 'issues' : 'files');
   };
 
   const handleBackToStatus = () => {
@@ -77,7 +54,7 @@ export function VerificationStatusContent({
         {currentView === 'files' && (
           <SubmittedFilesList
             key="files"
-            files={mockFiles}
+            files={submissions}
             onBack={handleBackToStatus}
           />
         )}
@@ -85,7 +62,7 @@ export function VerificationStatusContent({
         {currentView === 'issues' && (
           <IssuesList
             key="issues"
-            issues={mockIssues}
+            issues={submissions}
             onBack={handleBackToStatus}
           />
         )}
