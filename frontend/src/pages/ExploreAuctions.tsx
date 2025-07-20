@@ -53,11 +53,11 @@ interface PaginationInfo {
   itemsPerPage: number;
 }
 
-type FilterType = 'active' | 'expired' | 'upcoming';
+type FilterType = 'active' | 'ended' | 'upcoming';
 
 // AuctionTimer hook and util for time remaining and auction status
 
-export type AuctionStatus = 'upcoming' | 'active' | 'expired';
+export type AuctionStatus = 'upcoming' | 'active' | 'ended';
 
 export function useAuctionTimer(
   startTime: string,
@@ -97,7 +97,7 @@ export function useAuctionTimer(
           seconds: Math.floor((diff % 60000) / 1000),
         });
       } else {
-        setStatus('expired');
+        setStatus('ended');
         setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       }
     };
@@ -118,9 +118,46 @@ export function getAuctionTimerText(
   const { days, hours, minutes, seconds } = time;
   if (status === 'upcoming')
     return `Starts in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
-  if (status === 'active') return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-  return 'Expired';
+  if (status === 'active')
+    return `Ends in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+  return 'Auction Ended';
 }
+
+// Utility function to sort auctions based on filter type
+const sortAuctions = (
+  auctions: Auction[],
+  filterType: FilterType,
+): Auction[] => {
+  const now = Date.now();
+
+  return auctions.sort((a, b) => {
+    const aStart = new Date(a.startTime).getTime();
+    const aEnd = new Date(a.endTime).getTime();
+    const bStart = new Date(b.startTime).getTime();
+    const bEnd = new Date(b.endTime).getTime();
+
+    switch (filterType) {
+      case 'active':
+        // Sort by remaining time (ascending) - least remaining time first
+        const aTimeLeft = aEnd - now;
+        const bTimeLeft = bEnd - now;
+        return aTimeLeft - bTimeLeft;
+
+      case 'upcoming':
+        // Sort by time to start (ascending) - nearest opening first
+        const aTimeToStart = aStart - now;
+        const bTimeToStart = bStart - now;
+        return aTimeToStart - bTimeToStart;
+
+      case 'ended':
+        // Sort by end time (descending) - most recently ended first
+        return bEnd - aEnd;
+
+      default:
+        return 0;
+    }
+  });
+};
 
 // FilterContent component for filter options
 const FilterContent: React.FC<{
@@ -132,8 +169,8 @@ const FilterContent: React.FC<{
     { key: 'active' as FilterType, label: 'Active Auctions' },
     { key: 'upcoming' as FilterType, label: 'Upcoming Auctions' },
     {
-      key: 'expired' as FilterType,
-      label: 'Expired Auctions',
+      key: 'ended' as FilterType,
+      label: 'Ended Auctions',
       subtitle: '(Last 3 days)',
     },
   ];
@@ -182,8 +219,11 @@ const AuctionsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      // Convert filter type for API call (ended -> expired for backend compatibility)
+      const apiFilter = filter === 'ended' ? 'expired' : filter;
+
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auctions/all?filter=${filter}&page=${page}&limit=${pagination.itemsPerPage}&sort=latest`,
+        `${import.meta.env.VITE_API_URL}/auctions/all?filter=${apiFilter}&page=${page}&limit=${pagination.itemsPerPage}&sort=latest`,
         {
           method: 'GET',
           headers: {
@@ -201,7 +241,8 @@ const AuctionsPage: React.FC = () => {
       // Handle different response formats
       if (data.auctions && Array.isArray(data.auctions)) {
         // If the API returns paginated data
-        setAuctions(data.auctions);
+        const sortedAuctions = sortAuctions(data.auctions, filter);
+        setAuctions(sortedAuctions);
         setPagination((prev) => ({
           ...prev,
           currentPage: data.currentPage || page,
@@ -210,27 +251,21 @@ const AuctionsPage: React.FC = () => {
         }));
       } else if (Array.isArray(data)) {
         // If the API returns a simple array (fallback for current API)
-        // Implement client-side pagination
+        // Sort the data first, then implement client-side pagination
+        const sortedData = sortAuctions(data, filter);
+
         const itemsPerPage = pagination.itemsPerPage;
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-
-        // Sort by latest first (assuming there's a createdAt or similar field)
-        const sortedData = data.sort((a, b) => {
-          const dateA = new Date(a.startTime || a.createdAt || 0);
-          const dateB = new Date(b.startTime || b.createdAt || 0);
-          return dateB.getTime() - dateA.getTime();
-        });
-
         const paginatedData = sortedData.slice(startIndex, endIndex);
-        const totalPages = Math.ceil(data.length / itemsPerPage);
+        const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 
         setAuctions(paginatedData);
         setPagination((prev) => ({
           ...prev,
           currentPage: page,
           totalPages,
-          totalItems: data.length,
+          totalItems: sortedData.length,
         }));
       } else {
         setAuctions([]);

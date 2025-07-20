@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AxiosInstance } from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'react-toastify';
+import { useToast } from '@/hooks/use-toast';
 import AxiosRequest from '@/services/axiosInspector';
 
 interface AuctionUpdateFormDTO {
@@ -86,7 +86,7 @@ const AuctionForm: React.FC = () => {
     {},
   );
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-
+  const { toast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
@@ -433,22 +433,27 @@ const AuctionForm: React.FC = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      toast.success(
-        isEditMode
+      toast({
+        title: 'Success',
+        description: isEditMode
           ? 'Auction updated successfully!'
           : 'Auction created successfully!',
-      );
+        variant: 'default',
+      });
 
       setTimeout(() => {
         navigate('/manage-auctions');
       }, 1500);
     } catch (error: any) {
       console.error('Error submitting form:', error);
-      if (error.response?.data) {
-        toast.error(error.response.data);
-      } else {
-        toast.error('Something went wrong.');
-      }
+      toast({
+        title: 'Error',
+        description:
+          error.response?.data?.message ||
+          error.response?.data ||
+          'Something went wrong.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -497,9 +502,17 @@ const AuctionForm: React.FC = () => {
         .catch((error) => {
           console.error('Error fetching auction data:', error);
           if (error.code === 'ECONNABORTED') {
-            toast.error('Request timed out. Please try again.');
+            toast({
+              title: 'Error',
+              description: 'Request timed out. Please try again.',
+              variant: 'destructive',
+            });
           } else {
-            toast.error('Failed to load auction data');
+            toast({
+              title: 'Error',
+              description: 'Failed to load auction data',
+              variant: 'destructive',
+            });
           }
           navigate('/manage-auctions');
         })

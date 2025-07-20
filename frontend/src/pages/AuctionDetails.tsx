@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -119,17 +119,6 @@ export function useAuctionTimer(
 
       // Add small buffer to prevent flickering during transitions
       const BUFFER_MS = 2000; // 2 second buffer
-
-      // Debug logging
-      console.log('Auction Timer Debug:', {
-        now: new Date(now).toISOString(),
-        start: new Date(start).toISOString(),
-        end: new Date(end).toISOString(),
-        serverOffset: serverOffset,
-        minutesToStart: Math.round((start - now) / 1000 / 60),
-        minutesToEnd: Math.round((end - now) / 1000 / 60),
-        currentStatus: status,
-      });
 
       // Determine status with buffer zones
       if (now < start - BUFFER_MS) {
@@ -256,8 +245,8 @@ const AuctionDetailsPage = () => {
   const timerText = getAuctionTimerText(timeRemaining, auctionStatus);
 
   function transformBidData(backendData: any) {
-    const getAvatarUrl = (profilePicture: { id: any }) => {
-      if (profilePicture && profilePicture.id) {
+    const getAvatarUrl = (profilePicture: { id: any } | null | undefined) => {
+      if (profilePicture?.id) {
         return `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${profilePicture.id}`;
       }
       return '/defaultProfilePhoto.jpg';
@@ -267,11 +256,11 @@ const AuctionDetailsPage = () => {
       username: any;
       firstName: any;
       lastName: any;
-      profilePicture: { id: any };
+      profilePicture?: { id: any } | null;
     }) => ({
       id: user.username,
       name: `${user.firstName} ${user.lastName}`,
-      avatar: getAvatarUrl(user.profilePicture),
+      avatar: getAvatarUrl(user?.profilePicture),
     });
 
     return {
@@ -335,43 +324,70 @@ const AuctionDetailsPage = () => {
     }
   }, [auctionId]);
 
-  useAuctionWebSocket(auctionId!, (payload) => {
-    const newBid = payload.newBid;
-    const updatedHistory = payload.bidHistory;
-
-    const updatedProduct = { ...product! }; // product is already fetched earlier
-
-    // Update highest bid
-    updatedProduct.currentBid = newBid.amount;
-    updatedProduct.currentBidder = newBid.bidder
-      ? {
-          id: newBid.bidder.username,
-          name: `${newBid.bidder.firstName} ${newBid.bidder.lastName}`,
-          avatar: newBid.bidder.profilePicture?.id
-            ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${newBid.bidder.profilePicture.id}`
-            : '/defaultProfilePhoto.jpg',
+  // FIXED WebSocket callback with proper error handling
+  const handleBidUpdate = useCallback(
+    (payload: any) => {
+      try {
+        if (!payload || !payload.newBid) {
+          console.warn('Invalid WebSocket payload received:', payload);
+          return;
         }
-      : {
-          id: '',
-          name: 'No bidder yet',
-          avatar: '/defaultProfilePhoto.jpg',
-        };
 
-    // Update bid history
-    updatedProduct.bidHistory = updatedHistory.map((bid: any) => ({
-      bidder: {
-        id: bid.bidder.username,
-        name: `${bid.bidder.firstName} ${bid.bidder.lastName}`,
-        avatar: bid.bidder.profilePicture?.id
-          ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${bid.bidder.profilePicture.id}`
-          : '/defaultProfilePhoto.jpg',
-      },
-      amount: bid.amount,
-      timestamp: bid.bidTime,
-    }));
+        const newBid = payload.newBid;
+        const updatedHistory = payload.bidHistory || [];
 
-    setProduct(updatedProduct);
-  });
+        if (!product) {
+          console.warn('Product not loaded yet, skipping WebSocket update');
+          return;
+        }
+
+        const updatedProduct = { ...product };
+        updatedProduct.currentBid = newBid.amount || 0;
+
+        if (newBid.bidder) {
+          updatedProduct.currentBidder = {
+            id: newBid.bidder.username || '',
+            name: `${newBid.bidder.firstName || 'Unknown'} ${newBid.bidder.lastName || 'User'}`,
+            avatar: newBid.bidder.profilePicture?.id
+              ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${newBid.bidder.profilePicture.id}`
+              : '/defaultProfilePhoto.jpg',
+          };
+        } else {
+          updatedProduct.currentBidder = {
+            id: '',
+            name: 'Anonymous Bidder',
+            avatar: '/defaultProfilePhoto.jpg',
+          };
+        }
+
+        updatedProduct.bidHistory = updatedHistory.map((bid: any) => ({
+          bidder: {
+            id: bid.bidder?.username || '',
+            name: `${bid.bidder?.firstName || 'Unknown'} ${bid.bidder?.lastName || 'User'}`,
+            avatar: bid.bidder?.profilePicture?.id
+              ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${bid.bidder.profilePicture.id}`
+              : '/defaultProfilePhoto.jpg',
+          },
+          amount: bid.amount || 0,
+          timestamp: bid.bidTime || new Date().toISOString(),
+        }));
+
+        updatedProduct.bidIncrement = calculateBidIncrement(
+          updatedProduct.startingPrice,
+          updatedProduct.currentBid,
+        );
+
+        setProduct(updatedProduct);
+        setBidAmount(updatedProduct.currentBid + updatedProduct.bidIncrement);
+      } catch (error) {
+        console.error('Error processing WebSocket update:', error);
+      }
+    },
+    [product],
+  ); // only include 'product', no need for bidAmount
+
+  // Attach the memoized function
+  useAuctionWebSocket(auctionId!, handleBidUpdate);
 
   useEffect(() => {
     if (product) {
