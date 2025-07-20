@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/roletest/bidder").hasRole("BIDDER")
                         .requestMatchers("/api/user/**").permitAll()
                         .requestMatchers("/api/admin/**").permitAll()
+                        .requestMatchers("/api/seller/**").permitAll()
                         .requestMatchers("/api/complaints/**").permitAll()
                         .requestMatchers("/api/auctions/**").permitAll()
                         .requestMatchers("/api/roletest/**").authenticated()

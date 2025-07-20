@@ -53,15 +53,15 @@ public class User {
     private UserRole role;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id", nullable = false, referencedColumnName = "id")
     private Seller seller;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id", nullable = false, referencedColumnName = "id")
     private Admin admin;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id", nullable = false, referencedColumnName = "id")
     private Bidder bidder;
 
     @OneToOne(fetch = FetchType.LAZY)

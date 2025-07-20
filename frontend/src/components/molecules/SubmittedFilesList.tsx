@@ -1,38 +1,36 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, ArrowLeft } from 'lucide-react';
 import { ActionButton } from '@/components/atoms/ActionButton';
-
-interface SubmittedFile {
-  id: string;
-  name: string;
-  size: number;
-  uploadedAt: string;
-  status: 'pending' | 'approved' | 'rejected';
-}
+import { VerificationSubmission } from './VerificationStatusContent';
+import { VerificationStatus } from '../organisms/VerificationForm';
 
 interface SubmittedFilesListProps {
-  files: SubmittedFile[];
+  files: VerificationSubmission[];
   onBack: () => void;
 }
 
 export function SubmittedFilesList({ files, onBack }: SubmittedFilesListProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved':
+      case VerificationStatus.APPROVED:
         return 'text-green-600 bg-green-50 border-green-200';
-      case 'rejected':
+      case VerificationStatus.REJECTED:
         return 'text-red-600 bg-red-50 border-red-200';
-      default:
+      case VerificationStatus.PENDING:
         return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'approved':
+      case VerificationStatus.APPROVED:
         return 'Approved';
-      case 'rejected':
+      case VerificationStatus.REJECTED:
         return 'Rejected';
+      case VerificationStatus.PENDING:
+        return 'Pending';
       default:
         return 'Under Review';
     }
@@ -67,7 +65,7 @@ export function SubmittedFilesList({ files, onBack }: SubmittedFilesListProps) {
         <AnimatePresence>
           {files.map((file, index) => (
             <motion.div
-              key={file.id}
+              key={index}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 + 0.3 }}
@@ -78,11 +76,11 @@ export function SubmittedFilesList({ files, onBack }: SubmittedFilesListProps) {
                   <FileText className="h-5 w-5 text-gray-500 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground truncate">
-                      {file.name}
+                      {file.docTitle}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB • Uploaded{' '}
-                      {file.uploadedAt}
+                      {(file.docSize / 1024 / 1024).toFixed(2)} MB • Uploaded{' '}
+                      {file.createdAt}
                     </p>
                   </div>
                 </div>

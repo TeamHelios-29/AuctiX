@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -28,11 +29,21 @@ public class Seller {
     @Column(name="banner_id", nullable = true)
     private UUID bannerId;
 
+
+    @OneToMany(mappedBy = "seller", fetch = FetchType.LAZY)
+    private List<SellerVerificationRequest> sellerVerificationRequests;
+
     @OneToOne
     @MapsId
-    @JoinColumn(name = "id", nullable = false)
     @JsonIgnore
+    @JoinColumn(name = "id")
     private User user;
 
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
 
 }

@@ -109,7 +109,7 @@ export default function AppRouter() {
             path="/users"
             element={
               <ProtectedRoute
-                allowedUsers={['ADMIN', 'SUPER_ADMIN', 'BIDDER', 'SELLER']}
+                allowedUsers={['ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
               >
                 <User />
