@@ -409,4 +409,18 @@ public class UserController {
         }
     }
 
+    @PostMapping("/resetPassword")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam("email") String email,
+            @RequestParam("code") String code,
+            @RequestParam("newPassword") String newPassword ) throws AuthenticationException{
+        // Reset password
+        UserServiceResponse response = userDetailsService.resetPassword(email, code, newPassword);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok("Password reset successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response.getMessage());
+        }
+    }
+
 }

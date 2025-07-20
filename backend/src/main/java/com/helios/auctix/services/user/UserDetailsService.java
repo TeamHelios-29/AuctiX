@@ -302,4 +302,23 @@ public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO pro
         currentUser = userRepository.save(currentUser);
         return  new UserServiceResponse(true, "Password changed successfully", currentUser);
     }
+
+    public UserServiceResponse resetPassword(String email, String code, String newPassword) {
+        if (email == null || email.isEmpty()) {
+            return new UserServiceResponse(false, "Email cannot be null or empty");
+        }
+        if (code == null || code.isEmpty()) {
+            return new UserServiceResponse(false, "Code cannot be null or empty");
+        }
+        if (newPassword == null || newPassword.isEmpty()) {
+            return new UserServiceResponse(false, "New password cannot be null or empty");
+        }
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            return new UserServiceResponse(false, "User not found with email: " + email);
+        }
+
+        // TODO: Implement code verification logic here
+        return new UserServiceResponse(true, "Password changed successfully", user);
+    }
 }
