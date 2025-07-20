@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.InvalidParameterException;
@@ -41,6 +42,8 @@ public class UserDetailsService {
     private UserMapperImpl userMapperImpl;
     @Autowired
     private UserRoleRepository userRoleRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     /**
      * Retrieves a user by {@link Authentication}.
@@ -272,5 +275,31 @@ public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO pro
         requiredAction.setResolvedAt(java.time.LocalDateTime.now());
         userRequiredActionRepository.save(requiredAction);
         log.info("Resolved required action {} for user: {}", action, user.getUsername());
+    }
+
+    public UserServiceResponse changePassword(User currentUser, String oldPassword, String newPassword) {
+        if (currentUser == null) {
+            return new UserServiceResponse(false, "Current user is null");
+        }
+        if (oldPassword == null || oldPassword.isEmpty()) {
+            return new UserServiceResponse(false, "Old password is empty");
+        }
+        if (newPassword == null || newPassword.isEmpty()) {
+            return new UserServiceResponse(false, "New password is empty");
+        }
+        if (newPassword.contentEquals(oldPassword)) {
+            return  new UserServiceResponse(false, "New password cannot be the same as old password");
+        }
+        // encode the passwords
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+
+        // check if the old password matches the current user's password
+        if (!passwordEncoder.matches(oldPassword, currentUser.getPasswordHash())) {
+            throw new InvalidParameterException("Old password does not match current password");
+        }
+        // update the user's password
+        currentUser.setPasswordHash(encodedNewPassword);
+        currentUser = userRepository.save(currentUser);
+        return  new UserServiceResponse(true, "Password changed successfully", currentUser);
     }
 }

@@ -394,4 +394,19 @@ public class UserController {
         return ResponseEntity.ok(requiredActions);
     }
 
+    @PostMapping("/changePassword")
+    public ResponseEntity<String> changePassword(@RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword) throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // Change password
+        UserServiceResponse response = userDetailsService.changePassword(currentUser, oldPassword, newPassword);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok("Password changed successfully");
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response.getMessage());
+        }
+    }
+
 }
