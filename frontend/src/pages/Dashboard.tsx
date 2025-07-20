@@ -150,23 +150,22 @@ export default function AuctionDashboard() {
               )}
             </div>
             <div>
-              <div className="text-gray-500 font-medium leading-none">
+              <div className="text-gray-600 font-medium leading-none">
                 Hello,
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <h2 className="text-4xl leading-none font-bold">
                   {userData?.username || 'Guest'}
                 </h2>
-                <span className="text-white bg-[#ecb02d] rounded-full p-0.5">
-                  <Check className="h-4 w-4" />
-                </span>
               </div>
-              <div className="flex -mt-0.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className="text-[#ecb02d]">
-                    ★
-                  </span>
-                ))}
+              <div className="flex items-center mt-1">
+                <span className="text-sm font-semibold text-white bg-yellow-600 rounded-full px-2">
+                  {userData?.role === 'BIDDER'
+                    ? 'Bidder'
+                    : userData?.role === 'SELLER'
+                      ? 'Seller'
+                      : ''}
+                </span>
               </div>
             </div>
           </div>

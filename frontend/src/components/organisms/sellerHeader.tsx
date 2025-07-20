@@ -2,11 +2,20 @@ import { Button } from '../ui/button';
 import React, { useState } from 'react';
 import SellerReport from './SellerReport';
 
-export default function SellerHeader() {
-  const [reportOpen, setReportOpen] = useState(false);
+interface SellerHeaderProps {
+  sellerId?: string;
+  sellerName?: string;
+  sellerAvatar?: string;
+  backgroundPhoto?: string;
+}
 
-  // Dummy sellerId for demonstration
-  const sellerId = 'seller-123';
+export default function SellerHeader({
+  sellerId,
+  sellerName = 'Unknown Seller',
+  sellerAvatar,
+  backgroundPhoto,
+}: SellerHeaderProps) {
+  const [reportOpen, setReportOpen] = useState(false);
 
   const handleReportSubmit = (
     sellerId: string,
@@ -17,17 +26,35 @@ export default function SellerHeader() {
     // ...your logic here...
   };
 
+  // Helper function to get seller avatar URL
+  const getSellerAvatarUrl = () => {
+    if (sellerAvatar) {
+      return `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${sellerAvatar}`;
+    }
+    return 'defaultProfilePhoto.jpg';
+  };
+
+  // Helper function to get background photo URL
+  const getBackgroundPhotoUrl = () => {
+    if (backgroundPhoto) {
+      return `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${backgroundPhoto}`;
+    }
+    return null;
+  };
+
+  const backgroundUrl = getBackgroundPhotoUrl();
+
   return (
     <div className="bg-white p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 rounded-lg border">
       <div className="flex items-center gap-3 sm:gap-4">
         <img
-          src="exampleAvatar.png"
+          src={getSellerAvatarUrl()}
           alt="Seller"
-          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border"
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
         />
         <div>
           <h2 className="text-base sm:text-xl font-semibold flex items-center">
-            Sam Perera
+            {sellerName}
           </h2>
         </div>
       </div>
@@ -39,7 +66,7 @@ export default function SellerHeader() {
         Report Seller
       </Button>
       <SellerReport
-        sellerId={sellerId}
+        sellerId={sellerId || 'unknown'}
         open={reportOpen}
         onClose={() => setReportOpen(false)}
         onSubmit={handleReportSubmit}
