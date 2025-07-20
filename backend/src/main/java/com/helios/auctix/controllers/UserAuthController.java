@@ -1,9 +1,11 @@
 package com.helios.auctix.controllers;
 
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.LoginRequestDTO;
 import com.helios.auctix.dtos.RegistrationRequestDTO;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.services.UserAuthenticationService;
 import com.helios.auctix.services.user.UserDetailsService;
@@ -28,14 +30,15 @@ public class UserAuthController {
     private final UserRegisterService userRegisterService;
     private final UserDetailsService userDetailsService;
     private UserAuthenticationService userAuthenticationService;
-
+    private final NotificationEventPublisher notificationEventPublisher;
     private UserRepository userRepository; // TODO Replace with UserService when it is implemented
 
-    public UserAuthController(UserAuthenticationService userAuthenticationService, UserRepository userRepository, UserRegisterService userRegisterService, UserDetailsService userDetailsService) {
+    public UserAuthController(UserAuthenticationService userAuthenticationService, UserRepository userRepository, UserRegisterService userRegisterService, UserDetailsService userDetailsService, NotificationEventPublisher notificationEventPublisher) {
         this.userAuthenticationService = userAuthenticationService;
         this.userRepository = userRepository;
         this.userRegisterService = userRegisterService;
         this.userDetailsService = userDetailsService;
+        this.notificationEventPublisher = notificationEventPublisher;
     }
 
     @PostMapping("/register")
@@ -69,6 +72,14 @@ public class UserAuthController {
         if (!registrationResponse.isSuccess()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(registrationResponse.getMessage());
         }
+
+        notificationEventPublisher.publishNotificationEvent(
+                "Welcome to AuctiX",
+                "Your account on the AuctiX platform has been created created successfully!",
+                NotificationCategory.WELCOME_MESSAGE,
+                currentUser,
+                null
+        );
 
         // send a jwt to log the user in when registration is successful
         return ResponseEntity.status(HttpStatus.CREATED).body(

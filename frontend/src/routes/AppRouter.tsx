@@ -10,7 +10,6 @@ import LoginPage from '@/pages/Login';
 import Home from '@/pages/Home';
 import CreateAuction from '@/pages/CreateAuction';
 import SellerProfile from '@/pages/SellerProfile';
-import AuctionChat from '@/components/organisms/auction-chat';
 import AuctionDetailsPage from '@/pages/AuctionDetails';
 import Report from '@/pages/Report';
 import ProfileSettings from '@/pages/ProfileSettings';
@@ -18,7 +17,16 @@ import { useNotificationRegistration } from '@/hooks/use-notification-registrati
 import UserDeliveryPage from '@/pages/User_Delivery';
 import SellerDeliveryPage from '@/pages/Seller_Delivery';
 import AuctionsPage from '@/pages/ExploreAuctions';
+import ManageAuctions from '@/pages/ManageAuctions';
 import AdminManagementPage from '@/pages/AdminManagementPage';
+import ComplaintDetail from '@/pages/ComplaintDetail';
+import NotificationPreferencesPage from '@/pages/NotificationPreferencePage';
+import NotificationsPage from '@/pages/NotificationPage';
+// import WatchList from '@/pages/WatchList';
+import UserProfile from '@/components/organisms/UserProfile';
+import WatchlistPage from '@/pages/WatchlistPage';
+import SellerVerificationSubmitPage from '@/pages/SellerVerificationSubmitPage';
+import SecuritySettingsPage from '@/pages/SecuritySettingsPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -34,11 +42,36 @@ export default function AppRouter() {
             path="/auction-details/:auctionId"
             element={<AuctionDetailsPage />}
           />
-          <Route path="/create-auction" element={<CreateAuction />} />
+          {/* <Route path="/create-auction" element={<CreateAuction />} /> */}
+          <Route path="/auctions/new" element={<CreateAuction />} />
+          <Route path="/auctions/update/:id" element={<CreateAuction />} />
+
           <Route path="/explore-auctions" element={<AuctionsPage />} />
         </Route>
+
         {/* Routes using DashboardLayout */}
+
         <Route element={<DashboardLayout />}>
+          <Route
+            path="/manage-auctions"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <ManageAuctions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/watchlist"
+            element={
+              <ProtectedRoute allowedUsers={['BIDDER']} redirectPath="/403">
+                <WatchlistPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/dashboard"
             element={
@@ -51,10 +84,32 @@ export default function AppRouter() {
             }
           />
           <Route
+            path="/notifications/"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications/preferences"
+            element={
+              <ProtectedRoute
+                allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
+                redirectPath="/403"
+              >
+                <NotificationPreferencesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/users"
             element={
               <ProtectedRoute
-                allowedUsers={['ADMIN', 'SUPER_ADMIN', 'BIDDER', 'SELLER']}
+                allowedUsers={['ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
               >
                 <User />
@@ -67,26 +122,53 @@ export default function AppRouter() {
               <ProtectedRoute
                 allowedUsers={['SELLER', 'BIDDER', 'ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
+                ignorePendingForceRedirects={true}
               >
                 <ProfileSettings />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/admin-management"
             element={
               <ProtectedRoute
                 allowedUsers={['SUPER_ADMIN']}
                 redirectPath="/403"
+                ignorePendingForceRedirects={true}
               >
                 <AdminManagementPage />
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/seller-verification-submit"
+            element={
+              <ProtectedRoute allowedUsers={['SELLER']} redirectPath="/403">
+                <SellerVerificationSubmitPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/security"
+            element={
+              <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
+                <SecuritySettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:id"
+            element={
+              <ProtectedRoute allowedUsers={['ANY']} redirectPath="/403">
+                <UserProfile />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/reports" element={<Report />} />
+          <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/complaints/:id" element={<ComplaintDetail />} />
+          {/*           <Route path="/watchlist" element={<WatchList />} /> */}
         </Route>
         {/* Other Routes */}
         <Route path="/login" element={<LoginPage />} />
@@ -94,8 +176,7 @@ export default function AppRouter() {
         <Route path="/user-delivery" element={<UserDeliveryPage />} />
         <Route path="/seller-delivery" element={<SellerDeliveryPage />} />
 
-        <Route path="/403" element={<h2>403 Unautherized</h2>} />
-        <Route path="/test-chat" element={<AuctionChat />} />
+        <Route path="/403" element={<h2>403 Unauthorized</h2>} />
         <Route path="*" element={<h2>404 Not Found</h2>} />
       </Routes>
     </BrowserRouter>

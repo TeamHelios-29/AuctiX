@@ -1,10 +1,16 @@
 package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.auction.Bid;
+import com.helios.auctix.domain.user.User;
+import com.helios.auctix.dtos.BidDTO;
+import com.helios.auctix.dtos.PlaceBidRequest;
 import com.helios.auctix.services.BidService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.helios.auctix.services.user.UserDetailsService;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,20 +21,21 @@ import java.util.logging.Logger;
 @RestController
 @RequestMapping("/api/bids")
 @CrossOrigin(origins = "*")
+@AllArgsConstructor
 public class BidController {
 
     private final BidService bidService;
     private final Logger log = Logger.getLogger(BidController.class.getName());
+    private final UserDetailsService userDetailsService;
 
-    @Autowired
-    public BidController(BidService bidService) {
-        this.bidService = bidService;
-    }
-
+    //to get bid history
     @GetMapping("/auction/{auctionId}")
-    public ResponseEntity<List<Bid>> getBidHistoryForAuction(@PathVariable UUID auctionId) {
+    public ResponseEntity<List<BidDTO>> getBidHistoryForAuction(@PathVariable UUID auctionId) {
         try {
-            List<Bid> bidHistory = bidService.getBidHistoryForAuction(auctionId);
+            List<BidDTO> bidHistory = bidService.getBidHistoryForAuction(auctionId)
+                    .stream()
+                    .map(bidService::convertToDTO)
+                    .toList();
             return ResponseEntity.ok(bidHistory);
         } catch (Exception e) {
             log.warning("Error fetching bid history for auction " + auctionId + ": " + e.getMessage());
@@ -36,11 +43,12 @@ public class BidController {
         }
     }
 
+    //to get the highest bid
     @GetMapping("/auction/{auctionId}/highest")
     public ResponseEntity<?> getHighestBidForAuction(@PathVariable UUID auctionId) {
         try {
             Optional<Bid> highestBid = bidService.getHighestBidForAuction(auctionId);
-            return highestBid.map(ResponseEntity::ok)
+            return highestBid.map(bid -> ResponseEntity.ok(convertToDTO(bid)))
                     .orElseGet(() -> ResponseEntity.ok(null)); // Return null if no bids yet
         } catch (Exception e) {
             log.warning("Error fetching highest bid for auction " + auctionId + ": " + e.getMessage());
@@ -48,49 +56,45 @@ public class BidController {
         }
     }
 
+    //to place new bids
     @PostMapping("/place")
     public ResponseEntity<?> placeBid(@RequestBody PlaceBidRequest request) {
         try {
-            Bid placedBid = bidService.placeBid(
-                    request.getAuctionId(),
-                    request.getBidderId(),
-                    request.getBidderName(),
-                    request.getBidderAvatar(),
-                    request.getAmount()
-            );
+            Authentication authentication = SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            User bidder = userDetailsService
+                    .getAuthenticatedUser(authentication);
+
+            BidDTO placedBid = bidService.placeBid(request, bidder);
             return ResponseEntity.ok(placedBid);
         } catch (IllegalArgumentException e) {
+            log.warning("Bad request in place bid: " + e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IllegalStateException e) {
+            log.warning("Conflict in place bid: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (Exception e) {
-            log.warning("Error placing bid: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to place bid");
+            log.severe("Error placing bid: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to place bid: " + e.getMessage());
         }
     }
 
-    // Request DTO for placing bids
-    public static class PlaceBidRequest {
-        private UUID auctionId;
-        private UUID bidderId;
-        private String bidderName;
-        private String bidderAvatar;
-        private Double amount;
-
-        // Getters and setters
-        public UUID getAuctionId() { return auctionId; }
-        public void setAuctionId(UUID auctionId) { this.auctionId = auctionId; }
-
-        public UUID getBidderId() { return bidderId; }
-        public void setBidderId(UUID bidderId) { this.bidderId = bidderId; }
-
-        public String getBidderName() { return bidderName; }
-        public void setBidderName(String bidderName) { this.bidderName = bidderName; }
-
-        public String getBidderAvatar() { return bidderAvatar; }
-        public void setBidderAvatar(String bidderAvatar) { this.bidderAvatar = bidderAvatar; }
-
-        public Double getAmount() { return amount; }
-        public void setAmount(Double amount) { this.amount = amount; }
+    private BidDTO convertToDTO(Bid bid) {
+        return BidDTO.builder()
+                .id(bid.getId())
+                .auctionId(bid.getAuction().getId())
+                .auctionTitle(bid.getAuction().getTitle())
+                .bidderId(bid.getBidderId())
+                .bidderName(bid.getBidderName())
+                .bidderAvatar(bid.getBidderAvatar())
+                .amount(bid.getAmount())
+                .bidTime(bid.getBidTime())
+                .createdAt(bid.getCreatedAt())
+                .build();
     }
+    // Request DTO for placing bids
+    // Use com.helios.auctix.dtos.PlaceBidRequest instead of inner class.
 }

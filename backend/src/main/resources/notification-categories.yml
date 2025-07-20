@@ -1,0 +1,144 @@
+notificationCategories:
+  AUCTION_STARTED:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when an auction you are watching starts"
+    title: "Auction Started"
+
+  AUCTION_COMPLETED:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when an auction you are watching ends"
+    title: "Auction Completed"
+
+  AUCTION_END_SOON:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: [BIDDER, SELLER]
+    categoryGroup: AUCTION
+    description: "Get notified 10 minutes before an auction you are watching ends"
+    title: "Auction Ends soon"
+
+  AUCTION_START_SOON:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified 10 minutes before an auction you are watching starts"
+    title: "Auction Start soon"
+
+  AUCTION_WON:
+    allowedRoles: [BIDDER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when you win an auction"
+    title: "You won the auction!"
+
+  AUCTION_UPDATED:
+    allowedRoles: [BIDDER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when details of an auction you're watching change"
+    title: "Auction details updated"
+
+  AUCTION_CANCELED:
+    allowedRoles: [BIDDER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified if an auction you're watching is canceled by the seller or admin"
+    title: "Auction canceled"
+
+  OUTBID:
+    allowedRoles: [BIDDER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when you're outbid in an auction"
+    title: "You've been outbid"
+
+  ITEM_SOLD:
+    allowedRoles: [SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when your item has been sold to the highest bidder"
+    title: "Item sold"
+
+  NEW_BID_RECEIVED_SELLER:
+    allowedRoles: [SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when a new bid is placed on your auction"
+    title: "New bid on your auction"
+
+  NEW_BID_RECEIVED_WATCHER:
+    allowedRoles: [BIDDER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: AUCTION
+    description: "Get notified when a new bid is placed on a watched auction"
+    title: "New bid on an auction you are watching"
+
+  DEFAULT:
+    allowedRoles: [ADMIN, SUPER_ADMIN, BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: DEFAULT
+    description: "All other notifications"
+    title: "Default Notifications"
+
+  WELCOME_MESSAGE:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: [BIDDER, SELLER]
+    cannotEditRoles: [BIDDER, SELLER]
+    categoryGroup: SYSTEM
+    description: "A welcome message when you join the platform"
+    title: "Welcome to AuctiX!"
+
+  ACCOUNT_SUSPENDED:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: [BIDDER, SELLER]
+    cannotEditRoles: [BIDDER, SELLER]
+    categoryGroup: SYSTEM
+    description: "Your account has been suspended due to policy violations or suspicious activity"
+    title: "Account suspended"
+
+  ACCOUNT_REINSTATED:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: [BIDDER, SELLER]
+    cannotEditRoles: [BIDDER, SELLER]
+    categoryGroup: SYSTEM
+    description: "Your suspended account has been reinstated"
+    title: "Account reinstated"
+
+  WALLET_RECHARGE_SUCCESS:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: WALLET
+    description: "Get notified when your wallet recharge is successful"
+    title: "Wallet recharge successful"
+
+  WALLET_WITHDRAWAL_SUCCESS:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: WALLET
+    description: "Your wallet withdrawal has been successfully processed"
+    title: "Withdrawal successful"
+
+  PROMO:
+    allowedRoles: [BIDDER, SELLER]
+    alwaysHiddenRoles: []
+    cannotEditRoles: []
+    categoryGroup: PROMO
+    description: "Marketing notifications about promotions, discounts"
+    title: "Promotional Notifications"

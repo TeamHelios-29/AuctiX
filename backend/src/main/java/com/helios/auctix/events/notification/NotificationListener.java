@@ -31,7 +31,8 @@ public class NotificationListener implements ApplicationListener<NotificationEve
                         .notificationCategory(event.getNotificationCategory())
                         .notificationEvent(event.toString()) // TODO decide if we are storing this
                         .title(event.getTitle())
-                        .content(event.getMessage());
+                        .content(event.getMessage())
+                        .partialUrl(event.getPartialUrl());
 
 
         notificationManagerService.handleNotification(notificationBuilder.build());

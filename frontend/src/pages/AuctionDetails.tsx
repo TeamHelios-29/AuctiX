@@ -1,14 +1,198 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Share, Flag, Heart } from 'lucide-react';
-import { useParams } from 'react-router-dom'; // if using react-router
-import axios from 'axios'; // for API calls
-import { Client } from '@stomp/stompjs'; // for WebSocket connection
+import { useParams } from 'react-router-dom';
 import AxiosRequest from '@/services/axiosInspector';
+import { useToast } from '@/hooks/use-toast';
+import AuctionReport from '@/components/organisms/AuctionReport';
+import { title } from 'process';
+import AuctionChat from '@/components/organisms/auction-chat';
+import AddToWatchlistButton from '@/components/molecules/AddToWatchlistButton';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import { useAuctionWebSocket } from '@/hooks/useAuctionWebSocket';
 
-// Types
+// Import the timer utilities from your auction page or create them here
+interface TimeRemaining {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+export type AuctionStatus = 'upcoming' | 'active' | 'expired';
+
+export function useAuctionTimer(
+  startTime: string,
+  endTime: string,
+): [TimeRemaining, AuctionStatus] {
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  const [status, setStatus] = useState<AuctionStatus>('active');
+  const [serverOffset, setServerOffset] = useState<number>(0);
+  const [isOffsetReady, setIsOffsetReady] = useState<boolean>(false);
+
+  // Fetch server time offset once on mount
+  useEffect(() => {
+    const fetchServerOffset = async () => {
+      try {
+        // TEMPORARILY SKIP SERVER TIME SYNC FOR TESTING
+        setServerOffset(0);
+        setIsOffsetReady(true);
+        console.log('Using client time for testing');
+
+        /* UNCOMMENT THIS WHEN TESTING SERVER TIME SYNC
+      const clientTime = Date.now();
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auctions/server-time`,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch server time');
+      }
+
+      const data = await response.json();
+      const serverTime = data.timestamp;
+      const offset = serverTime - clientTime;
+
+      setServerOffset(offset);
+      setIsOffsetReady(true);
+
+      console.log('Server time synced:', {
+        offset: offset,
+        serverTime: new Date(serverTime).toISOString(),
+        clientTime: new Date(clientTime).toISOString(),
+        offsetMinutes: Math.round(offset / 1000 / 60),
+      });
+      */
+      } catch (error) {
+        console.error('Failed to sync server time, using client time:', error);
+        setServerOffset(0);
+        setIsOffsetReady(true);
+      }
+    };
+
+    fetchServerOffset();
+  }, []);
+
+  useEffect(() => {
+    const calculateTimeRemaining = () => {
+      // Don't calculate until we have server offset (or failed to get it)
+      if (!isOffsetReady) return;
+
+      // Get current time with server offset
+      const now = Date.now() + serverOffset;
+
+      let start: number;
+      let end: number;
+
+      try {
+        start = new Date(startTime).getTime();
+        end = new Date(endTime).getTime();
+
+        if (isNaN(start) || isNaN(end)) {
+          console.error('Invalid date format:', { startTime, endTime });
+          setStatus('active');
+          return;
+        }
+
+        if (end <= start) {
+          console.error('End time must be after start time:', {
+            startTime,
+            endTime,
+          });
+          setStatus('expired');
+          return;
+        }
+      } catch (error) {
+        console.error('Date parsing error:', error);
+        setStatus('active');
+        return;
+      }
+
+      // Add small buffer to prevent flickering during transitions
+      const BUFFER_MS = 2000; // 2 second buffer
+
+      // Debug logging
+      console.log('Auction Timer Debug:', {
+        now: new Date(now).toISOString(),
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        serverOffset: serverOffset,
+        minutesToStart: Math.round((start - now) / 1000 / 60),
+        minutesToEnd: Math.round((end - now) / 1000 / 60),
+        currentStatus: status,
+      });
+
+      // Determine status with buffer zones
+      if (now < start - BUFFER_MS) {
+        // Auction hasn't started yet
+        const diff = start - now;
+        setStatus('upcoming');
+        setTimeRemaining(calculateTimeComponents(diff));
+      } else if (now > end + BUFFER_MS) {
+        // Auction has ended
+        setStatus('expired');
+        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        // Auction is active (includes buffer zones around start/end)
+        const diff = end - now;
+        setStatus('active');
+        setTimeRemaining(
+          diff > 0
+            ? calculateTimeComponents(diff)
+            : { days: 0, hours: 0, minutes: 0, seconds: 0 },
+        );
+      }
+    };
+
+    const calculateTimeComponents = (milliseconds: number): TimeRemaining => {
+      if (milliseconds <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
+
+      return {
+        days: Math.floor(milliseconds / (1000 * 60 * 60 * 24)),
+        hours: Math.floor(
+          (milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+        ),
+        minutes: Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((milliseconds % (1000 * 60)) / 1000),
+      };
+    };
+
+    if (startTime && endTime && isOffsetReady) {
+      calculateTimeRemaining();
+      const interval = setInterval(calculateTimeRemaining, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [startTime, endTime, serverOffset, isOffsetReady]);
+
+  return [timeRemaining, status];
+}
+
+// Keep your existing getAuctionTimerText function unchanged
+export function getAuctionTimerText(
+  time: TimeRemaining,
+  status: AuctionStatus,
+) {
+  const { days, hours, minutes, seconds } = time;
+
+  if (status === 'expired') {
+    return 'Expired';
+  }
+
+  const timeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  return timeString;
+}
+
 interface BidHistory {
   bidder: {
     id: string;
@@ -19,18 +203,10 @@ interface BidHistory {
   timestamp: string;
 }
 
-interface ProductOwner {
-  id: string;
-  name: string;
-  avatar: string;
-  rating: number;
-  joinedDate: string;
-}
-
 interface ProductDetails {
   id: string;
   category: string;
-  name: string;
+  title: string;
   description: string;
   images: string[];
   startingPrice: number;
@@ -42,53 +218,25 @@ interface ProductDetails {
     avatar: string;
   };
   seller: {
-    id: string;
-    name: string;
-    avatar: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string | null;
   };
   endTime: string;
+  startTime: string;
   bidHistory: BidHistory[];
-  productOwner: ProductOwner;
 }
 
-const BID_INCREMENT = 1000;
-
-// const productData: ProductDetails = {
-//   id: '12345',
-//   category: 'Category',
-//   name: 'Product Name',
-//   description:
-//     'Lorem ipsum dolor sit amet consectetur. Augue quis justo amet tristique nibh. Elementum risus sem ultricies sed sit. Quam qelit aenm eu egestas diam ut sector nunc ulteries. In consetetur, urna non molestie. Tincidunt sitsusant et pretium cursus urna sociates et. Quis adipiscing laoreet risus malesuada elementum.',
-//   images: [
-//     '/api/placeholder/400/320',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//     '/api/placeholder/150/100',
-//   ],
-//   startingPrice: 5000,
-//   currentBid: 7000,
-//   bidIncrement: BID_INCREMENT,
-//   currentBidder: {
-//     id: '67890',
-//     name: 'Tishan Dias',
-//     avatar: '/api/placeholder/32/32',
-//   },
-//   seller: {
-//     id: '54321',
-//     name: 'John Dolly',
-//     avatar: '/api/placeholder/32/32',
-//   },
-//   endTime: '2025-04-20T12:00:00Z', // Example future date
-//   bidHistory: [],
-//   productOwner: {
-//     id: '54321',
-//     name: 'John Dolly',
-//     avatar: '/api/placeholder/32/32',
-//     rating: 4.8,
-//     joinedDate: '2023-01-15',
-//   },
-// };
+function calculateBidIncrement(
+  startingPrice: number,
+  currentBid: number,
+): number {
+  const base = Math.max(startingPrice, currentBid || startingPrice);
+  const increment = base * 0.05;
+  return Math.ceil(increment / 100) * 100;
+}
 
 const AuctionDetailsPage = () => {
   const { auctionId } = useParams<{ auctionId: string }>();
@@ -96,18 +244,84 @@ const AuctionDetailsPage = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [bidAmount, setBidAmount] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<string>('');
-  const [stompClient, setStompClient] = useState<Client | null>(null);
   const axiosInstance = AxiosRequest().axiosInstance;
+  const { toast } = useToast();
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Use the auction timer hook
+  const [timeRemaining, auctionStatus] = useAuctionTimer(
+    product?.startTime || '',
+    product?.endTime || '',
+  );
+  const timerText = getAuctionTimerText(timeRemaining, auctionStatus);
+
+  function transformBidData(backendData: any) {
+    const getAvatarUrl = (profilePicture: { id: any }) => {
+      if (profilePicture && profilePicture.id) {
+        return `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${profilePicture.id}`;
+      }
+      return '/defaultProfilePhoto.jpg';
+    };
+
+    const transformUser = (user: {
+      username: any;
+      firstName: any;
+      lastName: any;
+      profilePicture: { id: any };
+    }) => ({
+      id: user.username,
+      name: `${user.firstName} ${user.lastName}`,
+      avatar: getAvatarUrl(user.profilePicture),
+    });
+
+    return {
+      id: backendData.id,
+      category: backendData.category,
+      title: backendData.title,
+      description: backendData.description,
+      images: backendData.images || [],
+      startingPrice: backendData.startingPrice || 5000,
+      currentBid: backendData.currentHighestBid?.amount || 0,
+      bidIncrement: calculateBidIncrement(
+        backendData.startingPrice,
+        backendData.currentHighestBid?.amount || 0,
+      ),
+      currentBidder: backendData.currentHighestBid?.bidder
+        ? transformUser(backendData.currentHighestBid.bidder)
+        : {
+            id: '',
+            name: 'No bidder yet',
+            avatar: '/defaultProfilePhoto.jpg',
+          },
+      seller: {
+        ...backendData.seller,
+        profilePicture: getAvatarUrl(backendData.seller.profilePicture),
+      },
+      endTime: backendData.endTime,
+      startTime: backendData.startTime,
+      bidHistory: backendData.bidHistory.map((bid: any) => ({
+        bidder: transformUser(bid.bidder),
+        amount: bid.amount,
+        timestamp: bid.bidTime,
+      })),
+    };
+  }
+
   useEffect(() => {
     const fetchAuctionDetails = async () => {
       try {
         setLoading(true);
-
         const response = await axiosInstance.get(`/auctions/${auctionId}`);
-        setProduct(response.data);
-        // Initialize bid amount to current bid + increment
-        setBidAmount(response.data.currentBid + response.data.bidIncrement);
+        const transformedData = transformBidData(response.data);
+        setProduct(transformedData);
+        // --- MODIFICATION HERE ---
+        const initialBidSuggestion =
+          transformedData.currentBid > 0
+            ? transformedData.currentBid + transformedData.bidIncrement
+            : transformedData.startingPrice; // If no current bid, start from startingPrice
+
+        setBidAmount(initialBidSuggestion);
+        // --- END MODIFICATION ---
       } catch (err) {
         console.error('Error fetching auction details:', err);
         setError('Failed to load auction details. Please try again later.');
@@ -121,117 +335,54 @@ const AuctionDetailsPage = () => {
     }
   }, [auctionId]);
 
-  // useEffect(() => {
-  //   // Directly set mock data for demo
-  //   setProduct(productData);
-  //   setBidAmount(productData.currentBid + productData.bidIncrement);
-  //   setLoading(false);
-  // }, [auctionId]);
+  useAuctionWebSocket(auctionId!, (payload) => {
+    const newBid = payload.newBid;
+    const updatedHistory = payload.bidHistory;
 
-  // Setup WebSocket connection for real-time bid updates
-  useEffect(() => {
-    //!auctionId
-    if (true) return;
+    const updatedProduct = { ...product! }; // product is already fetched earlier
 
-    // Create STOMP client
-    const client = new Client({
-      brokerURL: 'ws://localhost:8080/ws', // Adjust to your WebSocket endpoint
-      debug: function (str) {
-        console.log(str);
+    // Update highest bid
+    updatedProduct.currentBid = newBid.amount;
+    updatedProduct.currentBidder = newBid.bidder
+      ? {
+          id: newBid.bidder.username,
+          name: `${newBid.bidder.firstName} ${newBid.bidder.lastName}`,
+          avatar: newBid.bidder.profilePicture?.id
+            ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${newBid.bidder.profilePicture.id}`
+            : '/defaultProfilePhoto.jpg',
+        }
+      : {
+          id: '',
+          name: 'No bidder yet',
+          avatar: '/defaultProfilePhoto.jpg',
+        };
+
+    // Update bid history
+    updatedProduct.bidHistory = updatedHistory.map((bid: any) => ({
+      bidder: {
+        id: bid.bidder.username,
+        name: `${bid.bidder.firstName} ${bid.bidder.lastName}`,
+        avatar: bid.bidder.profilePicture?.id
+          ? `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${bid.bidder.profilePicture.id}`
+          : '/defaultProfilePhoto.jpg',
       },
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-    });
+      amount: bid.amount,
+      timestamp: bid.bidTime,
+    }));
 
-    client.activate();
+    setProduct(updatedProduct);
+  });
 
-    // Cleanup function to disconnect the client
-    return () => {
-      if (client.connected) {
-        client.deactivate();
-      }
-    };
-
-    // Connect and subscribe to auction updates
-    client.onConnect = () => {
-      console.log('Connected to WebSocket');
-
-      // Subscribe to auction updates
-      client.subscribe(`/topic/auction/${auctionId}`, (message) => {
-        const updatedAuction = JSON.parse(message.body);
-        setProduct((prevProduct) => {
-          if (!prevProduct) return updatedAuction;
-
-          // Update with new data
-          const newProduct = { ...prevProduct, ...updatedAuction };
-
-          // Adjust bid amount if needed
-          setBidAmount(newProduct.currentBid + newProduct.bidIncrement);
-
-          return newProduct;
-        });
-      });
-
-      // Subscribe to bid history updates
-      client.subscribe(`/topic/auction/${auctionId}/bids`, (message) => {
-        const newBid = JSON.parse(message.body);
-        setProduct((prevProduct) => {
-          if (!prevProduct) return null;
-          return {
-            ...prevProduct,
-            currentBid: newBid.amount,
-            currentBidder: newBid.bidder,
-            bidHistory: [newBid, ...prevProduct.bidHistory],
-          };
-        });
-      });
-    };
-
-    client.onStompError = (frame) => {
-      console.error('STOMP error', frame);
-      setError('Lost connection to the auction. Please refresh the page.');
-    };
-
-    client.activate();
-    setStompClient(client);
-
-    // Cleanup on unmount
-    return () => {
-      if (client && client.active) {
-        client.deactivate();
-      }
-    };
-  }, [auctionId]);
-
-  // Calculate time remaining
   useEffect(() => {
-    if (!product) return;
-
-    const calculateTimeRemaining = () => {
-      const now = new Date();
-      const endTime = new Date(product.endTime);
-      const timeDiff = endTime.getTime() - now.getTime();
-
-      if (timeDiff <= 0) {
-        setTimeLeft('Auction ended');
-        return;
-      }
-
-      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor(
-        (timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      );
-      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-      setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-    };
-
-    calculateTimeRemaining();
-    const interval = setInterval(calculateTimeRemaining, 1000);
-
-    return () => clearInterval(interval);
+    if (product) {
+      console.log('Auction dates received:', {
+        startTime: product.startTime,
+        endTime: product.endTime,
+        startTimeParsed: new Date(product.startTime).toString(),
+        endTimeParsed: new Date(product.endTime).toString(),
+        now: new Date().toString(),
+      });
+    }
   }, [product]);
 
   const handleIncrementBid = () => {
@@ -241,11 +392,16 @@ const AuctionDetailsPage = () => {
 
   const handleDecrementBid = () => {
     if (!product) return;
-    if (
-      bidAmount - product.bidIncrement >=
-      product.currentBid + product.bidIncrement
-    ) {
+
+    const minAllowedBid =
+      Math.max(product.startingPrice, product.currentBid) +
+      product.bidIncrement;
+
+    // Ensure the bid doesn't go below the minimum allowed bid
+    if (bidAmount - product.bidIncrement >= minAllowedBid) {
       setBidAmount(bidAmount - product.bidIncrement);
+    } else {
+      setBidAmount(minAllowedBid);
     }
   };
 
@@ -253,29 +409,67 @@ const AuctionDetailsPage = () => {
     if (!product || !auctionId) return;
 
     try {
-      // Send bid to backend
-      await axios.post(`/api/bids`, {
+      await axiosInstance.post(`/bids/place`, {
         auctionId: auctionId,
-        amount: bidAmount,
-        // You might need to include authentication info or user ID
-        // depending on your backend implementation
+        amount: bidAmount.toString(),
       });
 
-      // No need to update state here as it will be updated via WebSocket
-    } catch (err) {
+      toast({
+        title: 'Bid Placed!',
+        description: `Your bid of LKR ${bidAmount.toLocaleString()} was placed successfully.`,
+        variant: 'success',
+      });
+    } catch (err: any) {
       console.error('Error placing bid:', err);
-      // Handle different error types (e.g., bid too low, auction ended)
       const errorResponse =
-        (err as any)?.response?.data?.message ||
+        err?.response?.data?.message ||
         'Failed to place bid. Please try again.';
+
       setError(errorResponse);
 
-      // Clear error after 5 seconds
+      toast({
+        title: 'Bid Failed',
+        description: errorResponse,
+        variant: 'destructive',
+      });
+
       setTimeout(() => setError(null), 5000);
     }
   };
 
-  // Show loading state
+  const [reportOpen, setReportOpen] = useState(false);
+  const handleReportSubmit = async (
+    itemId: string,
+    reason: string,
+    complaint: string,
+  ) => {
+    await axiosInstance.post(`/complaints`, {
+      targetType: 'AUCTION',
+      targetId: itemId,
+      reason: reason,
+      description: complaint,
+    });
+    toast({
+      title: 'Report Submitted',
+      description: `Your report for "${product?.title}" has been submitted.`,
+      variant: 'success',
+    });
+  };
+
+  // Function to get the appropriate label based on auction status
+  const getTimerLabel = (status: AuctionStatus) => {
+    switch (status) {
+      case 'upcoming':
+        return 'Starts in';
+      case 'active':
+        return 'Closes in';
+      case 'expired':
+        return 'Ended';
+      default:
+        return 'Closes in';
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -284,7 +478,6 @@ const AuctionDetailsPage = () => {
     );
   }
 
-  // Show error state
   if (error && !product) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -293,7 +486,6 @@ const AuctionDetailsPage = () => {
     );
   }
 
-  // If product is null after loading, show not found message
   if (!product) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -305,199 +497,152 @@ const AuctionDetailsPage = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Section - Product Images */}
         <div className="lg:col-span-2">
           <div className="mb-4">
             <p className="text-sm text-gray-500">{product.category}</p>
-            <h1 className="text-2xl font-bold">{product.name}</h1>
+            <h1 className="text-3xl font-semibold">{product.title}</h1>
           </div>
 
           <div className="mb-6">
-            <div className="mb-4">
-              <img
-                src="http://localhost:8080/api/user/getUserProfilePhoto?file_uuid=61163c7a-5d6c-4f2c-b64a-5cfda6b84565"
-                alt={product.name}
-                className="w-full h-96 object-cover rounded-md"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {product.images.slice(1).map((image, index) => (
-                <img
-                  key={index}
-                  src={image}
-                  alt={`${product.name} thumbnail ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-md cursor-pointer"
-                />
-              ))}
-            </div>
-          </div>
-
-          <Tabs defaultValue="information" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="information">Information</TabsTrigger>
-              <TabsTrigger value="bid-history">Bid History</TabsTrigger>
-              <TabsTrigger value="product-owner">Product Owner</TabsTrigger>
-            </TabsList>
-
-            <TabsContent
-              value="information"
-              className="p-4 border rounded-md mt-2"
-            >
-              <h2 className="text-lg font-semibold mb-4">About this product</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                {product.description}
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                {product.description}
-              </p>
-              <p className="text-sm text-gray-600">{product.description}</p>
-            </TabsContent>
-
-            <TabsContent
-              value="bid-history"
-              className="p-4 border rounded-md mt-2"
-            >
-              <h2 className="text-lg font-semibold mb-4">Bid History</h2>
-              {product.bidHistory.length > 0 ? (
-                <ul>
-                  {product.bidHistory.map((bid, index) => (
-                    <li key={index} className="mb-2 pb-2 border-b">
-                      <div className="flex items-center">
-                        <img
-                          src={bid.bidder.avatar}
-                          alt={bid.bidder.name}
-                          className="w-8 h-8 rounded-full mr-2"
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {bid.bidder.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            LKR {bid.amount.toLocaleString()} •{' '}
-                            {new Date(bid.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No bid history available yet.
-                </p>
-              )}
-            </TabsContent>
-
-            <TabsContent
-              value="product-owner"
-              className="p-4 border rounded-md mt-2"
-            >
-              <h2 className="text-lg font-semibold mb-4">Product Owner</h2>
-              <div className="flex items-center mb-4">
-                <img
-                  src={product.productOwner.avatar}
-                  alt={product.productOwner.name}
-                  className="w-12 h-12 rounded-full mr-3"
-                />
-                <div>
-                  <p className="font-medium">{product.productOwner.name}</p>
-                  <div className="flex items-center">
-                    <p className="text-sm text-gray-500 mr-2">
-                      Rating: {product.productOwner.rating}/5
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Joined:{' '}
-                      {new Date(
-                        product.productOwner.joinedDate,
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
+            {product.images && product.images.length > 0 && (
+              <>
+                <div className="mb-4">
+                  <img
+                    src={`${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${product.images[selectedImageIndex]}`}
+                    alt={`Product image ${selectedImageIndex + 1}`}
+                    className="w-full max-h-[500px] object-contain rounded-xl border"
+                  />
                 </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+
+                <div className="flex gap-2 overflow-x-auto">
+                  {product.images.map((imgId, index) => (
+                    <img
+                      key={index}
+                      src={`${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${imgId}`}
+                      alt={`Thumbnail ${index + 1}`}
+                      className={`h-20 w-20 object-cover cursor-pointer border rounded-lg ${
+                        selectedImageIndex === index
+                          ? 'border-blue-500'
+                          : 'border-gray-300'
+                      }`}
+                      onClick={() => setSelectedImageIndex(index)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Right Section - Bidding Information */}
-        <div className="space-y-6">
-          <div className="border-b pb-4">
-            <p className="text-sm text-gray-500 mb-1">Closes in</p>
-            <p className="text-lg font-semibold">{timeLeft}</p>
+        <div>
+          <div className="pb-4 border-b-4 border-yellow-400">
+            <br></br>
+            <p className="text-2xl">
+              <span className="text-gray-400">
+                {getTimerLabel(auctionStatus)}{' '}
+              </span>
+              <span className="">
+                {timerText === '0d 0h 0m 0s' && auctionStatus !== 'expired'
+                  ? 'Loading...'
+                  : timerText}
+              </span>
+            </p>
+            {/* Enhanced debug info - remove after testing */}
+            {/* <p className="text-xs text-gray-500">Status: {auctionStatus}</p> */}
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-md">
-            <p className="text-sm text-gray-500 mb-1">Current Highest Bid</p>
-            <p className="text-3xl font-bold mb-2">
-              LKR {product.currentBid.toLocaleString()}
+          <div className="bg-gray-100 p-4 rounded-md mt-4">
+            <p className="text-sm text-gray-700 ">Current Highest Bid</p>
+            <p className="text-4xl font-bold mb-2">
+              LKR {product.currentBid?.toLocaleString()}
             </p>
             <div className="flex items-center text-sm">
               <p>By</p>
               <img
-                src={product.currentBidder.avatar}
-                alt={product.currentBidder.name}
-                className="w-6 h-6 rounded-full mx-2"
+                src={
+                  product.currentBidder?.avatar !== 'NULL'
+                    ? product.currentBidder?.avatar
+                    : '/defaultProfilePhoto.jpg'
+                }
+                alt={product.currentBidder?.name}
+                className="w-6 h-6 rounded-full ml-2 mr-1"
               />
-              <p>{product.currentBidder.name}</p>
+              <p>{product.currentBidder?.name}</p>
             </div>
           </div>
 
-          <div>
+          <div className="mt-4">
             <p className="text-sm text-gray-500 mb-2">
-              Starting Price: LKR {product.startingPrice.toLocaleString()}
+              Starting Price: LKR {product.startingPrice?.toLocaleString()}
             </p>
 
-            <div className="flex items-center mb-4">
+            {auctionStatus === 'active' ? (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDecrementBid}
+                    className="w-8 h-8 p-0"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(Number(e.target.value))}
+                    className="text-center"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleIncrementBid}
+                    className="w-8 h-8 p-0"
+                  >
+                    +
+                  </Button>
+                </div>
+                <Button
+                  onClick={handlePlaceBid}
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-black"
+                >
+                  Place Bid - LKR {bidAmount.toLocaleString()}
+                </Button>
+              </>
+            ) : auctionStatus === 'upcoming' ? (
               <Button
-                variant="outline"
-                className="px-4"
-                onClick={handleDecrementBid}
+                className="w-full bg-yellow-200 text-gray-600 cursor-not-allowed"
+                disabled
               >
-                −
+                Auction not started
               </Button>
-              <Input
-                type="text"
-                value={`LKR ${bidAmount.toLocaleString()}`}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value) {
-                    setBidAmount(Number(value));
-                  }
-                }}
-                className="text-center mx-2"
-              />
+            ) : (
               <Button
-                variant="outline"
-                className="px-4"
-                onClick={handleIncrementBid}
+                className="w-full bg-gray-200 text-gray-600 cursor-not-allowed"
+                disabled
               >
-                +
+                Auction ended
               </Button>
-            </div>
-
-            <Button
-              className="w-full bg-yellow-400 hover:bg-yellow-500 text-black"
-              onClick={handlePlaceBid}
-            >
-              Place Bid
-            </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4 pt-4">
             <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
+              onClick={() => setReportOpen(true)}
             >
               <Flag className="h-5 w-5 mb-1" />
               Report
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
             >
               <Heart className="h-5 w-5 mb-1" />
               Add to Watchlist
-            </Button>
+            </Button> */}
+            <AddToWatchlistButton auctionId={product.id} />
             <Button
               variant="ghost"
               className="flex flex-col items-center text-xs"
@@ -509,23 +654,99 @@ const AuctionDetailsPage = () => {
 
           <div className="flex items-center mt-6">
             <p className="text-sm mr-2">By</p>
-            <img
-              src={product.seller.avatar}
-              alt={product.seller.name}
-              className="w-6 h-6 rounded-full mr-2"
-            />
-            <p className="text-sm">{product.seller.name}</p>
-          </div>
-
-          {/* Live Chat Section Placeholder */}
-          <div className="border rounded-md p-4 mt-6">
-            <h2 className="text-lg font-semibold mb-4">Live Chat</h2>
-            <p className="text-sm text-gray-500">
-              Live chat will be integrated here.
-            </p>
+            <span className="border rounded-full p-1 pr-2 flex items-center">
+              <img
+                src={
+                  product.seller.profilePicture || '/defaultProfilePhoto.jpg'
+                }
+                alt={`${product.seller.firstName} ${product.seller.lastName}`}
+                className="w-6 h-6 rounded-full mr-1"
+              />
+              <p className="text-sm">
+                {product.seller.firstName} {product.seller.lastName}
+              </p>
+            </span>
           </div>
         </div>
       </div>
+
+      <div className="mt-8">
+        <Tabs defaultValue="information" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="information">Information</TabsTrigger>
+            <TabsTrigger value="bid-history">Bid History</TabsTrigger>
+          </TabsList>
+
+          <TabsContent
+            value="information"
+            className="p-4 border rounded-md mt-2"
+          >
+            <h2 className="text-lg font-semibold mb-4">About this product</h2>
+            <p className="text-sm text-gray-600 mb-4">{product.description}</p>
+          </TabsContent>
+
+          <TabsContent
+            value="bid-history"
+            className="p-4 border rounded-md mt-2"
+          >
+            <h2 className="text-lg font-semibold mb-4">Bid History</h2>
+            {product.bidHistory.length > 0 ? (
+              <ul>
+                {product.bidHistory.map((bid, index) => (
+                  <li key={index} className="mb-2 pb-2 border-b">
+                    <div className="flex items-center">
+                      <img
+                        src={
+                          bid.bidder?.avatar !== 'NULL'
+                            ? bid.bidder?.avatar
+                            : '/default-avatar.png'
+                        }
+                        alt={bid.bidder?.name || 'Bidder'}
+                        className="w-8 h-8 rounded-full mr-2"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">{bid.bidder.name}</p>
+                        <p className="text-xs text-gray-500">
+                          LKR {bid.amount.toLocaleString()} •{' '}
+                          {new Date(bid.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">
+                No bid history available yet.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <div className="border rounded-md p-4 mt-6">
+        <h2 className="text-lg font-semibold mb-4">Live Chat</h2>
+        <p className="text-sm text-gray-500">
+          {auctionId ? (
+            <AuctionChat auctionId={auctionId} />
+          ) : (
+            <div>Sorry chat is unavailable</div>
+          )}
+        </p>
+      </div>
+
+      {error && (
+        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
+
+      <AuctionReport
+        itemId={product.id}
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 };

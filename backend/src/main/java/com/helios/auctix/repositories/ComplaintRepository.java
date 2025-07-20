@@ -11,6 +11,6 @@ import java.util.UUID;
 
 public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
     List<Complaint> findByReportedByOrderByDateReportedDesc(User reportedBy);
-    Page<Complaint> findByReportedUser_UsernameContainingIgnoreCaseOrReportedBy_UsernameContainingIgnoreCaseOrReasonContainingIgnoreCase(
+    Page<Complaint> findByReportedBy_UsernameContainingIgnoreCaseOrReasonContainingIgnoreCase(
             String reportedUserUsername, String reportedByUsername, String reason, Pageable pageable);
 }

@@ -1,10 +1,10 @@
 package com.helios.auctix.services.notification.senders;
 
+import com.helios.auctix.config.AuctixProperties;
 import com.helios.auctix.domain.notification.Notification;
 import com.helios.auctix.domain.notification.NotificationType;
 import com.helios.auctix.domain.user.UserFCMToken;
 import com.helios.auctix.services.FirebaseCloudMessageService;
-import com.helios.auctix.services.notification.NotificationPersistenceHelper;
 import com.helios.auctix.services.notification.NotificationSender;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +19,11 @@ public class PushNotificationSender implements NotificationSender {
      */
 
     private final FirebaseCloudMessageService firebaseCloudMessageService;
-    private final NotificationPersistenceHelper notificationPersistenceHelper;
+    private final AuctixProperties auctixProperties;
 
-    public PushNotificationSender(FirebaseCloudMessageService firebaseCloudMessageService, NotificationPersistenceHelper notificationPersistenceHelper) {
+    public PushNotificationSender(FirebaseCloudMessageService firebaseCloudMessageService, AuctixProperties auctixProperties) {
         this.firebaseCloudMessageService = firebaseCloudMessageService;
-        this.notificationPersistenceHelper = notificationPersistenceHelper;
+        this.auctixProperties = auctixProperties;
     }
 
 
@@ -37,16 +37,20 @@ public class PushNotificationSender implements NotificationSender {
 
         List<UserFCMToken> fcmTokensForUser = firebaseCloudMessageService.getActiveFCMTokensForUser(notification.getUser());
 
+        String url = notification.getPartialUrl();
+        String fullUrl = auctixProperties.convertToFullUrl(url);
+
         // Send to all 'active' tokens, if the client is unregistered or token has been expired it will throw an exception
         // that will be handled by the FirebaseCloudMessageService and it will be removing the token from the database
         for (UserFCMToken userFCMToken : fcmTokensForUser) {
             firebaseCloudMessageService.sendNotification(
                     userFCMToken.getFcmToken(),
                     notification.getTitle(),
-                    notification.getContent()
+                    notification.getContent(),
+                    fullUrl
             );
         }
 
-        notificationPersistenceHelper.finalizeAndSave(notification, getNotificationType());
+        // TODO optionally we could save delivery status
     }
 }

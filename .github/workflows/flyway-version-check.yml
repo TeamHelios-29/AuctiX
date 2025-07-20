@@ -1,0 +1,81 @@
+name: Flyway Migration Version Check
+
+on:
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  flyway-version-check:
+    # if: contains(join(github.event.pull_request.changed_files.*.filename, ','), 'backend/src/main/resources/db/migration/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for git diff
+
+      - name: Run Flyway version validation
+        id: flyway-check
+        run: |
+          chmod +x .github/scripts/check-flyway-versions.sh
+          .github/scripts/check-flyway-versions.sh > result.log || echo "FAILED" >> result.log
+
+          echo "FLYWAY_RESULT<<EOF" >> $GITHUB_ENV
+          cat result.log >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          if grep -q "❌" result.log; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on PR (always update)
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const status = "${{ steps.flyway-check.outputs.status }}";
+            const header = `### 🛫 Flyway Migration Check (${status === 'pass' ? '✅ Passed' : '❌ Failed'})`;
+            const result = process.env.FLYWAY_RESULT;
+
+            const body = `${header}\n\n\`\`\`\n${result}\n\`\`\``;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            const existing = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.startsWith("### 🛫 Flyway Migration Check")
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body
+              });
+            }
+
+      - name: Fail job if Flyway check failed
+        if: steps.flyway-check.outputs.status == 'fail'
+        run: |
+          echo "❌ Flyway check failed"
+          exit 1

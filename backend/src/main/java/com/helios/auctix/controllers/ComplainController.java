@@ -1,39 +1,54 @@
 package com.helios.auctix.controllers;
 
 import com.helios.auctix.domain.complaint.Complaint;
+import com.helios.auctix.domain.complaint.ComplaintActivity;
 import com.helios.auctix.domain.complaint.ComplaintStatus;
+import com.helios.auctix.dtos.ComplaintActivityDTO;
 import com.helios.auctix.dtos.ComplaintDTO;
-import com.helios.auctix.repositories.UserRepository;
+import com.helios.auctix.dtos.ComplaintResponseDTO;
 import com.helios.auctix.services.ComplaintService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.security.Principal;
+
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/complaints")  // Changed to plural form as per REST conventions
+@RequestMapping("/api/complaints")
 public class ComplainController {
-
-    @GetMapping("/hello")
-    public String sayHello() {
-        return "Hello World";
-    }
 
     private final ComplaintService complaintService;
 
     public ComplainController(ComplaintService complaintService) {
         this.complaintService = complaintService;
+
     }
 
+
     @PostMapping
-    public ResponseEntity<Complaint> createComplaint(@Valid @RequestBody ComplaintDTO complaintDto) {
-        return ResponseEntity.ok(complaintService.createComplaint(complaintDto));
+    public ResponseEntity<ComplaintResponseDTO> createComplaint(@Valid @RequestBody ComplaintDTO complaintDto) throws AuthenticationException {
+        Complaint complaint = complaintService.createComplaint(complaintDto);
+        ComplaintResponseDTO responseDTO = ComplaintResponseDTO.builder()
+                .id(complaint.getId())
+                .readableId(complaint.getReadableId())
+                .targetType(complaint.getTargetType())
+                .targetId(complaint.getTargetId())
+                .reportedByUsername(complaint.getReportedBy().getUsername())
+                .reason(complaint.getReason())
+                .description(complaint.getDescription())
+                .dateReported(complaint.getDateReported())
+                .status(complaint.getStatus())
+                .build();
+        return ResponseEntity.ok(responseDTO);
     }
+
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -52,7 +67,7 @@ public class ComplainController {
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
         }
-        //return ResponseEntity.ok(complaintService.getAllComplaints());
+
 
 
     @GetMapping("/{id}")
@@ -61,11 +76,11 @@ public class ComplainController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Complaint> updateComplaintStatus(
             @PathVariable UUID id,
             @RequestBody ComplaintStatus status
-    ) {
+    ) throws AuthenticationException {
         return ResponseEntity.ok(complaintService.updateComplaintStatus(id, status));
     }
 
@@ -73,4 +88,42 @@ public class ComplainController {
     public ResponseEntity<List<Complaint>> getUserComplaints(@PathVariable String username) {
         return ResponseEntity.ok(complaintService.getComplaintsByUser(username));
     }
+
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<List<ComplaintActivityDTO>> getComplaintTimeline(@PathVariable UUID id) {
+        List<ComplaintActivity> timeline = complaintService.getComplaintTimeline(id);
+
+        List<ComplaintActivityDTO> dtos = timeline.stream()
+                .map(activity -> ComplaintActivityDTO.builder()
+                        .id(activity.getId().toString())
+                        .type(activity.getType())
+                        .message(activity.getMessage())
+                        .performedBy(activity.getPerformedBy())
+                        .timestamp(activity.getTimestamp())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<ComplaintActivityDTO> addComment(
+            @PathVariable UUID id,
+            @RequestBody String comment
+    ) throws AuthenticationException {
+
+        ComplaintActivity activity = complaintService.addComment(id, comment);
+
+        ComplaintActivityDTO dto = ComplaintActivityDTO.builder()
+                .id(activity.getId().toString())
+                .type(activity.getType())
+                .message(activity.getMessage())
+                .performedBy(activity.getPerformedBy())
+                .timestamp(activity.getTimestamp())
+                .build();
+
+        return ResponseEntity.ok(dto);
+    }
+
+
 }

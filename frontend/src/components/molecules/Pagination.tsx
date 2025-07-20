@@ -7,7 +7,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
 export function PaginationNav({
   handlePage,
@@ -80,9 +80,7 @@ export function PaginationNav({
         )}
 
         <PaginationItem>
-          <PaginationLink className="bg-gray-500" isActive={true}>
-            {currentPage}
-          </PaginationLink>
+          <PaginationLink isActive={true}>{currentPage}</PaginationLink>
         </PaginationItem>
 
         {pages > currentPage && (

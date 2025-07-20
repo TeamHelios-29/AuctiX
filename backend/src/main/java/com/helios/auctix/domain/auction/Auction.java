@@ -1,16 +1,13 @@
 package com.helios.auctix.domain.auction;
 
-import com.helios.auctix.domain.user.Bidder;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.helios.auctix.domain.user.Seller;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import java.util.List;
-import java.time.Instant;  // You need to add this import
-import java.util.UUID;
+import lombok.*;
 
+import java.util.List;
+import java.time.Instant;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -23,27 +20,25 @@ public class Auction {
     @Id
     @GeneratedValue
     private UUID id;
-
-
     private String title;
     private String description;
     private Double startingPrice;
-    private Instant startTime;      // For precise event timing (UTC)
-    private Instant endTime;        // For precise event timing (UTC)
+    private Instant startTime;
+    private Instant endTime;
     private Boolean isPublic;
     private String category;
-//    private UUID sellerId;
 
+    @Column(name = "completed", nullable = false)
+    private Boolean completed = false;
 
-    @ElementCollection
-    private List<UUID> imageIds; // Change from imagePaths to imageIds
+    @Column(name = "winning_bid_id")
+    private UUID winningBidId;
 
     @Column(name = "created_at", updatable = false)
-    private Instant createdAt;      // Changed to Instant for consistency
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    private Instant updatedAt; // Changed to Instant for consistency
-
+    private Instant updatedAt;
 
     public String getTitle() {
         return title;
@@ -57,12 +52,31 @@ public class Auction {
     @JoinColumn(name = "seller_id", referencedColumnName = "id")
     private Seller seller;
 
+    // Use only one collection for image IDs - using ElementCollection with proper table name
+    @ElementCollection
+    @CollectionTable(
+            name = "auction_image_paths",
+            joinColumns = @JoinColumn(name = "auction_id")
+    )
+    @Column(name = "image_id")
+    private List<UUID> imagePaths;
 
+    // Don't use this field - it's causing database issues
+    @Transient
+    @JsonIgnore
+    private List<UUID> imageIds;
+
+    public UUID getSellerId() {
+        return (seller != null) ? seller.getId() : null;
+    }
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+        if (this.completed == null) {
+            this.completed = false;
+        }
     }
 
     @PreUpdate
@@ -70,14 +84,56 @@ public class Auction {
         this.updatedAt = Instant.now();
     }
 
-    @ElementCollection
-    @CollectionTable(
-            name = "auction_image_paths",
-            joinColumns = @JoinColumn(name = "auction_id")
-    )
+    // New fields for deletion management
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isDeleted = false;
 
-    @Column(name = "image_id")
-    private List<UUID> imagePaths;
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "deletion_status")
+    private String deletionStatus; // DELETED, PENDING_ADMIN_APPROVAL
+
+    @Column(name = "penalty_fee")
+    private Double penaltyFee;
+
+    // ... existing fields and methods ...
+
+    // Add getters and setters for new fields
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public String getDeletionStatus() {
+        return deletionStatus;
+    }
+
+    public void setDeletionStatus(String deletionStatus) {
+        this.deletionStatus = deletionStatus;
+    }
+
+    public Double getPenaltyFee() {
+        return penaltyFee;
+    }
+
+    public void setPenaltyFee(Double penaltyFee) {
+        this.penaltyFee = penaltyFee;
+    }
+
+    public boolean isPublic() {
+        return this.isPublic;
+    }
 
 }
-

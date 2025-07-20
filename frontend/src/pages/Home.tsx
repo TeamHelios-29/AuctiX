@@ -6,6 +6,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/Accordion';
+import { Link } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { ReactNode } from 'react';
 
@@ -13,63 +14,58 @@ export default function Home(): ReactNode {
   return (
     <div>
       <div>
-        <div className="bg-[linear-gradient(to_right_bottom,rgba(251,204,64,0.9),rgba(253,235,173,0.9)),url('/heroimage.jpg')] bg-cover flex flex-col items-center justify-center  h-[450px] sm:h-[530px]">
-          <div className="flex-col text-center items-center gap-1.5 ">
-            <div className="self-stretch text-center">
-              <span className="text-slate-950 text-3xl sm:text-6xl font-medium font-['Geist'] sm:leading-[60px]">
-                Discover, Bid, and Win
-                <br />
-                with Confidence on
-                <br />
-              </span>
-              <span className="text-slate-950 text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
-                Aucti
-              </span>
-              <span className="text-[#eaac26] text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
-                X
-              </span>
-              <span className="text-slate-950 text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
-                !
-              </span>
+        <section className="relative">
+          <img
+            src="/heroImage.png"
+            alt="Hero"
+            className="h-screen w-full object-cover"
+          />
+          <div
+            className="absolute inset-0 flex items-center justify-start text-white sm:p-16"
+            style={{ height: 'calc(100vh - 100px)' }}
+          >
+            <div className="flex flex-col items-start justify-center pl-12 w-full max-w-2xl">
+              <div className="self-stretch text-left">
+                <span className="text-black text-3xl sm:text-5xl font-light font-['Geist'] sm:leading-[50px]">
+                  Discover, Bid, and Win
+                  <br />
+                  with Confidence on
+                  <br />
+                </span>
+                <span className="text-black text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
+                  Aucti
+                </span>
+                <span className="text-[#eaac26] text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px] text-shadow-xl text-shadow-black">
+                  X
+                </span>
+                <span className="text-black text-7xl sm:text-8xl font-normal font-['Geist'] sm:leading-[96px]">
+                  !
+                </span>
+              </div>
+              <div className="items-center mt-6 sm:mt-8">
+                <Link to="/explore-auctions">
+                  <Button className="w-48">
+                    Explore Auctions{' '}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 5.33333H10.6667M5.33333 8H9.33333M7.33333 10.6667H10.6667M3.33333 2H12.6667C13.403 2 14 2.59695 14 3.33333V12.6667C14 13.403 13.403 14 12.6667 14H3.33333C2.59695 14 2 13.403 2 12.6667V3.33333C2 2.59695 2.59695 2 3.33333 2Z"
+                        stroke="#ffffffff"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
-          <div className="flex-col grid sm:grid-cols-2 gap-3 sm:gap-6 text-center items-center mt-6 sm:mt-10">
-            <Button className=" w-48">
-              Sign Up Now!{' '}
-              <svg
-                width="17"
-                height="16"
-                viewBox="0 0 17 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M8.50002 10L6.50002 8.00002M8.50002 10C9.43125 9.64585 10.3246 9.19917 11.1667 8.66669M8.50002 10V13.3334C8.50002 13.3334 10.52 12.9667 11.1667 12C11.8867 10.92 11.1667 8.66669 11.1667 8.66669M6.50002 8.00002C6.85478 7.07964 7.30149 6.1974 7.83335 5.36669C8.61014 4.12468 9.69177 3.10206 10.9754 2.39608C12.2589 1.69011 13.7018 1.32427 15.1667 1.33336C15.1667 3.14669 14.6467 6.33336 11.1667 8.66669M6.50002 8.00002L3.16669 8.00003C3.16669 8.00003 3.53335 5.98003 4.50002 5.33337C5.58002 4.61337 7.83335 5.33337 7.83335 5.33337M3.50002 11.0001C2.50002 11.8401 2.16669 14.3334 2.16669 14.3334C2.16669 14.3334 4.66002 14.0001 5.50002 13.0001C5.97335 12.4401 5.96669 11.5801 5.44002 11.0601C5.18089 10.8127 4.83955 10.6698 4.4815 10.6588C4.12346 10.6477 3.77394 10.7692 3.50002 11.0001Z"
-                  stroke="#F8FAFC"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </Button>
-            <Button variant="secondary" className=" w-48">
-              Explore Auctions{' '}
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M6 5.33333H10.6667M5.33333 8H9.33333M7.33333 10.6667H10.6667M3.33333 2H12.6667C13.403 2 14 2.59695 14 3.33333V12.6667C14 13.403 13.403 14 12.6667 14H3.33333C2.59695 14 2 13.403 2 12.6667V3.33333C2 2.59695 2.59695 2 3.33333 2Z"
-                  stroke="#020617"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </Button>
-          </div>
-        </div>
+        </section>
 
         <div className="max-w-4xl mx-auto text-center px-5 py-20 pt-36">
           <div className="self-stretch text-center">
@@ -170,19 +166,27 @@ export default function Home(): ReactNode {
           </Accordion>
         </div>
 
-        <div className="flex items-center justify-center rounded-lg bg-[#ecb02d] py-10 m-20">
-          <div className="w-full max-w-2xl p-8 text-center">
-            <h2 className="text-white text-xl md:text-2xl  mb-6">
+        <div
+          className="flex flex-col md:flex-row items-center justify-center md:rounded-lg md:py-10 md:m-20"
+          style={{
+            backgroundImage: "url('/feedbackImage.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <div className="w-full md:w-1/2 max-w-2xl p-8 text-left flex flex-col justify-center">
+            <h2 className="text-white text-md md:text-xl mb-6">
               We value your thoughts! Your feedback is crucial in helping us
               improve and provide a better experience. Whether you have
               suggestions, compliments, or concerns, we’d love to hear from you.
             </h2>
             <Textarea
               placeholder="Type your feedback"
-              className="w-full p-4 text-gray-700 bg-white rounded-md "
+              className="w-full p-4 text-gray-700 bg-white rounded-md"
             />
-            <Button className="mt-4 px-10">Submit</Button>
+            <Button className="mt-4 px-10 self-start">Submit</Button>
           </div>
+          <div className="w-full md:w-1/2 flex items-center justify-center h-full"></div>
         </div>
       </div>
     </div>

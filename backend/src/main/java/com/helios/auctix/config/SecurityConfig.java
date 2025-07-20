@@ -50,12 +50,21 @@ public class SecurityConfig {
                         .requestMatchers("/api/roletest/seller").hasRole("SELLER")
                         .requestMatchers("/api/roletest/bidder").hasRole("BIDDER")
                         .requestMatchers("/api/user/**").permitAll()
+                        .requestMatchers("/api/admin/**").permitAll()
+                        .requestMatchers("/api/seller/**").permitAll()
                         .requestMatchers("/api/complaints/**").permitAll()
                         .requestMatchers("/api/auctions/**").permitAll()
                         .requestMatchers("/api/roletest/**").authenticated()
                         .requestMatchers("/api/notification/settings").authenticated()
+                        .requestMatchers("/api/bids/**").permitAll()
+                        .requestMatchers("/api/watchlist/**").permitAll()
+                        .requestMatchers("/ws-auction/**").permitAll()
+                        .requestMatchers("/api/auctions/**").permitAll()
 
-                        .requestMatchers("/api/coins/**").permitAll()
+
+
+
+                        .requestMatchers("/api/coins/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -96,4 +105,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+
+
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
@@ -13,6 +14,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Builder
 @Entity
 @Table(name = "complaints")
 @Data
@@ -31,17 +33,23 @@ public class Complaint {
     @Column(name = "readable_id", unique = true, nullable = false, length = 10)
     private String readableId;
 
-    @ManyToOne
-    @JoinColumn(name = "reported_user_id", nullable = false)
-    private User reportedUser;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", nullable = false)
+    private ReportTargetType targetType;
+
+    @Column(name = "target_id", nullable = false)
+    private UUID targetId; // User/Auction id
 
     @ManyToOne
     @JoinColumn(name = "reported_by_id", nullable = false)
     private User reportedBy;
 
     @NotBlank
-    @Column(length = 1000, nullable = false)
+    @Column(length = 100, nullable = false)
     private String reason;
+
+    @Column(length = 1500)
+    private String description;
 
     @NotNull
     @Column(name = "date_reported", nullable = false)

@@ -12,16 +12,19 @@ import { Label } from '@radix-ui/react-dropdown-menu';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 
-function AuctionChat() {
+const AuctionChat = ({ auctionId }: { auctionId: string }) => {
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [messages, setMessages] = useState<ChatMessageProps[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [chatRoomId, setChatRoomId] = useState(
-    '5ded2b18-e4c6-4bed-8716-aa551123b469',
-  ); // TODO Change
+  const previousScrollHeightRef = useRef(0);
+  const previousScrollTopRef = useRef(0);
+  const lastNewMessageSource = useRef<'self' | 'other' | null>(null); // null if no last message
+
+  const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false);
+
   const user = useAppSelector((state) => state.user);
   const userAuth: IAuthUser = useAppSelector(
     (state) => state.auth as IAuthUser,
@@ -34,6 +37,9 @@ function AuctionChat() {
   const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Flag to control scroll behavior
+  const isLoadingOlderMessages = useRef(false);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const subscriptionRef = useRef<any>(null);
 
@@ -45,11 +51,22 @@ function AuctionChat() {
       if (isLoading) return;
 
       setIsLoading(true);
+      // Set flag when loading older messages (not the initial load)
+      if (pageNum > 0) {
+        isLoadingOlderMessages.current = true;
+
+        const container = scrollContainerRef.current;
+        if (container) {
+          previousScrollHeightRef.current = container.scrollHeight;
+          previousScrollTopRef.current = container.scrollTop;
+        }
+      }
+
       try {
         const response = await axiosInstance.get(
-          `/public/chat/${chatRoomId}/messages`,
+          `/public/chat/${auctionId}/messages`,
           {
-            params: { page: pageNum, size: 4 },
+            params: { page: pageNum, size: 3 },
           },
         );
 
@@ -59,16 +76,17 @@ function AuctionChat() {
 
         if (reversedNewMessages && reversedNewMessages.length > 0) {
           const formattedMessages = reversedNewMessages.map(
-            (msg: ChatMessageDTO) => ({
-              id: msg.id || Date.now().toString() + Math.random(),
-              userId: msg.senderId || '',
-              message: msg.content || '',
-              displayName: msg.senderName || 'Unknown',
-              userRole: msg.senderRole || 'User',
-              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-              isSentByCurrentUser:
-                isAuthenticated && msg.senderUsername === user.username,
-            }),
+            (msg: ChatMessageDTO) => {
+              return {
+                id: msg.id || Date.now().toString() + Math.random(),
+                userId: msg.senderId || '',
+                message: msg.content || '',
+                displayName: msg.senderName || 'Unknown',
+                userRole: msg.senderRole || 'User',
+                timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+                isSentByCurrentUser: msg.senderUsername == user.username,
+              };
+            },
           );
           setMessages((prevMessages) => [
             ...formattedMessages,
@@ -83,33 +101,72 @@ function AuctionChat() {
         setIsLoading(false);
       }
     },
-    [axiosInstance, chatRoomId, isLoading, isAuthenticated, user?.username],
+    [isLoading, axiosInstance, auctionId, user],
   );
 
-  // Scroll to bottom when new messages are added ( but not when loading old messages)
-  const shouldScrollToBottom = useRef(true);
-
+  // Handle scrolling after messages are updated
   useEffect(() => {
-    if (shouldScrollToBottom.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-    shouldScrollToBottom.current = true;
-  }, [messages]);
+    const container = scrollContainerRef.current;
+    if (!container || messages.length === 0) return;
 
-  // preserve scroll position after loading old messages
-  useEffect(() => {
-    if (page > 0 && !isLoading && messages.length > 0) {
-      const container = scrollContainerRef.current;
-      if (container) {
-        // small timeout to ensure the DOM has updated
-        setTimeout(() => {
-          // Set scroll position to show the newly loaded messages
-          // but not completely at the top to allow loading more
-          container.scrollTop = 1;
-        }, 100);
+    if (isLoadingOlderMessages.current) {
+      requestAnimationFrame(() => {
+        const newScrollHeight = container.scrollHeight;
+        const scrollDiff = newScrollHeight - previousScrollHeightRef.current;
+
+        container.scrollTop = previousScrollTopRef.current + scrollDiff;
+
+        // we need to check again or the new message indicator is shown when scrolling up
+        requestAnimationFrame(() => {
+          isLoadingOlderMessages.current = false;
+        });
+      });
+    } else if (lastNewMessageSource.current == 'self') {
+      // If user just sent a message, scroll to bottom
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+      lastNewMessageSource.current = null;
+    } else {
+      //  Scroll to bottom if user is near the bottom already
+      const nearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        100;
+
+      if (nearBottom) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth',
+        });
+      } else if (
+        isLoadingOlderMessages.current == false &&
+        lastNewMessageSource.current == 'other' &&
+        nearBottom == false
+      ) {
+        setShowNewMessageIndicator(true);
+        lastNewMessageSource.current = null;
       }
     }
-  }, [page, isLoading, messages.length]);
+  }, [messages]);
+
+  // Auto hide the new message indicator when scrolled to near the bottom.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+
+      if (distanceFromBottom < 100) {
+        setShowNewMessageIndicator(false);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Connect to WebSocket
   useEffect(() => {
@@ -131,7 +188,7 @@ function AuctionChat() {
         // Subscribe to the auction chat topic only if not already subscribed
         if (!subscriptionRef.current) {
           subscriptionRef.current = client.subscribe(
-            `/topic/auction/${chatRoomId}/chat`,
+            `/topic/auction/${auctionId}/chat`,
             (messageOutput) => {
               try {
                 const receivedMessage: ChatMessageDTO = JSON.parse(
@@ -158,10 +215,18 @@ function AuctionChat() {
                     receivedMessage.senderUsername === user.username,
                 };
 
+                // Adding new message - this is NOT loading older messages
+                isLoadingOlderMessages.current = false;
                 setMessages((prevMessages) => [
                   ...prevMessages,
                   newChatMessage,
                 ]);
+
+                if (newChatMessage.isSentByCurrentUser) {
+                  lastNewMessageSource.current = 'self';
+                } else {
+                  lastNewMessageSource.current = 'other';
+                }
               } catch (error) {
                 console.error('Error parsing message:', error);
               }
@@ -200,7 +265,7 @@ function AuctionChat() {
       }
     };
   }, [
-    chatRoomId,
+    auctionId,
     webSocketURL,
     user,
     isAuthenticated,
@@ -218,15 +283,16 @@ function AuctionChat() {
       console.log('Sending message:', newMessage);
 
       const chatMessage: ChatMessageDTO = {
+        // userid isnt there in user slice, so remove this later
         senderId: displayName,
         senderName: displayName,
         content: newMessage,
-        auctionId: chatRoomId,
+        auctionId: auctionId,
       };
 
       // Send to server
       stompClient.publish({
-        destination: `/app/chat.sendMessage/${chatRoomId}`,
+        destination: `/app/chat.sendMessage/${auctionId}`,
         body: JSON.stringify(chatMessage),
         headers: {
           Authorization: `Bearer ${userAuth.token}`,
@@ -235,23 +301,23 @@ function AuctionChat() {
 
       setNewMessage('');
 
-      // Since this is a new message, we'll want to scroll to bottom
-      shouldScrollToBottom.current = true;
+      // This is a new message, not loading older messages
+      isLoadingOlderMessages.current = false;
     } else if (!stompClient || !stompClient.active) {
       console.error('WebSocket is not connected');
     }
   };
 
+  // Handle infinite scroll
   useEffect(() => {
     const handleScroll = () => {
       const container = scrollContainerRef.current;
       if (!container || isLoading || !hasMore) return;
 
-      // console.log('Scroll position:', container.scrollTop);
-
-      if (container.scrollTop === 0) {
+      if (container.scrollTop <= 5) {
+        // Use a small threshold instead of exactly 0
         console.log('Reached top, loading more messages');
-        shouldScrollToBottom.current = false;
+        isLoadingOlderMessages.current = true;
         const nextPage = page + 1;
         setPage(nextPage);
         fetchMessages(nextPage);
@@ -270,10 +336,14 @@ function AuctionChat() {
 
   // Load initial messages only once when component mounts
   useEffect(() => {
-    fetchMessages(0);
-    // Only run this effect once when the component mounts
+    // Only run fetchMessages once loading is done
+    if (!user.loading) {
+      // Initial load should scroll to bottom
+      isLoadingOlderMessages.current = false;
+      fetchMessages(0);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userAuth, user.loading]);
 
   return (
     <div className="flex flex-col h-full">
@@ -296,10 +366,10 @@ function AuctionChat() {
         className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[500px]"
         ref={scrollContainerRef}
       >
-        {hasMore && (
+        {hasMore ? (
           <button
             onClick={() => {
-              shouldScrollToBottom.current = false;
+              isLoadingOlderMessages.current = true;
               const nextPage = page + 1;
               setPage(nextPage);
               fetchMessages(nextPage);
@@ -309,16 +379,18 @@ function AuctionChat() {
           >
             {isLoading ? 'Loading...' : 'Load Previous Messages'}
           </button>
+        ) : (
+          <div className="text-center">Start of chat history</div>
         )}
 
         {isLoading && page === 0 && (
           <div className="text-center text-gray-500">Loading messages...</div>
         )}
-        {isLoading && page > 0 && (
+        {/* {isLoading && page > 0 && (
           <div className="text-center text-gray-500">
             Loading more messages...
           </div>
-        )}
+        )} */}
         {messages.length === 0 && !isLoading ? (
           <div className="text-center text-gray-500">No messages yet</div>
         ) : (
@@ -338,6 +410,28 @@ function AuctionChat() {
         <div ref={messagesEndRef} />
       </div>
 
+      {showNewMessageIndicator && (
+        <div className="relative bottom-4 w-full z-10">
+          <div className="mx-auto w-fit">
+            <button
+              className="bg-yellow-500 text-black px-4 py-2 rounded shadow"
+              onClick={() => {
+                const container = scrollContainerRef.current;
+                if (container) {
+                  container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth',
+                  });
+                  setShowNewMessageIndicator(false);
+                }
+              }}
+            >
+              New messages - Click to view
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 border-t border-gray-200">
         <form
           onSubmit={(e) => {
@@ -346,9 +440,7 @@ function AuctionChat() {
           }}
         >
           <div className="flex flex-row items-center space-x-2">
-            <Label htmlFor="message" className="sr-only">
-              Message
-            </Label>
+            <Label className="sr-only">Message</Label>
             <Input
               type="text"
               value={newMessage}
@@ -370,6 +462,6 @@ function AuctionChat() {
       </div>
     </div>
   );
-}
+};
 
 export default AuctionChat;

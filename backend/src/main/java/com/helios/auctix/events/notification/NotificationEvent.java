@@ -2,9 +2,12 @@ package com.helios.auctix.events.notification;
 
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.notification.NotificationCategory;
+import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
+import org.springframework.lang.Nullable;
 
 
+@Getter
 public class NotificationEvent  extends ApplicationEvent {
 
     private final String title;
@@ -15,27 +18,16 @@ public class NotificationEvent  extends ApplicationEvent {
 
     private final User userToNotify;
 
-    public NotificationEvent(Object source, String title, String message, NotificationCategory notificationCategory, User userToNotify) {
+    @Nullable
+    private final String partialUrl;  // optional URL field
+
+    public NotificationEvent(Object source, String title, String message, NotificationCategory notificationCategory, User userToNotify, @Nullable String partialUrl) {
         super(source);
         this.title = title;
         this.message = message;
         this.notificationCategory = notificationCategory;
         this.userToNotify = userToNotify;
+        this.partialUrl = partialUrl;
     }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public NotificationCategory getNotificationCategory() {
-        return notificationCategory;
-    }
-
-    public User getUserToNotify() {
-        return userToNotify;
-    }
-
-    public String getTitle() {
-        return title;
-    }
 }

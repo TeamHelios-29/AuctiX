@@ -5,9 +5,13 @@ import com.helios.auctix.config.SupperAdminConfig;
 import com.helios.auctix.domain.user.*;
 import com.helios.auctix.repositories.*;
 import com.helios.auctix.services.JwtService;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.source.InvalidConfigurationPropertyValueException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,7 +19,8 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
+@Slf4j
 public class UserRegisterService {
 
     private final UserRepository userRepository;
@@ -25,10 +30,9 @@ public class UserRegisterService {
     private final UserRoleRepository userRoleRepository;
     private final JwtService jwtService;
     private final SupperAdminConfig supperAdminConfig;
+    private final PasswordEncoder encoder;
+    private final UserDetailsService userDetailsService;
 
-    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-    Logger log = Logger.getLogger(UserRegisterService.class.getName());
 
     /**
      * Checks if a user exists in the system based on the provided username.
@@ -99,12 +103,12 @@ public class UserRegisterService {
 
         // check the email is unique
         if(userRepository.existsByEmail(email)){
-            log.warning("User already exists from the given email");
+            log.error("User already exists from the given email");
             return new UserServiceResponse(false, "User already exists for the given email",null);
         }
         // check the username is unique
         if(userRepository.existsByUsername(username)){
-            log.warning("User already exists from the given username");
+            log.error("User already exists from the given username");
             return new UserServiceResponse(false, "User already exists for the given username",null);
         }
 
@@ -141,6 +145,10 @@ public class UserRegisterService {
             log.info("Saving seller object");
             sellerRepository.save(seller);
             log.info("User and Seller saved successfully");
+
+            // Register required action for seller
+            userDetailsService.registerUserRequiredAction(user, UserRequiredActionEnum.COMPLETE_PROFILE);
+            log.info("Required action for seller registered successfully");
         }
         else if(UserRoleEnum.BIDDER == role) {
         // save bidder data
@@ -153,6 +161,10 @@ public class UserRegisterService {
             log.info("Saving bidder object");
             bidderRepository.save(bidder);
             log.info("User and Bidder saved successfully");
+
+            // Register required action for bidder
+            userDetailsService.registerUserRequiredAction(user, UserRequiredActionEnum.COMPLETE_PROFILE);
+            log.info("Required action for bidder registered successfully");
         }
         else if(UserRoleEnum.ADMIN == role) {
         // save admin data
@@ -164,9 +176,13 @@ public class UserRegisterService {
             log.info("Saving admin object");
             adminRepository.save(admin);
             log.info("User and Admin saved successfully");
+
+            // Register required action for admin
+            userDetailsService.registerUserRequiredAction(user, UserRequiredActionEnum.FIRST_LOGIN_CHANGE_PASSWORD);
+            log.info("Required action for admin registered successfully");
         }
         else{
-            log.warning("Invalid role");
+            log.error("Invalid role");
             return new UserServiceResponse(false, "Invalid role",null);
         }
         return new UserServiceResponse(true, "User registered successfully",user);
@@ -211,11 +227,12 @@ public class UserRegisterService {
                     .build();
 
             log.info("Saving supper admin account");
-            userRepository.save(user);
+            user = userRepository.save(user);
+
             return true;
         }
         catch(Exception e){
-            log.warning("supper admin registering failed "+e.getMessage());
+            log.error("supper admin registering failed "+ e.getMessage());
             return false;
         }
     }

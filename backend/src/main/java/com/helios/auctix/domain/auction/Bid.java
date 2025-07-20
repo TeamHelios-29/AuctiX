@@ -5,30 +5,32 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 @Table(name = "bids")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Bid {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "auction_id", nullable = false)
     private Auction auction;
 
-    @Column(name = "bidder_id", nullable = false)
+    @Column(nullable = false)
     private UUID bidderId;
 
-    @Column(name = "bidder_name", nullable = false)
+    @Column(name = "bidder_name")
     private String bidderName;
 
     @Column(name = "bidder_avatar")
@@ -37,7 +39,7 @@ public class Bid {
     @Column(nullable = false)
     private Double amount;
 
-    @Column(name = "bid_time", nullable = false)
+    @Column(nullable = false)
     private Instant bidTime;
 
     @Column(name = "created_at", updatable = false)
@@ -48,6 +50,9 @@ public class Bid {
 
     @PrePersist
     protected void onCreate() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
         if (this.bidTime == null) {

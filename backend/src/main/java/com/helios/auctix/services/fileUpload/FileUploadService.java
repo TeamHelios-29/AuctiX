@@ -64,7 +64,7 @@ public class FileUploadService {
      * @param file The file to be uploaded.
      * @return A `FileUploadResponse` indicating the success or failure of the operation.
      */
-    public FileUploadResponse uploadFile(MultipartFile file, String category){
+    public FileUploadResponse uploadFile(MultipartFile file, FileUploadUseCaseEnum category){
         log.warning("unauthorized file upload request");
         return uploadFile(file, category ,(UUID) null , true);
     }
@@ -76,7 +76,7 @@ public class FileUploadService {
      * @param ownerEmail The email of the user who owns the file.
      * @return A `FileUploadResponse` indicating the success or failure of the operation.
      */
-    public FileUploadResponse uploadFile(MultipartFile file, String category ,String ownerEmail , boolean isPublic) {
+    public FileUploadResponse uploadFile(MultipartFile file, FileUploadUseCaseEnum category ,String ownerEmail , boolean isPublic) {
         User user = userRepository.findByEmail(ownerEmail);
         if(user == null) {
             return new FileUploadResponse(false,"User not found");
@@ -91,7 +91,7 @@ public class FileUploadService {
      * @param ownerUserId The UUID of the user who owns the file.
      * @return A `FileUploadResponse` indicating the success or failure of the operation.
      */
-    public FileUploadResponse uploadFile(MultipartFile file, String category, UUID ownerUserId, boolean isPublic) {
+    public FileUploadResponse uploadFile(MultipartFile file, FileUploadUseCaseEnum category, UUID ownerUserId, boolean isPublic) {
         try {
 
             if(azureStorageConfig.getAccountName() == null || azureStorageConfig.getAccountKey() == null || azureStorageConfig.getContainerName() == null) {
@@ -113,7 +113,7 @@ public class FileUploadService {
             UUID fileId = UUID.nameUUIDFromBytes(digestMsg);
 
             Long filesize = file.getSize();
-//            TODO: Rate limit mechanism
+            //TODO: Rate limit mechanism
 
             log.info("File Uploading to Azure Blob Storage");
             URI StorageContainer = azureStorageConfig.getStorageContainerURI();
@@ -141,7 +141,7 @@ public class FileUploadService {
                     .fileId(fileId)
                     .ownerId(ownerUserId)
                     .isPublic(isPublic)
-                    .category(category)
+                    .category(category.toString())
                     .build();
 
             uploadRepository.save(uploadInfo);
@@ -307,12 +307,12 @@ public class FileUploadService {
 
         log.info("checking file delete permissions");
         if(deleteRequestedUser == null) {
-            return new FileUploadResponse(false,"Unautherized");
+            return new FileUploadResponse(false,"Unauthorized");
         }
-        if(deleteRequestedUser.getId()== null && !deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN)) {
+        if(deleteRequestedUser.getId()== null && !(deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.ADMIN) || deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.SUPER_ADMIN))) {
             return new FileUploadResponse(false,"Only admins can delete the files without ownership");
         }
-        if(!(deleteRequestedUser.getId().equals(fileToDelete.getOwnerId()) || deleteRequestedUser.getRole().equals(UserRoleEnum.ADMIN))) {
+        if(!(deleteRequestedUser.getId().equals(fileToDelete.getOwnerId()) || deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.ADMIN) || deleteRequestedUser.getRoleEnum().equals(UserRoleEnum.SUPER_ADMIN))) {
             return new FileUploadResponse(false,"Only file owner or admins can delete this file");
         }
         log.info("marking the file as deleted");
