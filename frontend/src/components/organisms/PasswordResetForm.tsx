@@ -10,6 +10,15 @@ import { SixDigitCodeInput } from '@/components/molecules/SixDigitCodeInput';
 import { ActionButton } from '@/components/atoms/ActionButton';
 import { StatusMessage } from '@/components/molecules/StatusMessage';
 import { ZodError, z } from 'zod';
+import {
+  requestPasswordResetCode,
+  resetPassword,
+  validateVerificationCode,
+} from '@/services/passwordResetService';
+import { useToast } from '@/hooks/use-toast';
+import AxiosRequest from '@/services/axiosInspector';
+import { AxiosInstance } from 'axios';
+import { getServerErrorMessage } from '@/lib/errorMsg';
 
 export const emailSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -75,9 +84,8 @@ export function PasswordResetForm() {
     newPassword?: string;
     confirmPassword?: string;
   }>({});
-
-  // Mock correct verification code for demo (6 digits)
-  const CORRECT_CODE = '2p4KS8';
+  const { toast } = useToast();
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
 
   const steps = ['Email', 'Verify', 'Password'];
 
@@ -147,12 +155,22 @@ export function PasswordResetForm() {
     if (!validateEmail()) return;
 
     setIsLoading(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setIsLoading(false);
-    setCurrentStep('emailSent');
+    requestPasswordResetCode(email, axiosInstance)
+      .then(() => {
+        setCurrentStep('emailSent');
+        toast({
+          variant: 'default',
+          title: 'Verification Code Sent',
+          description: `A verification code has been sent to ${email}. Please check your inbox.`,
+        });
+      })
+      .catch((error) => {
+        console.error('Error requesting password reset code:', error);
+        setEmailError(getServerErrorMessage(error));
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
@@ -161,18 +179,30 @@ export function PasswordResetForm() {
     if (!validateCode()) return;
 
     setIsLoading(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setIsLoading(false);
-
-    // Check if code is correct
-    if (verificationCode === CORRECT_CODE) {
-      setCurrentStep('createPassword');
-    } else {
-      setCurrentStep('error');
-    }
+    validateVerificationCode(email, verificationCode, axiosInstance)
+      .then(() => {
+        setCurrentStep('createPassword');
+        toast({
+          variant: 'default',
+          title: 'Code Verified',
+          description: 'You can now create a new password.',
+        });
+      })
+      .catch((error) => {
+        console.error('Error verifying code:', error);
+        setCurrentStep('error');
+        const errorMsg = getServerErrorMessage(error);
+        setCodeError(errorMsg);
+        toast({
+          variant: 'destructive',
+          title: 'Verification Failed',
+          description: errorMsg,
+        });
+        setVerificationCode('');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -181,12 +211,35 @@ export function PasswordResetForm() {
     if (!validatePasswords()) return;
 
     setIsLoading(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setIsLoading(false);
-    setCurrentStep('success');
+    resetPassword(
+      email,
+      verificationCode,
+      passwordData.newPassword,
+      axiosInstance,
+    )
+      .then(() => {
+        setCurrentStep('success');
+        toast({
+          variant: 'default',
+          title: 'Code Verified',
+          description: 'You can now create a new password.',
+        });
+      })
+      .catch((error) => {
+        console.error('Error verifying code:', error);
+        setCurrentStep('error');
+        setCodeError('Invalid verification code. Please try again.');
+        toast({
+          variant: 'destructive',
+          title: 'Verification Failed',
+          description:
+            'The verification code you entered is incorrect. Please try again.',
+        });
+        setVerificationCode('');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const handleProceedToVerification = () => {
@@ -344,20 +397,6 @@ export function PasswordResetForm() {
                 </ActionButton>
               </motion.div>
             </form>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
-            >
-              <p className="text-sm text-yellow-700 mb-2">
-                <strong>For demo purposes, use code:</strong>
-              </p>
-              <p className="font-mono font-bold text-lg text-yellow-800">
-                {formatCodeForDisplay(CORRECT_CODE)}
-              </p>
-            </motion.div>
           </motion.div>
         );
 

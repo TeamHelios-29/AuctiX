@@ -3,28 +3,34 @@
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { VerificationStatus } from '../organisms/VerificationForm';
 
 interface StatusIconProps {
-  status: 'success' | 'error' | 'email';
+  status: VerificationStatus;
   className?: string;
 }
 
 export function StatusIcon({ status, className }: StatusIconProps) {
   const iconConfig = {
-    success: {
+    [VerificationStatus.APPROVED]: {
       icon: CheckCircle,
       color: 'text-green-500',
       bgColor: 'bg-green-100',
     },
-    error: {
+    [VerificationStatus.REJECTED]: {
       icon: XCircle,
       color: 'text-red-500',
       bgColor: 'bg-red-100',
     },
-    email: {
+    [VerificationStatus.PENDING]: {
       icon: Mail,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-100',
+    },
+    [VerificationStatus.NO_VERIFICATION_REQUESTED]: {
+      icon: Mail,
+      color: 'text-gray-500',
+      bgColor: 'bg-gray-100',
     },
   };
 

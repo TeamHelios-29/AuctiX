@@ -2,14 +2,15 @@ package com.helios.auctix.services.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.json.Json;
+import com.helios.auctix.domain.notification.Notification;
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.*;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
-import com.helios.auctix.repositories.UserAddressRepository;
-import com.helios.auctix.repositories.UserRepository;
-import com.helios.auctix.repositories.UserRequiredActionRepository;
-import com.helios.auctix.repositories.UserRoleRepository;
+import com.helios.auctix.repositories.*;
+import com.helios.auctix.services.notification.senders.EmailNotificationSender;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.naming.LimitExceededException;
 import java.security.InvalidParameterException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -44,6 +47,10 @@ public class UserDetailsService {
     private UserRoleRepository userRoleRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private PasswordResetRequestRepository passwordResetRequestRepository;
+    @Autowired
+    private EmailNotificationSender emailNotificationSender;
 
     /**
      * Retrieves a user by {@link Authentication}.
@@ -313,12 +320,139 @@ public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO pro
         if (newPassword == null || newPassword.isEmpty()) {
             return new UserServiceResponse(false, "New password cannot be null or empty");
         }
-        User user = userRepository.findByEmail(email);
+
+        // check if the reset code is valid and not expired
+        PasswordResetRequest resetRequest = passwordResetRequestRepository.findTopByExpiresAtAfterAndEmailAndCodeAndIsUsedFalseOrderByCreatedAtDesc(Instant.now(), email, code);
+        if(resetRequest==null){
+            return new UserServiceResponse(false, "Invalid or expired reset code");
+        }
+
+        // encode the new password
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+        User user = resetRequest.getUser();
         if (user == null) {
             return new UserServiceResponse(false, "User not found with email: " + email);
         }
 
-        // TODO: Implement code verification logic here
+        // update the user's password
+        user.setPasswordHash(encodedNewPassword);
+        user = userRepository.save(user);
+
         return new UserServiceResponse(true, "Password changed successfully", user);
+    }
+
+    // genarate a password reset code for the user
+    public PasswordResetRequest generatePasswordResetCode(String email, String ipAddress) throws LimitExceededException {
+        if (email == null || email.isEmpty()) {
+            throw new InvalidParameterException("Email cannot be null or empty");
+        }
+        if (ipAddress == null || ipAddress.isEmpty()) {
+            throw new InvalidParameterException("IP address cannot be null or empty");
+        }
+
+        // check if the user exists
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
+
+        // check if there is an unexpired existing password reset request for the user
+        Integer reqCount = passwordResetRequestRepository.countByExpiresAtAfterAndEmailAndIpAddressAndIsUsedFalseOrderByCreatedAtDesc(Instant.now(), email, ipAddress);
+
+        if (reqCount != null && reqCount > 3) {
+            throw new LimitExceededException("Too many password reset requests for this email or ip. Please try again later.");
+        }
+
+        // create a new password reset request
+        String code = generateRandomSixCharCode();
+        PasswordResetRequest resetRequest = PasswordResetRequest.builder()
+                .email(email)
+                .ipAddress(ipAddress)
+                .code(code)
+                .isUsed(false)
+                .user(user)
+                .build();
+
+        return passwordResetRequestRepository.save(resetRequest);
+    }
+
+    private String generateRandomSixCharCode() {
+        StringBuilder code = new StringBuilder();
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            for (int i = 0; i < 6; i++) {
+                int randomIndex = (int) (Math.random() * chars.length());
+                code.append(chars.charAt(randomIndex));
+            }
+        return code.toString();
+    }
+
+    public String getClientIP(HttpServletRequest request) {
+        String[] headers = {
+                "X-Forwarded-For",
+                "Proxy-Client-IP",
+                "WL-Proxy-Client-IP",
+                "HTTP_X_FORWARDED_FOR",
+                "HTTP_X_FORWARDED",
+                "HTTP_X_CLUSTER_CLIENT_IP",
+                "HTTP_CLIENT_IP",
+                "HTTP_FORWARDED_FOR",
+                "HTTP_FORWARDED",
+                "X-Real-IP",
+                "X-Cluster-Client-IP"
+        };
+
+        for (String header : headers) {
+            String ip = request.getHeader(header);
+            if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+                return ip.split(",")[0].trim();
+            }
+        }
+
+        return request.getRemoteAddr();
+    }
+
+    public void sendPasswordResetVerificationCode(PasswordResetRequest pswResetReq) {
+        if (pswResetReq == null) {
+            throw new InvalidParameterException("Password reset request not provided");
+        }
+        if (pswResetReq.getEmail() == null || pswResetReq.getEmail().isEmpty()) {
+            throw new InvalidParameterException("Email cannot be null or empty");
+        }
+        if (pswResetReq.getCode() == null || pswResetReq.getCode().isEmpty()) {
+            throw new InvalidParameterException("Code cannot be null or empty");
+        }
+
+        // TODO: send email
+        Notification notif = Notification.builder()
+                .title("Password Reset Verification Code")
+                .user(pswResetReq.getUser())
+                .notificationCategory(NotificationCategory.DEFAULT)
+                .content("Your password reset verification code is: " + pswResetReq.getCode())
+                .read(false)
+                .partialUrl("/reset-password?code=" + pswResetReq.getCode() + "&email=" + pswResetReq.getEmail()) // TODO: change this to the actual reset password URL
+                .build();
+        emailNotificationSender.sendNotification(notif);
+
+        log.info("Sending password reset verification code {} to email {}", pswResetReq.getCode(), pswResetReq.getEmail());
+    }
+
+    public boolean verifyPasswordResetCode(String email, String code) throws LimitExceededException {
+        if (email == null || email.isEmpty()) {
+            throw new InvalidParameterException("Email cannot be null or empty");
+        }
+        if (code == null || code.isEmpty()) {
+            throw new InvalidParameterException("Code cannot be null or empty");
+        }
+        // check if the reset code is valid and not expired
+        PasswordResetRequest resetRequest = passwordResetRequestRepository.findTopByExpiresAtAfterAndEmailAndCodeAndIsUsedFalseOrderByCreatedAtDesc(Instant.now(), email, code);
+        if (resetRequest == null) {
+            log.warn("Invalid or expired reset code for email: {}", email);
+            return false;
+        }
+        if(resetRequest.getCodeChecks()>5){
+            throw new LimitExceededException("Too many attempts to verify reset code for email: " + email);
+        }
+        log.info("Valid reset code for email: {}", email);
+        return true;
     }
 }
