@@ -434,7 +434,7 @@ public class UserController {
         // Generate password reset verification code
         PasswordResetRequest pswResetReq = userDetailsService.generatePasswordResetCode(email, ipAddress);
         userDetailsService.sendPasswordResetVerificationCode(pswResetReq);
-        return ResponseEntity.ok("Password reset verification code sent to " + email);
+        return ResponseEntity.ok("Password reset verification code sent to " + pswResetReq.getEmail());
     }
 
     @PostMapping("/verifyPasswordResetCode")

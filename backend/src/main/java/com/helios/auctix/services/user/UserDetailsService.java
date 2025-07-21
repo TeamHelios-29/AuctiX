@@ -331,7 +331,7 @@ public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO pro
         String encodedNewPassword = passwordEncoder.encode(newPassword);
         User user = resetRequest.getUser();
         if (user == null) {
-            return new UserServiceResponse(false, "User not found with email: " + email);
+            return new UserServiceResponse(false, "User not found with email: " + resetRequest.getEmail());
         }
 
         // update the user's password
