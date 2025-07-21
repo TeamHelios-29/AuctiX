@@ -430,4 +430,36 @@ public class AuctionController {
     }
 
 
+    @GetMapping("/seller/{id}")
+    public ResponseEntity<List<AuctionDetailsDTO>> getAuctionsBySeller(
+            @PathVariable UUID id,
+            @RequestParam(value = "filter", defaultValue = "total") String filter,
+            @RequestParam(value = "search", required = false) String searchTerm) {
+        try {
+            if (id == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            // Map frontend filter names to backend filter names (if needed)
+            String mappedFilter = mapFrontendFilterToBackend(filter);
+
+            // Get the basic auction list first
+            List<SellerAuctionDTO> auctions = auctionService.getSellerAuctions(id, mappedFilter, searchTerm);
+
+            // Convert each auction to detailed DTO
+            List<AuctionDetailsDTO> detailedAuctions = auctions.stream()
+                    .map(auction -> auctionService.getAuctionDetails(UUID.fromString(auction.getId())))
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(detailedAuctions);
+        } catch (IllegalArgumentException e) {
+            log.warning("Invalid argument provided: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.warning("Error fetching seller auctions: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
 }

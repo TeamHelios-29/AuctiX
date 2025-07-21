@@ -38,7 +38,7 @@ export default function AppRouter() {
         {/* Routes using DefaultLayout */}
         <Route element={<DefaultLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/seller" element={<SellerProfile />} />
+          <Route path="/seller/:id" element={<SellerProfile />} />
           <Route
             path="/auction-details/:auctionId"
             element={<AuctionDetailsPage />}
