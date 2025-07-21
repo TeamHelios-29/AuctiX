@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import javax.naming.LimitExceededException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,6 +75,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleUploadedFileSizeMaxLimitExceedException(UploadedFileSizeMaxLimitExceedException e) {
         log.error("Uploaded file size exceeds maximum limit: {}", e.getMessage());
         return buildErrorResponse("Uploaded file size exceeds maximum limit", HttpStatus.BAD_REQUEST);
+    }
+
+    // handle LimitExceededException
+    @ExceptionHandler(LimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleLimitExceededException(LimitExceededException e) {
+        log.error("Limit exceeded: {}", e.getMessage());
+        return buildErrorResponse("Limit exceeded", HttpStatus.BAD_REQUEST);
     }
 
 

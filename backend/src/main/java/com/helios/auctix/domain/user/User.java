@@ -68,6 +68,9 @@ public class User {
     @JoinColumn(name = "id")
     private UserAddress userAddress;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PasswordResetRequest> passwordResetRequest;
+
     // helper method to make it cleaner to get the role enum
     @JsonProperty("role")
     public UserRoleEnum getRoleEnum() {

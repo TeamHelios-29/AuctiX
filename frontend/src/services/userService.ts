@@ -19,10 +19,7 @@ export const updateProfileInfo = async (
   profileData: IProfileUpdateData,
   axiosInstance: AxiosInstance,
 ) => {
-  const response = await axiosInstance.post(
-    `${baseURL}/user/updateProfile`,
-    profileData,
-  );
+  const response = await axiosInstance.post(`/user/updateProfile`, profileData);
   return response.data;
 };
 
@@ -33,7 +30,7 @@ export const updateProfilePhoto = async (
   const formData = new FormData();
   formData.append('file', file);
   const response = await axiosInstance.post(
-    `${baseURL}/user/uploadUserProfilePhoto`,
+    `/user/uploadUserProfilePhoto`,
     formData,
     {
       headers: {
@@ -54,7 +51,7 @@ export const uploadVerificationDocs = async (
   });
 
   const response = await axiosInstance.post(
-    `${baseURL}/user/uploadVerificationDocs`,
+    `/user/uploadVerificationDocs`,
     formData,
     {
       headers: {
@@ -69,14 +66,11 @@ export const deleteProfilePhoto = async (
   username: string,
   axiosInstance: AxiosInstance,
 ) => {
-  const response = await axiosInstance.delete(
-    `${baseURL}/user/deleteUserProfilePhoto`,
-    {
-      params: {
-        username,
-      },
+  const response = await axiosInstance.delete(`/user/deleteUserProfilePhoto`, {
+    params: {
+      username,
     },
-  );
+  });
   return response.data;
 };
 
@@ -87,7 +81,7 @@ export const updateBannerPhoto = async (
   const formData = new FormData();
   formData.append('file', file);
   const response = await axiosInstance.post(
-    `${baseURL}/user/uploadUserBannerPhoto`,
+    `/user/uploadUserBannerPhoto`,
     formData,
     {
       headers: {
@@ -102,13 +96,31 @@ export const deleteBannerPhoto = async (
   username: string,
   axiosInstance: AxiosInstance,
 ) => {
-  const response = await axiosInstance.delete(
-    `${baseURL}/user/deleteBannerPhoto`,
-    {
-      params: {
-        username,
-      },
+  const response = await axiosInstance.delete(`/user/deleteBannerPhoto`, {
+    params: {
+      username,
     },
-  );
+  });
+  return response.data;
+};
+
+export interface IChangePasswordData {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export const changePassword = async (
+  passwordData: IChangePasswordData,
+  axiosInstance: AxiosInstance,
+) => {
+  const formData = new FormData();
+  formData.append('oldPassword', passwordData.oldPassword);
+  formData.append('newPassword', passwordData.newPassword);
+
+  const response = await axiosInstance.post(`/user/changePassword`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };

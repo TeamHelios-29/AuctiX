@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VerificationStatus } from '../organisms/VerificationForm';
 
@@ -12,11 +12,6 @@ interface StatusIconProps {
 
 export function StatusIcon({ status, className }: StatusIconProps) {
   const iconConfig = {
-    [VerificationStatus.PENDING]: {
-      icon: Clock,
-      color: 'text-yellow-500',
-      bgColor: 'bg-yellow-100',
-    },
     [VerificationStatus.APPROVED]: {
       icon: CheckCircle,
       color: 'text-green-500',
@@ -27,12 +22,17 @@ export function StatusIcon({ status, className }: StatusIconProps) {
       color: 'text-red-500',
       bgColor: 'bg-red-100',
     },
+    [VerificationStatus.PENDING]: {
+      icon: Mail,
+      color: 'text-yellow-500',
+      bgColor: 'bg-yellow-100',
+    },
     [VerificationStatus.NO_VERIFICATION_REQUESTED]: {
-      icon: Clock,
+      icon: Mail,
       color: 'text-gray-500',
       bgColor: 'bg-gray-100',
     },
-  } as const;
+  };
 
   const config = iconConfig[status];
   const IconComponent = config.icon;
