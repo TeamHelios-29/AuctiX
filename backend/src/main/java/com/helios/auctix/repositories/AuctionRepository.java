@@ -56,4 +56,13 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
     List<Auction> findByStartTimeBetween(Instant from, Instant to);
 
     List<Auction> findByEndTimeBetween(Instant from, Instant to);
+
+    @Query(value = """
+    SELECT EXISTS (
+        SELECT 1 FROM auctions
+        WHERE id = CAST(:auctionId AS UUID)
+        AND seller_id = CAST(:sellerId AS UUID)
+    )
+    """, nativeQuery = true)
+    boolean isSellerOwnerOfAuction(@Param("auctionId") UUID auctionId, @Param("sellerId") UUID sellerId);
 }
