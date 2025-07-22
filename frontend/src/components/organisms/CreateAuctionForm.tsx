@@ -66,6 +66,83 @@ const FormField = ({
   </div>
 );
 
+// Add this helper function to extract error messages
+const getErrorMessage = (error: any): string => {
+  console.error('Full error object:', error);
+
+  // If it's a network error
+  if (!error.response) {
+    return 'Network error. Please check your connection and try again.';
+  }
+
+  const { response } = error;
+  const status = response.status;
+  const data = response.data;
+
+  // Handle different status codes with specific messages
+  switch (status) {
+    case 401:
+      return 'Your session has expired. Please log in again.';
+    case 403:
+      // Check if it's the seller role error
+      if (data && data.message) {
+        return data.message;
+      }
+      return 'Access denied. You do not have permission to perform this action.';
+    case 404:
+      return 'The requested resource was not found.';
+    case 413:
+      return 'File size too large. Please use smaller images.';
+    case 422:
+      return 'Validation failed. Please check your input.';
+    case 429:
+      return 'Too many requests. Please wait a moment and try again.';
+    case 500:
+      return 'Server error. Please try again later.';
+    case 502:
+    case 503:
+    case 504:
+      return 'Service temporarily unavailable. Please try again later.';
+    default:
+      break;
+  }
+
+  // Try to extract message from response data
+  if (data) {
+    // If data is a string, return it directly
+    if (typeof data === 'string') {
+      return data;
+    }
+
+    // If data has a message property
+    if (data.message) {
+      return data.message;
+    }
+
+    // If data has an error property
+    if (data.error) {
+      return data.error;
+    }
+
+    // If data has errors array (for validation errors)
+    if (data.errors && Array.isArray(data.errors)) {
+      return data.errors.join(', ');
+    }
+
+    // If data is an object, try to stringify it meaningfully
+    if (typeof data === 'object') {
+      try {
+        return JSON.stringify(data);
+      } catch {
+        return 'An error occurred but details could not be parsed.';
+      }
+    }
+  }
+
+  // Default fallback
+  return 'Something went wrong. Please try again.';
+};
+
 const AuctionForm: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -366,6 +443,7 @@ const AuctionForm: React.FC = () => {
     validateField('images', images); // Revalidate with new existing images count
   };
 
+  // Updated handleSubmit function with better error handling
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -398,7 +476,18 @@ const AuctionForm: React.FC = () => {
       !categoryValid ||
       !imagesValid
     ) {
-      return; // Don't show toast for frontend validation errors
+      // Scroll to first error
+      const firstErrorField = document.querySelector('.border-red-500');
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form before submitting.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     setIsSubmitting(true);
@@ -431,6 +520,7 @@ const AuctionForm: React.FC = () => {
         url: endpoint,
         data: formData,
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000, // Increase timeout for file uploads
       });
 
       toast({
@@ -446,14 +536,35 @@ const AuctionForm: React.FC = () => {
       }, 1500);
     } catch (error: any) {
       console.error('Error submitting form:', error);
+
+      const errorMessage = getErrorMessage(error);
+
+      // Show different toast styles based on error type
+      const isValidationError = error.response?.status === 400;
+      const isForbiddenError = error.response?.status === 403;
+      const isAuthError = error.response?.status === 401;
+
+      let toastTitle = 'Error';
+      if (isValidationError) {
+        toastTitle = 'Validation Error';
+      } else if (isForbiddenError) {
+        toastTitle = 'Access Denied';
+      } else if (isAuthError) {
+        toastTitle = 'Authentication Error';
+      }
+
       toast({
-        title: 'Error',
-        description:
-          error.response?.data?.message ||
-          error.response?.data ||
-          'Something went wrong.',
+        title: toastTitle,
+        description: errorMessage,
         variant: 'destructive',
       });
+
+      // If it's an auth error, redirect to login after a delay
+      if (isAuthError) {
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -470,6 +581,7 @@ const AuctionForm: React.FC = () => {
     });
   };
 
+  // Also update the useEffect error handling for loading auction data
   useEffect(() => {
     if (id && !dataLoaded) {
       setIsEditMode(true);
@@ -482,7 +594,7 @@ const AuctionForm: React.FC = () => {
 
           setTitle(data.title || '');
           setDescription(processDescription(data.description || ''));
-          setStartingPrice(data.startingPrice?.toString() || ''); // Convert to string
+          setStartingPrice(data.startingPrice?.toString() || '');
           setStartTime(convertToDatetimeLocal(data.startTime));
           setEndTime(convertToDatetimeLocal(data.endTime));
           setCategory(data.category || '');
@@ -501,20 +613,29 @@ const AuctionForm: React.FC = () => {
         })
         .catch((error) => {
           console.error('Error fetching auction data:', error);
-          if (error.code === 'ECONNABORTED') {
-            toast({
-              title: 'Error',
-              description: 'Request timed out. Please try again.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Error',
-              description: 'Failed to load auction data',
-              variant: 'destructive',
-            });
+
+          const errorMessage = getErrorMessage(error);
+          let toastTitle = 'Error Loading Auction';
+
+          // Handle specific error types
+          if (error.response?.status === 404) {
+            toastTitle = 'Auction Not Found';
+          } else if (error.response?.status === 403) {
+            toastTitle = 'Access Denied';
+          } else if (error.code === 'ECONNABORTED') {
+            toastTitle = 'Timeout Error';
           }
-          navigate('/manage-auctions');
+
+          toast({
+            title: toastTitle,
+            description: errorMessage,
+            variant: 'destructive',
+          });
+
+          // Add a delay before redirecting to let user read the error
+          setTimeout(() => {
+            navigate('/manage-auctions');
+          }, 3000);
         })
         .finally(() => {
           setLoading(false);
