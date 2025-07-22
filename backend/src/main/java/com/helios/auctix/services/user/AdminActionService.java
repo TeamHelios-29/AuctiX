@@ -92,7 +92,10 @@ public class AdminActionService {
         Set<UUID> matchedUserIds = Set.of();
         String descriptionSearch = null;
 
-        AdminActionsEnum actionTypeFilterEnumVal = AdminActionsEnum.valueOf(actionTypeFilter);
+        AdminActionsEnum actionTypeFilterEnumVal = null;
+        if (actionTypeFilter != null && !actionTypeFilter.isEmpty() && !actionTypeFilter.equals("ALL")) {
+            actionTypeFilterEnumVal = AdminActionsEnum.valueOf(actionTypeFilter);
+        }
 
         if (search != null && search.toLowerCase().contains("username:")) {
             String lowerSearch = search.toLowerCase();
@@ -118,7 +121,7 @@ public class AdminActionService {
         if (matchedUserIds != null && !matchedUserIds.isEmpty()) {
             adminActions = adminActionRepository.searchAdminActions( new ArrayList<>(matchedUserIds), descriptionSearch, actionTypeFilterEnumVal, pageable);
         } else {
-            adminActions = adminActionRepository.findByDescriptionContainingIgnoreCaseAndActivityType(pageable, descriptionSearch, actionTypeFilterEnumVal);
+            adminActions = adminActionRepository.searchAdminActionsNoUserSearch(pageable, descriptionSearch, actionTypeFilterEnumVal);
         }
 
         log.info("Retrieved {} admin actions with limit {}, offset {}, order {}, sortBy createdAt, search {}, filterBy activity_type, filterValue {}",
