@@ -79,15 +79,56 @@ public class AuctionService {
     }
 
     public Auction createAuction(Auction auction) {
+        try {
         // Validate required fields
         if (auction.getTitle() == null || auction.getTitle().isEmpty()) {
             throw new IllegalArgumentException("Title is required");
         }
+
+        // Validate title length and word count
+        String[] words = auction.getTitle().trim().split("\\s+");
+        if (words.length < 5) {
+            throw new IllegalArgumentException("Title must be at least 5 words long");
+        }
+
+        if (auction.getTitle().length() > 100) {
+            throw new IllegalArgumentException("Title cannot exceed 100 characters");
+        }
+
+        if (auction.getDescription() == null || auction.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("Description is required");
+        }
+
+        if (auction.getDescription().length() < 20) {
+            throw new IllegalArgumentException("Description must be at least 20 characters long");
+        }
+
+        if (auction.getDescription().length() > 1000) {
+            throw new IllegalArgumentException("Description cannot exceed 1000 characters");
+        }
+
         if (auction.getStartingPrice() <= 0) {
             throw new IllegalArgumentException("Starting price must be greater than 0");
         }
+
+        if (auction.getStartingPrice() > 10000000) {
+            throw new IllegalArgumentException("Starting price cannot exceed 10,000,000 LKR");
+        }
+
+        if (auction.getStartTime() == null || auction.getEndTime() == null) {
+            throw new IllegalArgumentException("Start time and end time are required");
+        }
+
         if (auction.getStartTime().isAfter(auction.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time");
+        }
+
+        if (auction.getCategory() == null || auction.getCategory().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category is required");
+        }
+
+        if (auction.getImagePaths() == null || auction.getImagePaths().isEmpty()) {
+            throw new IllegalArgumentException("At least one image is required");
         }
 
         // Set timestamps
@@ -96,9 +137,23 @@ public class AuctionService {
 
         Auction savedAuction = auctionRepository.save(auction);
 
-        // create a chat-room for the auction and add join the seller to the chat
-        createChatRoomForAuction(savedAuction);
+        // Create a chat-room for the auction and add the seller to the chat
+        try {
+            createChatRoomForAuction(savedAuction);
+        } catch (Exception e) {
+            log.warning("Failed to create chat room for auction: " + e.getMessage());
+            // Don't fail the auction creation if chat room creation fails
+        }
+
         return savedAuction;
+
+    } catch (IllegalArgumentException e) {
+        // Re-throw validation errors
+        throw e;
+    } catch (Exception e) {
+        log.severe("Error creating auction in service: " + e.getMessage());
+        throw new RuntimeException("Failed to create auction: " + e.getMessage(), e);
+    }
     }
 
     public List<Auction> getAllAuctions() {

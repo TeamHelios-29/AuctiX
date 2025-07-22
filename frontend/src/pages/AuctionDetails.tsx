@@ -327,6 +327,7 @@ const AuctionDetailsPage = () => {
   // FIXED WebSocket callback with proper error handling
   const handleBidUpdate = useCallback(
     (payload: any) => {
+      console.log('WebSocket received payload:', payload); // ✅ Add this
       try {
         if (!payload || !payload.newBid) {
           console.warn('Invalid WebSocket payload received:', payload);
@@ -424,6 +425,32 @@ const AuctionDetailsPage = () => {
   const handlePlaceBid = async () => {
     if (!product || !auctionId) return;
 
+    // Pre-validation checks
+    if (auctionStatus !== 'active') {
+      toast({
+        title: 'Bid Not Allowed',
+        description:
+          auctionStatus === 'upcoming'
+            ? 'This auction has not started yet'
+            : 'This auction has already ended',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const minAllowedBid =
+      Math.max(product.startingPrice, product.currentBid) +
+      product.bidIncrement;
+    if (bidAmount < minAllowedBid) {
+      toast({
+        title: 'Invalid Bid Amount',
+        description: `Minimum bid is LKR ${minAllowedBid.toLocaleString()}`,
+        variant: 'destructive',
+      });
+      setBidAmount(minAllowedBid);
+      return;
+    }
+
     try {
       await axiosInstance.post(`/bids/place`, {
         auctionId: auctionId,
@@ -431,26 +458,129 @@ const AuctionDetailsPage = () => {
       });
 
       toast({
-        title: 'Bid Placed!',
+        title: 'Bid Placed Successfully!',
         description: `Your bid of LKR ${bidAmount.toLocaleString()} was placed successfully.`,
-        variant: 'success',
+        variant: 'default',
       });
+
+      // Clear any previous errors
+      setError(null);
     } catch (err: any) {
       console.error('Error placing bid:', err);
-      const errorResponse =
-        err?.response?.data?.message ||
-        'Failed to place bid. Please try again.';
 
-      setError(errorResponse);
+      // Handle different error types based on response structure
+      const errorData = err?.response?.data;
+      let errorTitle = 'Bid Failed';
+      let errorMessage = 'Failed to place bid. Please try again.';
+
+      if (errorData) {
+        // Handle structured error responses
+        if (
+          typeof errorData === 'object' &&
+          errorData.error &&
+          errorData.message
+        ) {
+          errorTitle = getErrorTitle(errorData.error);
+          errorMessage = errorData.message;
+        }
+        // Handle simple string responses
+        else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      }
+
+      // Handle specific HTTP status codes
+      if (err?.response?.status === 401) {
+        errorTitle = 'Authentication Required';
+        errorMessage = 'Please log in to place a bid';
+
+        // Optional: Redirect to login page
+        // window.location.href = '/login';
+      } else if (err?.response?.status === 403) {
+        errorTitle = 'Access Denied';
+        errorMessage =
+          errorData?.message ||
+          'You are not allowed to place bids on this auction';
+      } else if (err?.response?.status === 409) {
+        errorTitle = 'Bid Conflict';
+        // The error message from backend should be descriptive enough
+      } else if (err?.response?.status === 500) {
+        errorTitle = 'Server Error';
+        errorMessage = 'A server error occurred. Please try again later.';
+      }
+
+      setError(errorMessage);
 
       toast({
-        title: 'Bid Failed',
-        description: errorResponse,
+        title: errorTitle,
+        description: errorMessage,
         variant: 'destructive',
       });
 
-      setTimeout(() => setError(null), 5000);
+      // Clear error after 10 seconds for better UX
+      setTimeout(() => setError(null), 10000);
     }
+  };
+
+  const renderBidButton = () => {
+    if (!product) return null;
+
+    if (auctionStatus === 'upcoming') {
+      return (
+        <Button
+          className="w-full bg-gray-300 text-gray-600 cursor-not-allowed"
+          disabled
+        >
+          Auction Starts {getAuctionTimerText(timeRemaining, auctionStatus)}
+        </Button>
+      );
+    }
+
+    if (auctionStatus === 'expired') {
+      return (
+        <Button
+          className="w-full bg-gray-200 text-gray-600 cursor-not-allowed"
+          disabled
+        >
+          Auction Ended
+        </Button>
+      );
+    }
+
+    const minAllowedBid =
+      Math.max(product.startingPrice, product.currentBid) +
+      product.bidIncrement;
+    const isBidValid = bidAmount >= minAllowedBid;
+
+    return (
+      <Button
+        onClick={handlePlaceBid}
+        disabled={!isBidValid}
+        className={`w-full ${
+          isBidValid
+            ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
+            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+        }`}
+      >
+        {isBidValid
+          ? `Place Bid - LKR ${bidAmount.toLocaleString()}`
+          : `Minimum: LKR ${minAllowedBid.toLocaleString()}`}
+      </Button>
+    );
+  };
+
+  // Helper function to get user-friendly error titles
+  const getErrorTitle = (errorCode: string): string => {
+    const errorTitles: { [key: string]: string } = {
+      AUTHENTICATION_REQUIRED: 'Login Required',
+      USER_NOT_FOUND: 'Session Expired',
+      INVALID_BID: 'Invalid Bid',
+      BID_CONFLICT: 'Bid Conflict',
+      ACCESS_DENIED: 'Access Denied',
+      INTERNAL_ERROR: 'Server Error',
+    };
+
+    return errorTitles[errorCode] || 'Bid Failed';
   };
 
   const [reportOpen, setReportOpen] = useState(false);
@@ -509,6 +639,28 @@ const AuctionDetailsPage = () => {
       </div>
     );
   }
+
+  const handleBidAmountChange = (value: number) => {
+    if (!product) return;
+
+    if (error) setError(null);
+
+    if (value < 0) {
+      setBidAmount(0);
+      return;
+    }
+
+    if (value > 999_999_999) {
+      toast({
+        title: 'Bid Too Large',
+        description: 'Please enter a reasonable bid amount',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setBidAmount(value);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -592,54 +744,35 @@ const AuctionDetailsPage = () => {
               Starting Price: LKR {product.startingPrice?.toLocaleString()}
             </p>
 
-            {auctionStatus === 'active' ? (
-              <>
-                <div className="flex items-center gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDecrementBid}
-                    className="w-8 h-8 p-0"
-                  >
-                    -
-                  </Button>
-                  <Input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(Number(e.target.value))}
-                    className="text-center"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleIncrementBid}
-                    className="w-8 h-8 p-0"
-                  >
-                    +
-                  </Button>
-                </div>
-                <Button
-                  onClick={handlePlaceBid}
-                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-black"
-                >
-                  Place Bid - LKR {bidAmount.toLocaleString()}
-                </Button>
-              </>
-            ) : auctionStatus === 'upcoming' ? (
+            <div className="flex items-center gap-2 mb-4">
               <Button
-                className="w-full bg-yellow-200 text-gray-600 cursor-not-allowed"
-                disabled
+                variant="outline"
+                size="sm"
+                onClick={handleDecrementBid}
+                className="w-8 h-8 p-0"
               >
-                Auction not started
+                -
               </Button>
-            ) : (
+              <Input
+                type="number"
+                value={bidAmount}
+                onChange={(e) => handleBidAmountChange(Number(e.target.value))}
+                className="text-center"
+                min="0"
+                max="999999999"
+                step="100"
+              />
               <Button
-                className="w-full bg-gray-200 text-gray-600 cursor-not-allowed"
-                disabled
+                variant="outline"
+                size="sm"
+                onClick={handleIncrementBid}
+                className="w-8 h-8 p-0"
               >
-                Auction ended
+                +
               </Button>
-            )}
+            </div>
+
+            {renderBidButton()}
           </div>
 
           <div className="grid grid-cols-3 gap-4 pt-4">
@@ -685,7 +818,6 @@ const AuctionDetailsPage = () => {
           </div>
         </div>
       </div>
-
       <div className="mt-8">
         <Tabs defaultValue="information" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -739,7 +871,6 @@ const AuctionDetailsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-
       <div className="border rounded-md p-4 mt-6">
         <h2 className="text-lg font-semibold mb-4">Live Chat</h2>
         <p className="text-sm text-gray-500">
@@ -750,13 +881,47 @@ const AuctionDetailsPage = () => {
           )}
         </p>
       </div>
-
+      // Enhanced error display with better styling
       {error && (
-        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
-          {error}
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-red-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-600"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
       <AuctionReport
         itemId={product.id}
         open={reportOpen}

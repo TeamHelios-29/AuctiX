@@ -3,6 +3,7 @@ package com.helios.auctix.services;
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.Bid;
 import com.helios.auctix.domain.user.User;
+import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.BidUpdateMessageDTO;
 import com.helios.auctix.services.user.UserDetailsService;
 import com.helios.auctix.dtos.BidDTO;
@@ -92,10 +93,33 @@ public class BidService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
 
+        UserRoleEnum userRole = bidder.getRoleEnum();
+        if (userRole != UserRoleEnum.BIDDER) {
+            throw new SecurityException("Only registered bidders can place bids on auctions");
+        }
+
+        // Additional check: Prevent sellers from bidding on their own auctions
+        if (auction.getSeller().getId().equals(bidderId)) {
+            throw new SecurityException("You cannot bid on your own auction");
+        }
+
         // Check if auction is active
         Instant now = Instant.now();
-        if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
-            throw new IllegalStateException("Auction is not active");
+        if (now.isBefore(auction.getStartTime())) {
+            throw new IllegalStateException("Auction has not started yet");
+        }
+        if (now.isAfter(auction.getEndTime())) {
+            throw new IllegalStateException("Auction has already ended");
+        }
+
+        // Validate bid amount format and value
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Bid amount must be a positive number");
+        }
+
+        // Check for reasonable bid limits (prevent extremely large bids)
+        if (amount > 100_000_000) { // 100 million limit - adjust as needed
+            throw new IllegalArgumentException("Bid amount exceeds maximum allowed limit");
         }
 
         // Set bidTime server-side
@@ -123,9 +147,19 @@ public class BidService {
         });
 
         if (highestBid.isPresent()) {
-            if (amount <= highestBid.get().getAmount()) {
-                log.warning("Bid too low: " + amount + " <= " + highestBid.get().getAmount());
-                throw new IllegalArgumentException("Bid amount must be higher than current highest bid");
+            double currentHighest = highestBid.get().getAmount();
+            double minimumBid = currentHighest + calculateMinimumIncrement(currentHighest);
+
+            if (amount <= currentHighest) {
+                throw new IllegalArgumentException(
+                        String.format("Bid must be higher than current highest bid of LKR %,.2f", currentHighest)
+                );
+            }
+
+            if (amount < minimumBid) {
+                throw new IllegalArgumentException(
+                        String.format("Bid must be at least LKR %,.2f (minimum increment required)", minimumBid)
+                );
             }
 
             // If a different user previously had the highest bid, unfreeze their amount
@@ -188,6 +222,14 @@ public class BidService {
 
         return bidDTO;
 
+    }
+
+    // Helper method to calculate minimum increment
+    private double calculateMinimumIncrement(double currentBid) {
+        // Calculate 5% increment with minimum of 100
+        double increment = Math.max(100, currentBid * 0.05);
+        // Round to nearest 100
+        return Math.ceil(increment / 100) * 100;
     }
 
 
