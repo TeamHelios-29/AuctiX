@@ -57,7 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/roletest/**").authenticated()
                         .requestMatchers("/api/notification/settings").authenticated()
                         .requestMatchers("/api/bids/**").permitAll()
-                        .requestMatchers("/api/watchlist/**").permitAll()
+                        .requestMatchers("/api/watchlist/**").hasRole("BIDDER")
                         .requestMatchers("/ws-auction/**").permitAll()
                         .requestMatchers("/api/auctions/**").permitAll()
 
