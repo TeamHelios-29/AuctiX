@@ -85,7 +85,7 @@ public class ChatController {
 
         if (sender.getRoleEnum() == UserRoleEnum.SELLER) {
             UUID sellerId = sender.getSeller().getId();
-            boolean isAuctionByMessagingSeller = auctionRepository.existsByIdAndSellerId(UUID.fromString(auctionId), sellerId);
+            boolean isAuctionByMessagingSeller = auctionRepository.isSellerOwnerOfAuction(UUID.fromString(auctionId), sellerId);
             log.info("iSAuctionByMessaingSeller" + isAuctionByMessagingSeller);
             if (!isAuctionByMessagingSeller) {
                 log.warning("The message cannot be send because the seller does not own this auction");

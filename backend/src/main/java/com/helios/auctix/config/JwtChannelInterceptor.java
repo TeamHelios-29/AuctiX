@@ -1,5 +1,6 @@
 package com.helios.auctix.config;
 
+import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.repositories.AuctionRepository;
@@ -90,9 +91,9 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             try {
 
                 String authHeader = accessor.getFirstNativeHeader("Authorization");
-                String destination = accessor.getDestination();
-                Matcher matcher = AUCTION_ID_PATTERN.matcher(destination != null ? destination : "");
-                String auctionId = null;
+                String auctionId = accessor.getFirstNativeHeader("auctionId");
+                Matcher matcher = AUCTION_ID_PATTERN.matcher(auctionId != null ? auctionId : "");
+
                 if (matcher.find()) {
                     auctionId = matcher.group(1);
                 }
@@ -161,27 +162,27 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                     log.warning("User not found for email: " + userEmail);
                     return null;
                 }
-
-                if (user.getRoleEnum().equals(UserRoleEnum.SELLER)) {
-                    if (auctionId == null || auctionId.isBlank()) {
-                        log.warning("Auction ID is required for seller authentication.");
-                        return null;
-                    }
-
-                    boolean isSellerOwnedAuction = auctionRepository.existsByIdAndSellerId(
-                            user.getSeller().getId(),
-                            UUID.fromString(auctionId)
-                    );
-
-                    log.info("Seller ownership check for auction " + auctionId + ": " + isSellerOwnedAuction);
-
-                    if (!isSellerOwnedAuction) {
-                        return null;
-                    }
-                }
-
                 if (!user.getRoleEnum().equals(UserRoleEnum.BIDDER)) {
-                    return null;
+                    if (user.getRoleEnum().equals(UserRoleEnum.SELLER)) {
+                        if (auctionId == null || auctionId.isBlank()) {
+                            log.warning("Auction ID is required for seller authentication.");
+                            return null;
+                        }
+
+                        UUID sellerID = user.getSeller().getId();
+                        boolean isSellerOwnedAuction = auctionRepository.isSellerOwnerOfAuction(
+                                UUID.fromString(auctionId),
+                                sellerID
+                        );
+
+                        log.info("Seller ownership check for auction " + auctionId + ": " + isSellerOwnedAuction);
+
+                        if (!isSellerOwnedAuction) {
+                            return null;
+                        }
+                    } else {
+                        return null;
+                    }
                 }
 
                 List<GrantedAuthority> authorities = List.of(
@@ -229,7 +230,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                     if (user != null && auctionId != null) {
                         if (user.getRoleEnum().equals(UserRoleEnum.SELLER)) {
                             // check if this chat is
-                            boolean isSellerOwnedAuction = auctionRepository.existsByIdAndSellerId(user.getSeller().getId(), UUID.fromString(auctionId));
+                            boolean isSellerOwnedAuction = auctionRepository.isSellerOwnerOfAuction(UUID.fromString(auctionId), user.getSeller().getId());
                             if (!isSellerOwnedAuction) {
                                 return;
                             }
