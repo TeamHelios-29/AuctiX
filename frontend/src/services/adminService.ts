@@ -35,3 +35,20 @@ export const getFilteredAdminActionsLog = async (
 
   return response.data;
 };
+
+export const banUser = async (
+  axiosInstance: AxiosInstance,
+  username: string,
+  reason: string,
+) => {
+  const formData = new FormData();
+  formData.append('username', username);
+  formData.append('reason', reason);
+
+  const response = await axiosInstance.post('/admin/banUser', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
