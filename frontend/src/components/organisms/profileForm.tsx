@@ -29,6 +29,8 @@ import { ProfileUrlsSection } from '../molecules/ProfileURLsSection';
 import { AddressSection } from '../molecules/ProfileAddressSection';
 import { PersonalBasicInfoSection } from '../molecules/ProfileBasicInfoSection';
 import { assets } from '@/config/assets';
+import { IUser } from '@/types/IUser';
+import { fetchPendingRequiredActions } from '@/store/slices/requiredActionsSlice';
 
 const profileFormSchema = z.object({
   firstName: z
@@ -121,7 +123,7 @@ export function ProfileForm() {
   const { toast } = useToast();
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
   const dispatch = useAppDispatch();
-  const userData = useAppSelector((state) => state.user);
+  const userData = useAppSelector<IUser>((state) => state.user);
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues,
@@ -318,6 +320,7 @@ export function ProfileForm() {
             title: 'Profile details updated successfully',
             description: 'Your profile details has been updated.',
           });
+          dispatch(fetchPendingRequiredActions());
         })
         .catch((err) => {
           console.error('Error updating profile details:', err);
