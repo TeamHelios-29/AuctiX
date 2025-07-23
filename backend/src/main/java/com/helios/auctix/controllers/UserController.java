@@ -7,6 +7,9 @@ import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
+import com.helios.auctix.exception.PermissionDeniedException;
+import com.helios.auctix.exception.UploadedFileCountMaxLimitExceedException;
+import com.helios.auctix.exception.UploadedFileSizeMaxLimitExceedException;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.services.fileUpload.*;
 import com.helios.auctix.services.user.*;
@@ -170,7 +173,7 @@ public class UserController {
         String userRole = user.getRole().getName().toString();
         log.info("user data requested by " + user.getEmail() + "," + userRole);
         if (!(UserRoleEnum.valueOf(userRole) == UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole) == UserRoleEnum.SUPER_ADMIN)) {
-            throw new PermissionDeniedDataAccessException("You don't have permission to access this resource", new Throwable("Permission Denied"));
+            throw new PermissionDeniedException("You don't have permission to access this resource");
         }
 
         // decode from url encoded parameters
