@@ -65,4 +65,14 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
     )
     """, nativeQuery = true)
     boolean isSellerOwnerOfAuction(@Param("auctionId") UUID auctionId, @Param("sellerId") UUID sellerId);
+
+    @Query(value = """
+    SELECT * FROM auctions
+    WHERE search_vector @@ to_tsquery('english', :tsQuery)
+      AND is_deleted = false
+    ORDER BY ts_rank(search_vector, to_tsquery('english', :tsQuery)) DESC
+    LIMIT 50
+    """, nativeQuery = true)
+    List<Auction> searchByFullText(@Param("tsQuery") String tsQuery);
+
 }

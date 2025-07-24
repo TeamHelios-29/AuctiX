@@ -7,6 +7,8 @@ import com.helios.auctix.dtos.*;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.AuctionImagePathsRepository;
+
+import java.util.Arrays;
 import java.util.logging.Logger;
 import com.helios.auctix.repositories.AuctionRepository;
 
@@ -596,6 +598,20 @@ public class AuctionService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to save image: " + e.getMessage());
         }
+    }
+
+
+    public List<Auction> searchAuctions(String searchTerm) {
+        if (searchTerm == null || searchTerm.isBlank()) {
+            return auctionRepository.findAll();
+        }
+        String sanitized = searchTerm.replaceAll("[^\\w\\s]", "");
+        // Convert: "vint toy car" => "vint:* & toy:* & car:*"
+        String tsQuery = Arrays.stream(sanitized.trim().split("\\s+"))
+                .map(word -> word + ":*")
+                .collect(Collectors.joining(" & "));
+
+        return auctionRepository.searchByFullText(tsQuery);
     }
 
 

@@ -643,5 +643,16 @@ public class AuctionController {
         }
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<AuctionDetailsDTO>> searchAuctions(@RequestParam String q) {
+        List<Auction> results = auctionService.searchAuctions(q);
+
+        List<AuctionDetailsDTO> dtos = results.stream()
+                .map(auctionService::convertToDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
+
 
 }
