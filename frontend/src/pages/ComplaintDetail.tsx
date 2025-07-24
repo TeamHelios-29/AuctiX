@@ -196,40 +196,75 @@ export default function ComplaintDetail() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-5xl">
+    <div className="bg-white">
       {/* Header part */}
-
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/complaints">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                Complaint Details
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                #{complaint.readableId || complaint.id}
-              </p>
-            </div>
-          </div>
-          <StatusBadge status={complaint.status} />
+      <header className="relative h-28 w-full bg-gradient-to-b from-yellow-400 to-black/90">
+        <div className="absolute bottom-0 left-0 right-0 px-6 md:px-8 mb-4 flex items-center gap-4">
+          <Button variant="ghost" className="text-white" size="icon" asChild>
+            <Link to="/complaints">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <h1 className="text-4xl font-bold text-white ">Complaints Details</h1>
         </div>
-      </div>
+      </header>
 
       <div className="p-6">
         {/* complaint details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Complaint Info */}
+          <div className="space-y-4 md:col-span-1">
             <div className="rounded-lg p-4 border border-gray-100 hover:shadow-sm transition-shadow">
-              <h2 className="text-sm font-medium text-gray-500 flex items-center">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Complaint
+                </h2>
+                <span className="text-xs text-gray-500">
+                  #{complaint.readableId || complaint.id}
+                </span>
+              </div>
+              <div className="mb-4">
+                <span className="text-sm font-medium text-gray-500">
+                  Status:
+                </span>{' '}
+                <StatusBadge status={complaint.status} />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">
+                  Reason
+                </h3>
+                <div className="p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm whitespace-pre-wrap">
+                    {complaint.reason}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <h3 className="text-sm font-medium text-gray-500 flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Date Reported
+                </h3>
+                <p className="mt-2 text-sm">
+                  {new Date(complaint.dateReported).toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Reported User */}
+          <div className="space-y-4 md:col-span-1">
+            <div className="rounded-lg p-4 border border-gray-100 hover:shadow-sm transition-shadow">
+              <h2 className="text-sm font-medium text-gray-500 flex items-center mb-2">
                 <User className="h-4 w-4 mr-2" />
                 Reported User
               </h2>
-              <div className="flex items-center mt-2">
+              <div className="flex items-center">
                 {complaint.reportedUser?.profile_photo ? (
                   <img
                     src={complaint.reportedUser.profile_photo}
@@ -252,43 +287,25 @@ export default function ComplaintDetail() {
                   <p className="text-xs text-gray-500">
                     {`${complaint.reportedUser?.firstName || ''} ${complaint.reportedUser?.lastName || ''}`}
                   </p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <h2 className="text-sm font-medium text-gray-500 mb-2">
-                  Reason for Complaint
-                </h2>
-                <div className="p-4 bg-gray-50 rounded-md mt-2">
-                  <p className="text-sm whitespace-pre-wrap">
-                    {complaint.reason}
+                  <p className="text-xs text-gray-400">
+                    {complaint.reportedUser?.email}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {complaint.reportedUser?.role}
                   </p>
                 </div>
-              </div>
-              <div className="mt-4">
-                <h2 className="text-sm font-medium text-gray-500 flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Date Reported
-                </h2>
-                <p className="mt-2 text-sm">
-                  {new Date(complaint.dateReported).toLocaleString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
               </div>
             </div>
           </div>
 
-          <div className="h-full flex flex-col justify-between">
-            <div className="rounded-lg p-4 border border-gray-100 hover:shadow-sm transition-shadow ">
-              <h2 className="text-sm font-medium text-gray-500 flex items-center">
+          {/* Reported By & Status */}
+          <div className="flex flex-col justify-between md:col-span-1 space-y-4">
+            <div className="rounded-lg p-4 border border-gray-100 hover:shadow-sm transition-shadow">
+              <h2 className="text-sm font-medium text-gray-500 flex items-center mb-2">
                 <User className="h-4 w-4 mr-2" />
                 Reported By
               </h2>
-              <div className="flex items-center mt-2">
+              <div className="flex items-center">
                 {complaint.reportedBy?.profile_photo ? (
                   <img
                     src={complaint.reportedBy.profile_photo}
@@ -309,10 +326,16 @@ export default function ComplaintDetail() {
                   <p className="text-xs text-gray-500">
                     {`${complaint.reportedBy?.firstName || ''} ${complaint.reportedBy?.lastName || ''}`}
                   </p>
+                  <p className="text-xs text-gray-400">
+                    {complaint.reportedBy?.email}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {complaint.reportedBy?.role}
+                  </p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center mb-4">
+            <div className="flex items-center">
               <select
                 className="border border-gray-200 rounded-md px-3 py-2 mr-2 bg-white"
                 value={selectedStatus}
@@ -338,13 +361,11 @@ export default function ComplaintDetail() {
           </div>
         </div>
 
-        {/* Timeline Section*/}
+        {/* Timeline Section */}
         <div className="mt-8 border-t border-gray-100 pt-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             Complaint History
           </h2>
-
-          {/* Timeline list */}
           <div className="space-y-6 relative">
             {timelineLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -352,9 +373,8 @@ export default function ComplaintDetail() {
                 <span className="ml-2">Loading timeline...</span>
               </div>
             ) : timelineActivities.length > 0 ? (
-              timelineActivities.map((entry, index) => (
+              timelineActivities.map((entry) => (
                 <div key={entry.id} className="flex">
-                  {/* Timeline node */}
                   <div className="z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-4">
                     {entry.type === 'STATUS_CHANGE' ? (
                       <div className="bg-green-100 w-8 h-8 rounded-full flex items-center justify-center">
@@ -366,8 +386,6 @@ export default function ComplaintDetail() {
                       </div>
                     )}
                   </div>
-
-                  {/* Content */}
                   <div className="flex-grow pb-6">
                     <div className="flex items-center">
                       <span className="font-medium">{entry.performedBy}</span>
@@ -380,18 +398,14 @@ export default function ComplaintDetail() {
                         })}
                       </span>
                     </div>
-
                     {entry.type === 'STATUS_CHANGE' ? (
                       <div className="text-sm mt-1">
-                        {/* Parse the message to extract status information */}
                         {(() => {
                           const statusRegex = /from\s+(\w+)\s+to\s+(\w+)/i;
                           const match = entry.message.match(statusRegex);
-
                           if (match && match.length >= 3) {
                             const fromStatus = match[1];
                             const toStatus = match[2];
-
                             return (
                               <>
                                 Changed status from{' '}
@@ -400,7 +414,6 @@ export default function ComplaintDetail() {
                               </>
                             );
                           }
-
                           return entry.message;
                         })()}
                       </div>
@@ -417,7 +430,6 @@ export default function ComplaintDetail() {
                 No activity yet.
               </div>
             )}
-
             {/* Add Comment Form */}
             <div className="flex pt-4">
               <div className="z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-4">
