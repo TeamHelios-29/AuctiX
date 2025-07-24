@@ -1,26 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import SellerHeader from '@/components/organisms/sellerHeader';
 import AuctionCard from '../components/molecules/auctionCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Star } from 'lucide-react';
+import { assets } from '@/config/assets';
+import AxiosRequest from '@/services/axiosInspector';
+import { useToast } from '@/hooks/use-toast';
+import SellerReport from '@/components/organisms/SellerReport';
 
 export default function SellerProfile() {
   const { id } = useParams<{ id: string }>();
   const [auctions, setAuctions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sellerInfo, setSellerInfo] = useState<any>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const axiosInstance = AxiosRequest().axiosInstance;
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!id) return;
     fetch(`http://localhost:8080/api/auctions/seller/${id}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log('Auction data:', data);
         setAuctions(data);
 
         // Extract seller info from first auction if available
         if (data.length > 0 && data[0].seller) {
-          setSellerInfo(data[0].seller);
+          const seller = data[0].seller;
+          setSellerInfo(seller);
         }
 
         setLoading(false);
@@ -31,26 +39,16 @@ export default function SellerProfile() {
       });
   }, [id]);
 
-  // Helper function to get auction image URL - matching ExploreAuctions pattern
+  // Helper function to get auction image URL
   const getAuctionImageUrl = (auction: any) => {
-    console.log('Processing auction for image:', {
-      id: auction.id,
-      images: auction.images,
-      hasImages: auction.images && auction.images.length > 0,
-      firstImage: auction.images?.[0],
-    });
-
     if (auction.images && auction.images.length > 0) {
       const imageUrl = `${import.meta.env.VITE_API_URL}/auctions/getAuctionImages?file_uuid=${auction.images[0]}`;
-      console.log('Generated image URL:', imageUrl);
-      console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
       return imageUrl;
     }
-    console.log('No images found, using placeholder');
     return '/api/placeholder/400/250';
   };
 
-  // Helper function to get seller avatar URL - matching ExploreAuctions pattern
+  // Helper function to get seller avatar URL
   const getSellerAvatarUrl = (auction: any) => {
     if (
       auction.seller &&
@@ -62,20 +60,114 @@ export default function SellerProfile() {
     return '/api/placeholder/24/24';
   };
 
+  const getSellerProfileImage = () => {
+    if (sellerInfo?.profilePicture?.id) {
+      return `${import.meta.env.VITE_API_URL}/user/getUserProfilePhoto?file_uuid=${sellerInfo.profilePicture.id}`;
+    }
+    return '/defaultProfilePhoto.jpg';
+  };
+
+  // Helper function to get background photo URL
+  const getBannerPhotoUrl = () => {
+    if (sellerInfo?.seller.bannerId) {
+      return `${import.meta.env.VITE_API_URL}/user/getUserBannerPhoto?file_uuid=${sellerInfo.seller.bannerId}`;
+    }
+    return assets.default_banner_image;
+  };
+
+  const handleReportSubmit = async (
+    itemId: string,
+    reason: string,
+    complaint: string,
+  ) => {
+    try {
+      await axiosInstance.post(`/complaints`, {
+        targetType: 'USER',
+        targetId: id,
+        reason: reason,
+        description: complaint,
+      });
+      toast({
+        title: 'Report Submitted',
+        description: `Your report for this seller has been submitted.`,
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Report Failed',
+        description: 'Failed to submit report. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div>
-      <div className="min-h-screen mx-auto px-10 py-6 sm:py-8  sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-7xl">
-        {/* Seller Header */}
-        <SellerHeader
-          sellerId={id}
-          sellerName={
-            sellerInfo?.firstName && sellerInfo?.lastName
-              ? `${sellerInfo.firstName} ${sellerInfo.lastName}`
-              : 'Loading...'
-          }
-          sellerAvatar={sellerInfo?.profilePicture?.id}
-          backgroundPhoto={sellerInfo?.backgroundPhoto?.id}
-        />
+      <div className="min-h-screen mx-auto px-10 py-6 sm:py-8 sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-7xl">
+        {/* Header with banner background */}
+        <div className="relative">
+          {/* Banner background */}
+          <div
+            className="h-64 rounded-lg"
+            style={{
+              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('${getBannerPhotoUrl()}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          ></div>
+
+          {/* Profile content */}
+          <div className="bg-white rounded-lg shadow-sm -mt-20 mx-4 px-8 py-4 relative border">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              {/* Profile Image */}
+              <div className="flex-shrink-0">
+                <img
+                  src={getSellerProfileImage()}
+                  alt="Profile"
+                  className="w-20 h-20 rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/defaultProfilePhoto.jpg';
+                  }}
+                />
+              </div>
+
+              {/* Profile Info */}
+              <div className="flex-grow">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                      {sellerInfo?.firstName && sellerInfo?.lastName
+                        ? `${sellerInfo.firstName} ${sellerInfo.lastName}`
+                        : 'Loading...'}
+                    </h1>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                          sellerInfo?.verified
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {sellerInfo?.verified
+                          ? 'Verified Seller'
+                          : 'Not Verified'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="mt-4 md:mt-0"
+                onClick={() => setReportOpen(true)}
+              >
+                Report
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <div className="text-xl sm:text-4xl font-semibold mt-6 sm:mt-10">
           Auctions by seller
         </div>
@@ -103,8 +195,6 @@ export default function SellerProfile() {
               const imageUrl = getAuctionImageUrl(auction);
               const avatarUrl = getSellerAvatarUrl(auction);
 
-              console.log('Auction:', auction.id, 'Image URL:', imageUrl); // Debug log
-
               return (
                 <AuctionCard
                   key={auction.id || index}
@@ -127,6 +217,12 @@ export default function SellerProfile() {
           </div>
         )}
       </div>
+      <SellerReport
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleReportSubmit}
+        sellerId={id || ''}
+      />
     </div>
   );
 }

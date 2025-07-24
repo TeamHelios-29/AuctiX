@@ -1,19 +1,20 @@
 import { Button } from '../ui/button';
 import React, { useState } from 'react';
 import SellerReport from './SellerReport';
+import { assets } from '@/config/assets';
 
 interface SellerHeaderProps {
   sellerId?: string;
   sellerName?: string;
   sellerAvatar?: string;
-  backgroundPhoto?: string;
+  bannerPhoto?: string;
 }
 
 export default function SellerHeader({
   sellerId,
   sellerName,
   sellerAvatar,
-  backgroundPhoto,
+  bannerPhoto,
 }: SellerHeaderProps) {
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -35,36 +36,27 @@ export default function SellerHeader({
   };
 
   // Helper function to get background photo URL
-  const getBackgroundPhotoUrl = () => {
-    if (backgroundPhoto) {
-      return `${import.meta.env.VITE_API_URL}/user/getUserProfilePhoto?file_uuid=${backgroundPhoto}`;
+  const getBannerPhotoUrl = () => {
+    if (bannerPhoto) {
+      const url = `${import.meta.env.VITE_API_URL}/user/getUserBannerPhoto?file_uuid=${bannerPhoto}`;
+      console.log('Generated banner URL:', url);
+      return url;
     }
-    return '/defaultBanner.jpg';
+    return assets.default_banner_image;
   };
 
-  const backgroundUrl = getBackgroundPhotoUrl();
-
-  console.log('Background photo ID:', backgroundPhoto);
-  console.log('Background URL:', backgroundUrl);
-  console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
+  const bannerUrl = getBannerPhotoUrl();
 
   return (
     <div
       className="relative overflow-hidden rounded-lg border"
-      style={
-        backgroundUrl
-          ? {
-              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('${backgroundUrl}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              minHeight: '220px',
-            }
-          : {
-              backgroundColor: '#f3f4f6',
-              minHeight: '220px',
-            }
-      }
+      style={{
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('${bannerUrl}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '220px',
+      }}
     >
       <div className="flex flex-col sm:flex-row items-end gap-4 h-full p-6">
         <div className="flex items-end gap-4">

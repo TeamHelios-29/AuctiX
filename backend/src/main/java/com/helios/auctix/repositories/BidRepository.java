@@ -40,4 +40,7 @@ public interface BidRepository extends JpaRepository<Bid, UUID> {
 
 
     Optional<Bid> findTopByAuctionIdAndBidderIdOrderByAmountDesc(UUID id, UUID userId);
+
+    List<Bid> findByBidderId(UUID bidderId);
+
 }

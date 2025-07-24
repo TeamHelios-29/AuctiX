@@ -49,7 +49,7 @@ export const fetchCurrentUser = createAsyncThunk(
           ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.profilePicture.id}`
           : assets.default_profile_image,
         banner_photo_link: response.data.seller?.bannerId
-          ? `${baseURL}/user/getUserProfilePhoto?file_uuid=${response.data.seller.bannerId}`
+          ? `${baseURL}/user/getUserBannerPhoto?file_uuid=${response.data.seller.bannerId}`
           : assets.default_banner_image,
         fcmTokens: response.data.fcmTokens || [],
       };
