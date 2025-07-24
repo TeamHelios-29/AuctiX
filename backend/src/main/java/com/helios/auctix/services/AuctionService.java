@@ -7,6 +7,8 @@ import com.helios.auctix.dtos.*;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.AuctionImagePathsRepository;
+
+import java.util.Arrays;
 import java.util.logging.Logger;
 import com.helios.auctix.repositories.AuctionRepository;
 
@@ -160,30 +162,41 @@ public class AuctionService {
     }
     }
 
-    public Page<Auction> getActiveAuctionsPaged(String category, int page, int limit) {
+    public Page<Auction> getActiveAuctionsPaged(String category, String tsQuery, int page, int limit) {
         Instant now = Instant.now();
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("startTime").descending());
-        return auctionRepository.findActiveAuctionsPaged(now, category, pageable);
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findActiveAuctionsPaged(now, category, tsQuery, pageable);
     }
 
-    public Page<Auction> getUpcomingAuctionsPaged(String category, int page, int limit) {
+
+
+    public Page<Auction> getUpcomingAuctionsPaged(String category, String tsQuery, int page, int limit) {
         Instant now = Instant.now();
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("startTime").ascending());
-        return auctionRepository.findUpcomingAuctionsPaged(now, category, pageable);
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findUpcomingAuctionsPaged(now, category, tsQuery, pageable);
     }
 
-    public Page<Auction> getExpiredAuctionsPaged(String category, int page, int limit) {
+
+    public Page<Auction> getExpiredAuctionsPaged(String category, String tsQuery, int page, int limit) {
         Instant now = Instant.now();
         Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("endTime").descending());
-        return auctionRepository.findExpiredAuctionsPaged(now, threeDaysAgo, category, pageable);
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findExpiredAuctionsPaged(now, threeDaysAgo, category, tsQuery, pageable);
     }
 
-    public Page<Auction> getAllAuctionsPaged(String category, int page, int limit) {
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("startTime").descending());
-        return auctionRepository.findAllByCategory(category, pageable);
+
+    public Page<Auction> getAllAuctionsPaged(String category, String tsQuery, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findAllPaged(category, tsQuery, pageable); // ✅ Match new repo method
     }
 
+
+    public String buildTsQuery(String searchQuery) {
+        if (searchQuery == null || searchQuery.trim().isEmpty()) return null;
+        return Arrays.stream(searchQuery.trim().split("\\s+"))
+                .map(word -> word + ":*")
+                .collect(Collectors.joining(" & "));
+    }
 
 
 

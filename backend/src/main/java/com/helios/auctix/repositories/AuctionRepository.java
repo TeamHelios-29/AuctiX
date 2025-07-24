@@ -55,16 +55,120 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
     @Query("SELECT a FROM Auction a WHERE a.seller.id = :sellerId ORDER BY a.createdAt DESC")
     List<Auction> findBySellerId(@Param("sellerId") UUID sellerId);
 
-    @Query("SELECT a FROM Auction a WHERE a.startTime <= :now AND a.endTime > :now AND a.isPublic = true AND (:category IS NULL OR a.category = :category)")
-    Page<Auction> findActiveAuctionsPaged(@Param("now") Instant now, @Param("category") String category, Pageable pageable);
+    @Query(value = """
+  SELECT * FROM auctions
+  WHERE start_time <= :now
+    AND end_time > :now
+    AND is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  ORDER BY 
+    CASE WHEN :tsQuery IS NULL THEN start_time END DESC,
+    CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+  """,
+            countQuery = """
+  SELECT count(*) FROM auctions
+  WHERE start_time <= :now
+    AND end_time > :now
+    AND is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  """,
+            nativeQuery = true)
+    Page<Auction> findActiveAuctionsPaged(
+            @Param("now") Instant now,
+            @Param("category") String category,
+            @Param("tsQuery") String tsQuery,
+            Pageable pageable
+    );
 
-    @Query("SELECT a FROM Auction a WHERE a.startTime > :now AND a.endTime > :now AND a.isPublic = true AND (:category IS NULL OR a.category = :category)")
-    Page<Auction> findUpcomingAuctionsPaged(@Param("now") Instant now, @Param("category") String category, Pageable pageable);
 
-    @Query("SELECT a FROM Auction a WHERE a.endTime < :now AND a.endTime >= :threeDaysAgo AND a.isPublic = true AND (:category IS NULL OR a.category = :category)")
-    Page<Auction> findExpiredAuctionsPaged(@Param("now") Instant now, @Param("threeDaysAgo") Instant threeDaysAgo, @Param("category") String category, Pageable pageable);
+    @Query(value = """
+  SELECT * FROM auctions
+  WHERE start_time > :now
+    AND end_time > :now
+    AND is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  ORDER BY 
+    CASE WHEN :tsQuery IS NULL THEN start_time END ASC,
+    CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+  """,
+            countQuery = """
+  SELECT count(*) FROM auctions
+  WHERE start_time > :now
+    AND end_time > :now
+    AND is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  """,
+            nativeQuery = true)
+    Page<Auction> findUpcomingAuctionsPaged(
+            @Param("now") Instant now,
+            @Param("category") String category,
+            @Param("tsQuery") String tsQuery,
+            Pageable pageable
+    );
 
-    @Query("SELECT a FROM Auction a WHERE a.isPublic = true AND (:category IS NULL OR a.category = :category)")
-    Page<Auction> findAllByCategory(@Param("category") String category, Pageable pageable);
+
+    @Query(value = """
+  SELECT * FROM auctions
+  WHERE end_time < :now
+    AND end_time >= :threeDaysAgo
+    AND is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  ORDER BY 
+    CASE WHEN :tsQuery IS NULL THEN end_time END DESC,
+    CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+  """,
+            countQuery = """
+  SELECT count(*) FROM auctions
+  WHERE end_time < :now
+    AND end_time >= :threeDaysAgo
+    AND is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  """,
+            nativeQuery = true)
+    Page<Auction> findExpiredAuctionsPaged(
+            @Param("now") Instant now,
+            @Param("threeDaysAgo") Instant threeDaysAgo,
+            @Param("category") String category,
+            @Param("tsQuery") String tsQuery,
+            Pageable pageable
+    );
+
+
+    @Query(value = """
+  SELECT * FROM auctions
+  WHERE is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  ORDER BY 
+    CASE WHEN :tsQuery IS NULL THEN start_time END DESC,
+    CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+  """,
+            countQuery = """
+  SELECT count(*) FROM auctions
+  WHERE is_public = true
+    AND is_deleted = false
+    AND (:category IS NULL OR LOWER(category) = LOWER(:category))
+    AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+  """,
+            nativeQuery = true)
+    Page<Auction> findAllPaged(
+            @Param("category") String category,
+            @Param("tsQuery") String tsQuery,
+            Pageable pageable
+    );
+
 
 }

@@ -382,9 +382,10 @@ public class AuctionController {
     // Add this method to your existing AuctionController class
 
     @GetMapping("/all")
-    public ResponseEntity<Map<String, Object>> getAllAuctions(
+    public ResponseEntity<?> getAllAuctions(
             @RequestParam(value = "filter", defaultValue = "active") String filter,
             @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "searchQuery", required = false) String searchQuery,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "12") int limit)
     {
@@ -392,28 +393,31 @@ public class AuctionController {
         System.out.println("Received filter: " + filter + ", category: " + category);
 
         try {
+            String tsQuery = auctionService.buildTsQuery(searchQuery);
+
             Page<Auction> pagedAuctions;
+            List<AuctionDetailsDTO> auctionDTOs;
 
             switch (filter.toLowerCase()) {
                 case "active":
-                    pagedAuctions = auctionService.getActiveAuctionsPaged(category, page, limit);
+                    pagedAuctions = auctionService.getActiveAuctionsPaged(category, tsQuery, page, limit);
                     break;
                 case "expired":
-                    pagedAuctions = auctionService.getExpiredAuctionsPaged(category, page, limit);
+                    pagedAuctions = auctionService.getExpiredAuctionsPaged(category, tsQuery, page, limit);
                     break;
-                case "upcoming":  // Add new case for upcoming
-                    pagedAuctions = auctionService.getUpcomingAuctionsPaged(category, page, limit);
+                case "upcoming":
+                    pagedAuctions = auctionService.getUpcomingAuctionsPaged(category, tsQuery, page, limit);
                     break;
                 default:
-                    pagedAuctions = auctionService.getAllAuctionsPaged(category, page, limit);
+                    pagedAuctions = auctionService.getAllAuctionsPaged(category, tsQuery, page, limit);
                     break;
             }
+
 
             // DEBUG LOG
 //            System.out.println("Returning " + auctions.size() + " auctions");
 
-            List<AuctionDetailsDTO> auctionDTOs = pagedAuctions.getContent()
-                    .stream()
+            auctionDTOs = pagedAuctions.getContent().stream()
                     .map(auctionService::convertToDTO)
                     .collect(Collectors.toList());
 
