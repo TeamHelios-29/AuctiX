@@ -383,7 +383,8 @@ public class AuctionController {
     @GetMapping("/all")
     public ResponseEntity<List<AuctionDetailsDTO>> getAllAuctions(
             @RequestParam(value = "filter", defaultValue = "active") String filter,
-            @RequestParam(value = "category", required = false) String category)
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "searchQuery", required = false) String searchQuery)
     {
         // DEBUG LOG
         System.out.println("Received filter: " + filter + ", category: " + category);
@@ -393,16 +394,16 @@ public class AuctionController {
 
             switch (filter.toLowerCase()) {
                 case "active":
-                    auctions = auctionService.getActiveAuctionsDTO(category);
+                    auctions = auctionService.getActiveAuctionsDTO(category, searchQuery);
                     break;
                 case "expired":
-                    auctions = auctionService.getExpiredAuctionsDTO(category);
+                    auctions = auctionService.getExpiredAuctionsDTO(category, searchQuery);
                     break;
                 case "upcoming":  // Add new case for upcoming
-                    auctions = auctionService.getUpcomingAuctionsDTO(category);
+                    auctions = auctionService.getUpcomingAuctionsDTO(category, searchQuery);
                     break;
                 default:
-                    auctions = auctionService.getAllAuctionsDTO(category);
+                    auctions = auctionService.getAllAuctionsDTO(category, searchQuery);
                     break;
             }
 

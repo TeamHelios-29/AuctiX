@@ -30,24 +30,76 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
         return findByStartTimeBeforeAndEndTimeAfterAndIsPublicTrue(now, now);
     }
     // OPTION 1: Active auctions = Currently running (started and not ended)
-    @Query("SELECT a FROM Auction a WHERE a.startTime <= :now AND a.endTime > :now AND a.isPublic = true ORDER BY a.startTime DESC")
-    List<Auction> findActiveAuctions(@Param("now") Instant now);
+    @Query(value = """
+    SELECT * FROM auctions
+    WHERE start_time <= :now
+      AND end_time > :now
+      AND is_public = true
+      AND is_deleted = false
+      AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+    ORDER BY 
+      CASE WHEN :tsQuery IS NULL THEN start_time END DESC,
+      CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+    LIMIT 50
+    """, nativeQuery = true)
+    List<Auction> findActiveAuctions(@Param("now") Instant now, @Param("tsQuery") String tsQuery);
 
     // OPTION 2: Available auctions = Not yet ended (includes future auctions)
-    @Query("SELECT a FROM Auction a WHERE a.endTime > :now AND a.isPublic = true ORDER BY a.startTime DESC")
-    List<Auction> findAvailableAuctions(@Param("now") Instant now);
+    @Query(value = """
+    SELECT * FROM auctions
+    WHERE end_time > :now
+      AND is_public = true
+      AND is_deleted = false
+      AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+    ORDER BY 
+      CASE WHEN :tsQuery IS NULL THEN start_time END DESC,
+      CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+    LIMIT 50
+    """, nativeQuery = true)
+    List<Auction> findAvailableAuctions(@Param("now") Instant now, @Param("tsQuery") String tsQuery);
 
     // OPTION 3: Upcoming auctions = Future auctions that haven't started
-    @Query("SELECT a FROM Auction a WHERE a.startTime > :now AND a.endTime > :now AND a.isPublic = true ORDER BY a.startTime ASC")
-    List<Auction> findUpcomingAuctions(@Param("now") Instant now);
+    @Query(value = """
+    SELECT * FROM auctions
+    WHERE start_time > :now
+      AND end_time > :now
+      AND is_public = true
+      AND is_deleted = false
+      AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+    ORDER BY 
+      CASE WHEN :tsQuery IS NULL THEN start_time END ASC,
+      CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+    LIMIT 50
+    """, nativeQuery = true)
+    List<Auction> findUpcomingAuctions(@Param("now") Instant now, @Param("tsQuery") String tsQuery);
 
     // Find expired auctions within the last 3 days
-    @Query("SELECT a FROM Auction a WHERE a.endTime < :now AND a.endTime >= :threeDaysAgo AND a.isPublic = true ORDER BY a.endTime DESC")
-    List<Auction> findExpiredAuctions(@Param("now") Instant now, @Param("threeDaysAgo") Instant threeDaysAgo);
+    @Query(value = """
+    SELECT * FROM auctions
+    WHERE end_time < :now
+      AND end_time >= :threeDaysAgo
+      AND is_public = true
+      AND is_deleted = false
+      AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+    ORDER BY 
+      CASE WHEN :tsQuery IS NULL THEN end_time END DESC,
+      CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+    LIMIT 50
+    """, nativeQuery = true)
+    List<Auction> findExpiredAuctions(@Param("now") Instant now, @Param("threeDaysAgo") Instant threeDaysAgo, @Param("tsQuery") String tsQuery);
 
     // Find all public auctions (useful for "All Auctions" filter)
-    @Query("SELECT a FROM Auction a WHERE a.isPublic = true ORDER BY a.createdAt DESC")
-    List<Auction> findAllPublicAuctions();
+    @Query(value = """
+    SELECT * FROM auctions
+    WHERE is_public = true
+      AND is_deleted = false
+      AND (:tsQuery IS NULL OR search_vector @@ to_tsquery('english', :tsQuery))
+    ORDER BY 
+      CASE WHEN :tsQuery IS NULL THEN created_at END DESC,
+      CASE WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) END DESC
+    LIMIT 50
+    """, nativeQuery = true)
+    List<Auction> findAllPublicAuctions(@Param("tsQuery") String tsQuery);
 
     // Find auctions by seller
     @Query("SELECT a FROM Auction a WHERE a.seller.id = :sellerId ORDER BY a.createdAt DESC")
@@ -68,9 +120,16 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 
     @Query(value = """
     SELECT * FROM auctions
-    WHERE search_vector @@ to_tsquery('english', :tsQuery)
-      AND is_deleted = false
-    ORDER BY ts_rank(search_vector, to_tsquery('english', :tsQuery)) DESC
+    WHERE is_deleted = false
+      AND (
+        :tsQuery IS NULL 
+        OR search_vector @@ to_tsquery('english', :tsQuery)
+      )
+    ORDER BY 
+      CASE 
+        WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) 
+        ELSE 0 
+      END DESC
     LIMIT 50
     """, nativeQuery = true)
     List<Auction> searchByFullText(@Param("tsQuery") String tsQuery);
