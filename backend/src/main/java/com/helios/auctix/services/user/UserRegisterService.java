@@ -3,20 +3,17 @@ package com.helios.auctix.services.user;
 
 import com.helios.auctix.config.SupperAdminConfig;
 import com.helios.auctix.domain.user.*;
+import com.helios.auctix.domain.user.UserRequiredActionEnum;
 import com.helios.auctix.repositories.*;
 import com.helios.auctix.services.JwtService;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.source.InvalidConfigurationPropertyValueException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
-import java.util.logging.Logger;
 
 @Service
 @AllArgsConstructor

@@ -28,6 +28,7 @@ import WatchlistPage from '@/pages/WatchlistPage';
 import SellerVerificationSubmitPage from '@/pages/SellerVerificationSubmitPage';
 import SecuritySettingsPage from '@/pages/SecuritySettingsPage';
 import PasswordResetPage from '@/pages/PasswordResetPage';
+import { NoticePage } from '@/pages/NoticePage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -50,6 +51,8 @@ export default function AppRouter() {
           <Route path="/explore-auctions" element={<AuctionsPage />} />
 
           <Route path="/password-reset" element={<PasswordResetPage />} />
+
+          <Route path="/notice" element={<NoticePage />} />
         </Route>
 
         {/* Routes using DashboardLayout */}

@@ -1,10 +1,11 @@
 package com.helios.auctix.services.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.json.Json;
 import com.helios.auctix.domain.notification.Notification;
 import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.*;
+import com.helios.auctix.domain.user.UserRequiredAction;
+import com.helios.auctix.domain.user.UserRequiredActionEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
@@ -247,6 +248,10 @@ public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO pro
     }
 
     public void registerUserRequiredAction(User user, UserRequiredActionEnum action) {
+        registerUserRequiredAction(user, action, null);
+    }
+
+    public void registerUserRequiredAction(User user, UserRequiredActionEnum action ,UserRequiredActionContext context) {
         if (action == null) {
             throw new InvalidParameterException("Action cannot be null");
         }
@@ -261,7 +266,7 @@ public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO pro
                 .user(user)
                 .actionType(action)
                 .isResolved(false)
-                .context(null)
+                .context(context!=null?context.toMap():null)
                 .build();
 
         userRequiredActionRepository.save(requiredAction);

@@ -1,5 +1,3 @@
-'use client';
-
 import type React from 'react';
 
 import { useState } from 'react';
@@ -19,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import AxiosRequest from '@/services/axiosInspector';
 import { AxiosInstance } from 'axios';
 import { getServerErrorMessage } from '@/lib/errorMsg';
+import { useNavigate } from 'react-router-dom';
 
 export const emailSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -61,13 +60,7 @@ export const formatCodeForDisplay = (code: string): string => {
   return cleaned;
 };
 
-type Step =
-  | 'email'
-  | 'emailSent'
-  | 'verification'
-  | 'createPassword'
-  | 'success'
-  | 'error';
+type Step = 'email' | 'verification' | 'createPassword' | 'success' | 'error';
 
 export function PasswordResetForm() {
   const [currentStep, setCurrentStep] = useState<Step>('email');
@@ -86,14 +79,14 @@ export function PasswordResetForm() {
   }>({});
   const { toast } = useToast();
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
+  const navigate = useNavigate();
 
   const steps = ['Email', 'Verify', 'Password'];
 
-  const getCurrentStepNumber = (): number => {
+  function getCurrentStepNumber(): number {
     switch (currentStep) {
       case 'email':
         return 1;
-      case 'emailSent':
       case 'verification':
         return 2;
       case 'createPassword':
@@ -101,7 +94,7 @@ export function PasswordResetForm() {
       default:
         return 1;
     }
-  };
+  }
 
   const validateEmail = (): boolean => {
     try {
@@ -157,7 +150,7 @@ export function PasswordResetForm() {
     setIsLoading(true);
     requestPasswordResetCode(email, axiosInstance)
       .then(() => {
-        setCurrentStep('emailSent');
+        setCurrentStep('verification');
         toast({
           variant: 'default',
           title: 'Verification Code Sent',
@@ -221,8 +214,9 @@ export function PasswordResetForm() {
         setCurrentStep('success');
         toast({
           variant: 'default',
-          title: 'Code Verified',
-          description: 'You can now create a new password.',
+          title: 'Password Reset Successful',
+          description:
+            'Your password has been reset successfully. You can now log in with your new password.',
         });
       })
       .catch((error) => {
@@ -240,10 +234,6 @@ export function PasswordResetForm() {
       .finally(() => {
         setIsLoading(false);
       });
-  };
-
-  const handleProceedToVerification = () => {
-    setCurrentStep('verification');
   };
 
   const handleTryAgain = () => {
@@ -323,25 +313,6 @@ export function PasswordResetForm() {
           </motion.div>
         );
 
-      case 'emailSent':
-        return (
-          <motion.div
-            key="emailSent"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <StatusMessage
-              status="email"
-              title="Check Your Email"
-              message={`We've sent a 6-digit verification code to ${email}. Please check your inbox and enter the code below.`}
-              buttonText="Enter Verification Code"
-              onButtonClick={handleProceedToVerification}
-            />
-          </motion.div>
-        );
-
       case 'verification':
         return (
           <motion.div
@@ -388,7 +359,7 @@ export function PasswordResetForm() {
                 </ActionButton>
 
                 <ActionButton
-                  onClick={() => setCurrentStep('emailSent')}
+                  onClick={() => setCurrentStep('email')}
                   variant="ghost"
                   className="text-muted-foreground hover:text-foreground"
                   disabled={isLoading}
@@ -486,7 +457,7 @@ export function PasswordResetForm() {
               title="Password Reset Complete!"
               message="Your password has been successfully reset. You can now sign in with your new password."
               buttonText="Sign In"
-              onButtonClick={() => console.log('Navigate to sign in')}
+              onButtonClick={() => navigate('/login')}
             />
           </motion.div>
         );
@@ -539,7 +510,7 @@ export function PasswordResetForm() {
         className="w-full max-w-md"
       >
         {/* Progress Bar - only show for main steps */}
-        {!['emailSent', 'success', 'error'].includes(currentStep) && (
+        {!['success', 'error'].includes(currentStep) && (
           <ProgressBar
             currentStep={getCurrentStepNumber()}
             totalSteps={3}
