@@ -30,6 +30,7 @@ export default function AuctionSearchBar() {
   const [results, setResults] = useState<AuctionResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,21 +48,44 @@ export default function AuctionSearchBar() {
           });
       } else {
         setShowDropdown(false);
+        setResults([]);
       }
     }, 300);
 
     return () => clearTimeout(delayDebounce);
   }, [query]);
 
+  // Hide dropdown when clicking outside input or dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSelect = (auctionId: string) => {
     setShowDropdown(false);
-    setQuery('');
     navigate(`/auction-details/${auctionId}`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/explore?q=${encodeURIComponent(query)}`);
+    setShowDropdown(false);
+    navigate(`/explore-auctions/?q=${encodeURIComponent(query)}`);
+  };
+
+  const clearQuery = () => {
+    setQuery('');
+    setResults([]);
+    setShowDropdown(false);
+    if (inputRef.current) inputRef.current.focus();
   };
 
   const highlightMatch = (text?: string) => {
@@ -79,17 +103,28 @@ export default function AuctionSearchBar() {
   };
 
   return (
-    <div className="relative w-full max-w-sm">
-      <form onSubmit={handleSubmit}>
+    <div ref={containerRef} className="relative w-full max-w-sm">
+      <form onSubmit={handleSubmit} className="relative">
         <input
           type="text"
-          className="w-full px-4 py-2 border rounded-lg"
+          className="w-full px-4 py-2 border rounded-lg pr-8"
           placeholder="Search auctions..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query && setShowDropdown(true)}
           ref={inputRef}
+          autoComplete="off"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={clearQuery}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
+            aria-label="Clear search"
+          >
+            &#10005;
+          </button>
+        )}
       </form>
 
       {showDropdown && results.length > 0 && (
@@ -112,7 +147,7 @@ export default function AuctionSearchBar() {
                 </div>
 
                 <div className="text-xs text-gray-500">
-                  Seller:
+                  Seller:{' '}
                   {highlightMatch(
                     item.seller.firstName && item.seller.lastName
                       ? `${item.seller.firstName} ${item.seller.lastName}`
