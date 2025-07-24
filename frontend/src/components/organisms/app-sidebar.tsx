@@ -34,11 +34,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         { title: 'Overview', url: '/dashboard', isActive: true },
         {
           title: 'Auctions',
-          items: [
-            { title: 'Ongoing', url: '/auctions/ongoing' },
-            { title: 'Upcoming', url: '/auctions/upcoming' },
-            { title: 'Closed', url: '/auctions/closed' },
-          ],
+          url: '/manage-auctions',
+          roles: ['SELLER'],
+        },
+        {
+          title: 'My Bids',
+          url: '/my-bids',
+          roles: ['BIDDER'],
         },
         {
           title: 'Watch List',

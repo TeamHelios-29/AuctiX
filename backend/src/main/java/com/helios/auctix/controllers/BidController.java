@@ -3,13 +3,16 @@ package com.helios.auctix.controllers;
 import com.helios.auctix.domain.auction.Bid;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.BidDTO;
+import com.helios.auctix.dtos.MyBidAuctionDTO;
 import com.helios.auctix.dtos.PlaceBidRequest;
+import com.helios.auctix.services.AuctionService;
 import com.helios.auctix.services.BidService;
 import com.helios.auctix.services.user.UserDetailsService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +28,7 @@ import java.util.logging.Logger;
 public class BidController {
 
     private final BidService bidService;
+    private final AuctionService auctionService;
     private final Logger log = Logger.getLogger(BidController.class.getName());
     private final UserDetailsService userDetailsService;
 
@@ -55,6 +59,28 @@ public class BidController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+
+    @GetMapping("/my-auctions")
+    public ResponseEntity<List<MyBidAuctionDTO>> getMyBidAuctions(
+            @RequestParam(value = "status", defaultValue = "all") String status) {
+        try {
+            // Get authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User user = userDetailsService.getAuthenticatedUser(authentication);
+
+            // Get auctions based on status
+            List<MyBidAuctionDTO> myAuctions = bidService.getMyBidAuctions(user.getId(), status);
+
+            return ResponseEntity.ok(myAuctions);
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            log.warning("Error fetching user's bid auctions: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 
     //to place new bids
     @PostMapping("/place")

@@ -333,6 +333,38 @@ public class UserController {
                 .body(binaryFile.toBytes());
     }
 
+    @GetMapping("/getUserBannerPhoto")
+    public ResponseEntity<?> getUserBannerPhoto(@RequestParam("file_uuid") UUID file_uuid) throws AuthenticationException {
+        log.info("banner file get request: " + file_uuid);
+
+        // Authenticate user
+        User currentUser = null;
+        FileUploadResponse res = null;
+        if (!fileUploadService.isFilePublic(file_uuid)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+            log.info("getting banner file by user " + currentUser.getEmail());
+
+            // Get file upload data
+            res = fileUploadService.getFile(file_uuid, currentUser.getEmail());
+        } else {
+            res = fileUploadService.getFile(file_uuid);
+        }
+
+        if (!res.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+        }
+
+        BinaryData binaryFile = res.getBinaryData();
+        String fileName = res.getUpload().getFileName();
+        String contentType = res.getUpload().getFileType().getContentType();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(binaryFile.toBytes());
+    }
+
     @DeleteMapping("/deleteUserProfilePhoto")
     public ResponseEntity<String> deleteUserProfilePhoto(@RequestParam("username") String username) throws AuthenticationException {
 

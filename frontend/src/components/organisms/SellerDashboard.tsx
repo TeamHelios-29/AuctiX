@@ -190,54 +190,100 @@ export default function SellerDashboard() {
 
   return (
     <div className="bg-white">
-      <div className="p-6 max-w-6xl mx-auto">
-        <header className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-semibold">Overview</h1>
-          </div>
-          <div></div>
-        </header>
-        <div className="bg-gradient-to-r from-[#FFF0B7] to-transparent p-6 rounded-lg mb-8">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              {userData.profile_photo ? (
-                <img
-                  src={userData.profile_photo}
-                  alt="Profile"
-                  className="rounded-md w-20 h-20 object-cover"
-                />
-              ) : (
-                <svg
-                  className="rounded-md w-20 h-20 bg-white text-gray-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
+      <section className="relative w-full mb-5">
+        {/* Banner image without padding */}
+        <div className="relative h-64 w-full">
+          <img
+            src={userData.banner_photo}
+            alt="cover-image"
+            className="w-full h-full object-cover"
+          />
+          {/* Gradient overlay for better text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+
+          {/* Profile content positioned at bottom of banner */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+            <div className="w-full max-w-7xl mx-auto">
+              <div className="flex items-end justify-between">
+                <div className="flex items-end">
+                  <img
+                    src={userData.profile_photo}
+                    alt="user-avatar-image"
+                    className="rounded-md w-20 h-20 object-cover shadow-lg shadow-white/10 border-2 border-white/20"
+                  />
+                  <div className="flex flex-col items-start ml-4 md:ml-6 mb-2">
+                    <div className="text-white/80 font-medium leading-none text-sm">
+                      Hello,
+                    </div>
+                    <h3 className="font-manrope font-bold text-2xl md:text-4xl text-white">
+                      {userData.username || 'Guest'}
+                    </h3>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/settings/profile')}
                 >
-                  <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.866 0-7 3.134-7 7h14c0-3.866-3.134-7-7-7z" />
-                </svg>
-              )}
-            </div>
-            <div>
-              <div className="text-gray-600 font-medium leading-none">
-                Hello,
-              </div>
-              <div className="flex items-center">
-                <h2 className="text-4xl leading-none font-bold">
-                  {userData?.username || 'Guest'}
-                </h2>
-              </div>
-              <div className="flex items-center mt-1">
-                <span className="text-sm font-semibold text-white bg-yellow-600 rounded-full px-2">
-                  {userData?.role === 'BIDDER'
-                    ? 'Bidder'
-                    : userData?.role === 'SELLER'
-                      ? 'Seller'
-                      : ''}
-                </span>
+                  Go to Settings
+                </Button>
               </div>
             </div>
           </div>
         </div>
+      </section>
+      <div className="max-w-7xl mx-auto px-6 md:px-8 py-6">
+        {/* Split screen: Wallet Card (left) and placeholder (right) */}
+        <div className="flex gap-6 mb-8">
+          {/* Wallet Card (left) */}
+          {/* Wallet Card (left) */}
+          <div className="w-full md:w-2/5">
+            <Card className="bg-gradient-to-br from-gray-50 to-zinc-300 text-gray-800 p-6 rounded-lg h-full shadow-sm border-none">
+              <div className="flex justify-between items-start mb-4">
+                <div className="text-gray-600 text-sm font-medium">Wallet</div>
+                <div className="text-gray-800 text-lg ">
+                  Aucti<span className="text-[#eaac26]">X</span>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <div className="text-gray-500 text-xs mb-1">
+                  Available Balance
+                </div>
+                <div className="text-2xl font-bold tracking-wider text-gray-900">
+                  {loading
+                    ? 'Loading...'
+                    : walletInfo?.amount !== undefined
+                      ? `LKR ${walletInfo.amount.toLocaleString()}`
+                      : 'LKR 0'}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-gray-500 text-xs">Frozen</div>
+                  <div className="text-sm font-semibold text-orange-600">
+                    {walletInfo?.freezeAmount !== undefined
+                      ? `LKR ${walletInfo.freezeAmount.toLocaleString()}`
+                      : 'LKR 0'}
+                  </div>
+                </div>
+                <div>
+                  <Button
+                    variant="secondary"
+                    className="text-xs px-3 py-1 text-gray-700 hover:text-gray-900"
+                    onClick={() => navigate('/wallet')}
+                  >
+                    Go to Wallet
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+          {/* Placeholder for right side */}
+          <div className="hidden md:block w-3/5 bg-gray-100 rounded-lg"></div>
+        </div>
+
         <div className="p-6 border rounded-lg mb-8">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -254,11 +300,11 @@ export default function SellerDashboard() {
 
           {/* Seller Stats Cards */}
           <div className="grid grid-cols-5 gap-6 mb-8">
-            <Card className="p-4">
+            <Card className="p-4 bg-gray-100 border-none">
               <div className="text-4xl font-bold">
                 {stats?.totalAuctions || 0}
               </div>
-              <div className="text-sm text-gray-500">Total</div>
+              <div className="text-sm font-bold text-gray-500">Total</div>
             </Card>
             <Card className="p-4 border-yellow-300 shadow-lg shadow-yellow-100">
               <div className="text-4xl font-bold">
@@ -437,51 +483,6 @@ export default function SellerDashboard() {
             >
               View All
             </Button>
-          </div>
-        </div>
-
-        <div className="p-6 border rounded-lg mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Wallet</h2>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-gray-500 text-sm mb-1">
-                    Available Balance
-                  </div>
-                  <div className="text-3xl font-bold text-green-700">
-                    {loading
-                      ? 'Loading...'
-                      : walletInfo?.amount !== undefined
-                        ? `LKR ${walletInfo.amount.toLocaleString()}`
-                        : stats?.walletBalance !== undefined
-                          ? `LKR ${stats.walletBalance.toLocaleString()}`
-                          : 'LKR 0'}
-                  </div>
-                </div>
-                {walletInfo?.freezeAmount !== undefined && (
-                  <div>
-                    <div className="text-gray-500 text-sm mb-1">
-                      Frozen Amount
-                    </div>
-                    <div className="text-2xl font-bold text-orange-600">
-                      LKR {walletInfo.freezeAmount.toLocaleString()}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {walletInfo?.updatedAt && (
-                <div className="text-xs text-gray-400 mt-2">
-                  Last Updated:{' '}
-                  {new Date(walletInfo.updatedAt).toLocaleString()}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate('/wallet')}>
-                Go to Wallet
-              </Button>
-            </div>
           </div>
         </div>
       </div>
