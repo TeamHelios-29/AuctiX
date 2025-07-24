@@ -16,6 +16,10 @@ import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -156,63 +160,98 @@ public class AuctionService {
     }
     }
 
+    public Page<Auction> getActiveAuctionsPaged(String category, int page, int limit) {
+        Instant now = Instant.now();
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("startTime").descending());
+        return auctionRepository.findActiveAuctionsPaged(now, category, pageable);
+    }
+
+    public Page<Auction> getUpcomingAuctionsPaged(String category, int page, int limit) {
+        Instant now = Instant.now();
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("startTime").ascending());
+        return auctionRepository.findUpcomingAuctionsPaged(now, category, pageable);
+    }
+
+    public Page<Auction> getExpiredAuctionsPaged(String category, int page, int limit) {
+        Instant now = Instant.now();
+        Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("endTime").descending());
+        return auctionRepository.findExpiredAuctionsPaged(now, threeDaysAgo, category, pageable);
+    }
+
+    public Page<Auction> getAllAuctionsPaged(String category, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("startTime").descending());
+        return auctionRepository.findAllByCategory(category, pageable);
+    }
+
+
+
+
+
+
+
+
+
+
     public List<Auction> getAllAuctions() {
         return auctionRepository.findAllPublicAuctions(); // Use the new method
     }
 
+
+
     // Get currently running auctions (started and not ended)
-    public List<Auction> getActiveAuctions() {
-        Instant now = Instant.now();
-        return auctionRepository.findActiveAuctions(now);
-    }
+//    public List<Auction> getActiveAuctions() {
+//        Instant now = Instant.now();
+//        return auctionRepository.findActiveAuctions(now);
+//    }
+//
+//    // Get available auctions (not yet ended - includes future auctions)
+//    public List<Auction> getAvailableAuctions() {
+//        Instant now = Instant.now();
+//        return auctionRepository.findAvailableAuctions(now);
+//    }
+//
+//    // Get upcoming auctions (future auctions)
+//    public List<Auction> getUpcomingAuctions() {
+//        Instant now = Instant.now();
+//        return auctionRepository.findUpcomingAuctions(now);
+//    }
+//
+//    // Get expired auctions from the last 3 days
+//    public List<Auction> getExpiredAuctions() {
+//        Instant now = Instant.now();
+//        Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
+//        return auctionRepository.findExpiredAuctions(now, threeDaysAgo);
+//    }
 
-    // Get available auctions (not yet ended - includes future auctions)
-    public List<Auction> getAvailableAuctions() {
-        Instant now = Instant.now();
-        return auctionRepository.findAvailableAuctions(now);
-    }
 
-    // Get upcoming auctions (future auctions)
-    public List<Auction> getUpcomingAuctions() {
-        Instant now = Instant.now();
-        return auctionRepository.findUpcomingAuctions(now);
-    }
-
-    // Get expired auctions from the last 3 days
-    public List<Auction> getExpiredAuctions() {
-        Instant now = Instant.now();
-        Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
-        return auctionRepository.findExpiredAuctions(now, threeDaysAgo);
-    }
-
-
-    public List<AuctionDetailsDTO> getActiveAuctionsDTO(String category) {
-        return getActiveAuctions().stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO(String category) {
-        return getUpcomingAuctions().stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<AuctionDetailsDTO> getExpiredAuctionsDTO(String category) {
-        return getExpiredAuctions().stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<AuctionDetailsDTO> getAllAuctionsDTO(String category) {
-        return getAllAuctions().stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
+//    public List<AuctionDetailsDTO> getActiveAuctionsDTO(String category) {
+//        return getActiveAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO(String category) {
+//        return getUpcomingAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public List<AuctionDetailsDTO> getExpiredAuctionsDTO(String category) {
+//        return getExpiredAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public List<AuctionDetailsDTO> getAllAuctionsDTO(String category) {
+//        return getAllAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
 
     // Helper method to convert Auction entity to AuctionDetailsDTO (package private so other services can use)
     public AuctionDetailsDTO convertToDTO(Auction auction) {
