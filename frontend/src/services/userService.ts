@@ -8,7 +8,7 @@ export interface IProfileUpdateData {
   firstName: string;
   lastName: string;
   address: {
-    number: string;
+    addressNumber: string;
     addressLine1: string;
     addressLine2: string;
     country: string;
