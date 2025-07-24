@@ -7,6 +7,8 @@ import com.helios.auctix.dtos.*;
 import com.helios.auctix.mappers.impl.SellerMapperImpl;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.AuctionImagePathsRepository;
+
+import java.util.Arrays;
 import java.util.logging.Logger;
 import com.helios.auctix.repositories.AuctionRepository;
 
@@ -156,59 +158,65 @@ public class AuctionService {
     }
     }
 
-    public List<Auction> getAllAuctions() {
-        return auctionRepository.findAllPublicAuctions(); // Use the new method
+    public List<Auction> getAllAuctions(String searchQuery) {
+        String tsQuery = buildTsQuery(searchQuery);
+        return auctionRepository.findAllPublicAuctions(tsQuery); // Use the new method
     }
 
     // Get currently running auctions (started and not ended)
-    public List<Auction> getActiveAuctions() {
+    public List<Auction> getActiveAuctions(String searchQuery) {
+        String tsQuery = buildTsQuery(searchQuery);
         Instant now = Instant.now();
-        return auctionRepository.findActiveAuctions(now);
+        return auctionRepository.findActiveAuctions(now, tsQuery);
     }
 
     // Get available auctions (not yet ended - includes future auctions)
-    public List<Auction> getAvailableAuctions() {
+    public List<Auction> getAvailableAuctions(String searchQuery) {
+        String tsQuery = buildTsQuery(searchQuery);
         Instant now = Instant.now();
-        return auctionRepository.findAvailableAuctions(now);
+        return auctionRepository.findAvailableAuctions(now, tsQuery);
     }
 
     // Get upcoming auctions (future auctions)
-    public List<Auction> getUpcomingAuctions() {
+    public List<Auction> getUpcomingAuctions(String searchQuery) {
+        String tsQuery = buildTsQuery(searchQuery);
         Instant now = Instant.now();
-        return auctionRepository.findUpcomingAuctions(now);
+        return auctionRepository.findUpcomingAuctions(now, tsQuery);
     }
 
     // Get expired auctions from the last 3 days
-    public List<Auction> getExpiredAuctions() {
+    public List<Auction> getExpiredAuctions(String searchQuery) {
+        String tsQuery = buildTsQuery(searchQuery);
         Instant now = Instant.now();
         Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
-        return auctionRepository.findExpiredAuctions(now, threeDaysAgo);
+        return auctionRepository.findExpiredAuctions(now, threeDaysAgo, tsQuery);
     }
 
 
-    public List<AuctionDetailsDTO> getActiveAuctionsDTO(String category) {
-        return getActiveAuctions().stream()
+
+    public List<AuctionDetailsDTO> getActiveAuctionsDTO(String category, String searchQuery) {
+        return getActiveAuctions(searchQuery).stream()
                 .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO(String category) {
-        return getUpcomingAuctions().stream()
+    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO(String category, String searchQuery) {
+        return getUpcomingAuctions(searchQuery).stream()
                 .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public List<AuctionDetailsDTO> getExpiredAuctionsDTO(String category) {
-        return getExpiredAuctions().stream()
+    public List<AuctionDetailsDTO> getExpiredAuctionsDTO(String category, String searchQuery) {
+        return getExpiredAuctions(searchQuery).stream()
                 .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public List<AuctionDetailsDTO> getAllAuctionsDTO(String category) {
-        return getAllAuctions().stream()
+    public List<AuctionDetailsDTO> getAllAuctionsDTO(String category, String searchQuery) {
+        return getAllAuctions(searchQuery).stream()
                 .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -596,6 +604,43 @@ public class AuctionService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to save image: " + e.getMessage());
         }
+    }
+
+
+    public List<Auction> searchAuctions(String searchTerm) {
+        String tsQuery = buildTsQuery(searchTerm);
+        if (tsQuery == null) {
+            return auctionRepository.findAll();
+        }
+        return auctionRepository.searchByFullText(tsQuery);
+    }
+
+    /**
+     * Builds a PostgreSQL full-text search query (`tsquery`) from a raw search string.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Removes all non-alphanumeric characters except whitespace</li>
+     *   <li>Splits the cleaned string into words</li>
+     *   <li>Appends <code>:*</code> to each word to enable prefix matching</li>
+     *   <li>Joins all words using <code>&</code> for logical AND</li>
+     * </ul>
+     * <p>
+     * Example: <code>"vintage toy"</code> becomes <code>"vintage:* & toy:*"</code>
+     *
+     * @param searchTerm the raw user input search string; can be null or blank
+     * @return a formatted tsquery string for use in PostgreSQL's <code>to_tsquery</code>, or null if input is null/blank
+     */
+    private String buildTsQuery(String searchTerm) {
+        if (searchTerm == null || searchTerm.isBlank()) {
+            return null;
+        }
+
+        String sanitized = searchTerm.replaceAll("[^\\w\\s]", "");
+        // E.g. Convert: "vint toy car" => "vint:* & toy:* & car:*"
+        return Arrays.stream(sanitized.trim().split("\\s+"))
+                .map(word -> word + ":*") // append :* for prefix matching
+                .collect(Collectors.joining(" & "));
     }
 
 
