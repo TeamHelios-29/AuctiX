@@ -12,6 +12,7 @@ import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import com.helios.auctix.services.user.UserDetailsService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -381,36 +382,55 @@ public class AuctionController {
     // Add this method to your existing AuctionController class
 
     @GetMapping("/all")
-    public ResponseEntity<List<AuctionDetailsDTO>> getAllAuctions(
+    public ResponseEntity<?> getAllAuctions(
             @RequestParam(value = "filter", defaultValue = "active") String filter,
             @RequestParam(value = "category", required = false) String category,
-            @RequestParam(value = "searchQuery", required = false) String searchQuery)
+            @RequestParam(value = "searchQuery", required = false) String searchQuery,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "limit", defaultValue = "12") int limit)
+
     {
         // DEBUG LOG
         System.out.println("Received filter: " + filter + ", category: " + category);
 
         try {
-            List<AuctionDetailsDTO> auctions;
+            String tsQuery = auctionService.buildTsQuery(searchQuery);
+
+            Page<Auction> pagedAuctions;
+            List<AuctionDetailsDTO> auctionDTOs;
 
             switch (filter.toLowerCase()) {
                 case "active":
-                    auctions = auctionService.getActiveAuctionsDTO(category, searchQuery);
+
+                    pagedAuctions = auctionService.getActiveAuctionsPaged(category, tsQuery, page, limit);
                     break;
                 case "expired":
-                    auctions = auctionService.getExpiredAuctionsDTO(category, searchQuery);
+                    pagedAuctions = auctionService.getExpiredAuctionsPaged(category, tsQuery, page, limit);
                     break;
-                case "upcoming":  // Add new case for upcoming
-                    auctions = auctionService.getUpcomingAuctionsDTO(category, searchQuery);
+                case "upcoming":
+                    pagedAuctions = auctionService.getUpcomingAuctionsPaged(category, tsQuery, page, limit);
                     break;
                 default:
-                    auctions = auctionService.getAllAuctionsDTO(category, searchQuery);
+                    pagedAuctions = auctionService.getAllAuctionsPaged(category, tsQuery, page, limit);
+
                     break;
             }
 
-            // DEBUG LOG
-            System.out.println("Returning " + auctions.size() + " auctions");
 
-            return ResponseEntity.ok(auctions);
+            // DEBUG LOG
+//            System.out.println("Returning " + auctions.size() + " auctions");
+
+            auctionDTOs = pagedAuctions.getContent().stream()
+                    .map(auctionService::convertToDTO)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("auctions", auctionDTOs);
+            response.put("currentPage", pagedAuctions.getNumber() + 1);
+            response.put("totalPages", pagedAuctions.getTotalPages());
+            response.put("totalItems", pagedAuctions.getTotalElements());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.warning("Error fetching auctions with filter " + filter + ": " + e.getMessage());
             return ResponseEntity.internalServerError().build();

@@ -18,6 +18,10 @@ import com.helios.auctix.services.fileUpload.FileUploadService;
 import com.helios.auctix.services.fileUpload.FileUploadUseCaseEnum;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -158,69 +162,111 @@ public class AuctionService {
     }
     }
 
-    public List<Auction> getAllAuctions(String searchQuery) {
-        String tsQuery = buildTsQuery(searchQuery);
-        return auctionRepository.findAllPublicAuctions(tsQuery); // Use the new method
-    }
 
-    // Get currently running auctions (started and not ended)
-    public List<Auction> getActiveAuctions(String searchQuery) {
-        String tsQuery = buildTsQuery(searchQuery);
+    public Page<Auction> getActiveAuctionsPaged(String category, String tsQuery, int page, int limit) {
         Instant now = Instant.now();
-        return auctionRepository.findActiveAuctions(now, tsQuery);
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findActiveAuctionsPaged(now, category, tsQuery, pageable);
     }
 
-    // Get available auctions (not yet ended - includes future auctions)
-    public List<Auction> getAvailableAuctions(String searchQuery) {
-        String tsQuery = buildTsQuery(searchQuery);
+
+
+    public Page<Auction> getUpcomingAuctionsPaged(String category, String tsQuery, int page, int limit) {
         Instant now = Instant.now();
-        return auctionRepository.findAvailableAuctions(now, tsQuery);
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findUpcomingAuctionsPaged(now, category, tsQuery, pageable);
     }
 
-    // Get upcoming auctions (future auctions)
-    public List<Auction> getUpcomingAuctions(String searchQuery) {
-        String tsQuery = buildTsQuery(searchQuery);
-        Instant now = Instant.now();
-        return auctionRepository.findUpcomingAuctions(now, tsQuery);
-    }
 
-    // Get expired auctions from the last 3 days
-    public List<Auction> getExpiredAuctions(String searchQuery) {
-        String tsQuery = buildTsQuery(searchQuery);
+    public Page<Auction> getExpiredAuctionsPaged(String category, String tsQuery, int page, int limit) {
         Instant now = Instant.now();
         Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
-        return auctionRepository.findExpiredAuctions(now, threeDaysAgo, tsQuery);
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findExpiredAuctionsPaged(now, threeDaysAgo, category, tsQuery, pageable);
+    }
+
+
+    public Page<Auction> getAllAuctionsPaged(String category, String tsQuery, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        return auctionRepository.findAllPaged(category, tsQuery, pageable); // ✅ Match new repo method
+    }
+
+
+    public String buildTsQuery(String searchQuery) {
+        if (searchQuery == null || searchQuery.trim().isEmpty()) return null;
+        return Arrays.stream(searchQuery.trim().split("\\s+"))
+                .map(word -> word + ":*")
+                .collect(Collectors.joining(" & "));
     }
 
 
 
-    public List<AuctionDetailsDTO> getActiveAuctionsDTO(String category, String searchQuery) {
-        return getActiveAuctions(searchQuery).stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+
+
+
+
+
+
+    public List<Auction> getAllAuctions() {
+        return auctionRepository.findAllPublicAuctions(); // Use the new method
+
     }
 
-    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO(String category, String searchQuery) {
-        return getUpcomingAuctions(searchQuery).stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
 
-    public List<AuctionDetailsDTO> getExpiredAuctionsDTO(String category, String searchQuery) {
-        return getExpiredAuctions(searchQuery).stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
 
-    public List<AuctionDetailsDTO> getAllAuctionsDTO(String category, String searchQuery) {
-        return getAllAuctions(searchQuery).stream()
-                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
+    // Get currently running auctions (started and not ended)
+//    public List<Auction> getActiveAuctions() {
+//        Instant now = Instant.now();
+//        return auctionRepository.findActiveAuctions(now);
+//    }
+//
+//    // Get available auctions (not yet ended - includes future auctions)
+//    public List<Auction> getAvailableAuctions() {
+//        Instant now = Instant.now();
+//        return auctionRepository.findAvailableAuctions(now);
+//    }
+//
+//    // Get upcoming auctions (future auctions)
+//    public List<Auction> getUpcomingAuctions() {
+//        Instant now = Instant.now();
+//        return auctionRepository.findUpcomingAuctions(now);
+//    }
+//
+//    // Get expired auctions from the last 3 days
+//    public List<Auction> getExpiredAuctions() {
+//        Instant now = Instant.now();
+//        Instant threeDaysAgo = now.minus(3, ChronoUnit.DAYS);
+//        return auctionRepository.findExpiredAuctions(now, threeDaysAgo);
+//    }
+
+
+//    public List<AuctionDetailsDTO> getActiveAuctionsDTO(String category) {
+//        return getActiveAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO(String category) {
+//        return getUpcomingAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public List<AuctionDetailsDTO> getExpiredAuctionsDTO(String category) {
+//        return getExpiredAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public List<AuctionDetailsDTO> getAllAuctionsDTO(String category) {
+//        return getAllAuctions().stream()
+//                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
 
     // Helper method to convert Auction entity to AuctionDetailsDTO (package private so other services can use)
     public AuctionDetailsDTO convertToDTO(Auction auction) {
