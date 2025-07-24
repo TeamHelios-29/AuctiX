@@ -182,6 +182,41 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
             Pageable pageable
     );
 
+    @Query(value = """
+  SELECT * FROM auctions
+  WHERE is_deleted = false
+    AND is_public = true
+    AND (
+      :tsQuery IS NULL 
+      OR search_vector @@ to_tsquery('english', :tsQuery)
+    )
+  ORDER BY 
+    CASE 
+      WHEN :tsQuery IS NOT NULL THEN ts_rank(search_vector, to_tsquery('english', :tsQuery)) 
+      ELSE 0 
+    END DESC
+  LIMIT 50
+""", nativeQuery = true)
+    List<Auction> searchByFullText(@Param("tsQuery") String tsQuery);
+
+    // Finds auctions that are starting within a time window
+    List<Auction> findByStartTimeBetween(Instant start, Instant end);
+
+    // Finds auctions that are ending within a time window
+    List<Auction> findByEndTimeBetween(Instant start, Instant end);
+
+    @Query(value = """
+  SELECT EXISTS (
+    SELECT 1 FROM auctions
+    WHERE id = CAST(:auctionId AS UUID)
+      AND seller_id = CAST(:sellerId AS UUID)
+  )
+""", nativeQuery = true)
+    boolean isSellerOwnerOfAuction(
+            @Param("auctionId") UUID auctionId,
+            @Param("sellerId") UUID sellerId
+    );
+
 
 
 }
