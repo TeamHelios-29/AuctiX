@@ -27,6 +27,7 @@ import UserProfile from '@/components/organisms/UserProfile';
 import WatchlistPage from '@/pages/WatchlistPage';
 import SellerVerificationSubmitPage from '@/pages/SellerVerificationSubmitPage';
 import SecuritySettingsPage from '@/pages/SecuritySettingsPage';
+import PasswordResetPage from '@/pages/PasswordResetPage';
 
 export default function AppRouter() {
   useNotificationRegistration();
@@ -47,6 +48,8 @@ export default function AppRouter() {
           <Route path="/auctions/update/:id" element={<CreateAuction />} />
 
           <Route path="/explore-auctions" element={<AuctionsPage />} />
+
+          <Route path="/password-reset" element={<PasswordResetPage />} />
         </Route>
 
         {/* Routes using DashboardLayout */}
@@ -109,7 +112,7 @@ export default function AppRouter() {
             path="/users"
             element={
               <ProtectedRoute
-                allowedUsers={['ADMIN', 'SUPER_ADMIN', 'BIDDER', 'SELLER']}
+                allowedUsers={['ADMIN', 'SUPER_ADMIN']}
                 redirectPath="/403"
               >
                 <User />
@@ -164,6 +167,7 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           />
+
           <Route path="/reports" element={<Report />} />
           <Route path="/complaints" element={<Report />} />
           <Route path="/wallet" element={<WalletPage />} />

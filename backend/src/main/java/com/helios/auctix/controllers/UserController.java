@@ -1,6 +1,7 @@
 package com.helios.auctix.controllers;
 
 import com.azure.core.util.BinaryData;
+import com.helios.auctix.domain.user.PasswordResetRequest;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRoleEnum;
@@ -9,6 +10,7 @@ import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.services.fileUpload.*;
 import com.helios.auctix.services.user.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.context.annotation.Profile;
@@ -20,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.naming.LimitExceededException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -425,5 +428,59 @@ public class UserController {
         List<UserRequiredAction> requiredActions = userDetailsService.getRequiredActions(currentUser);
         return ResponseEntity.ok(requiredActions);
     }
+
+    @PostMapping("/changePassword")
+    public ResponseEntity<String> changePassword(@RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword) throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // Change password
+        UserServiceResponse response = userDetailsService.changePassword(currentUser, oldPassword, newPassword);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok("Password changed successfully");
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response.getMessage());
+        }
+    }
+
+    @PostMapping("/resetPassword")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam("email") String email,
+            @RequestParam("code") String code,
+            @RequestParam("newPassword") String newPassword ) throws AuthenticationException{
+        // Reset password
+        UserServiceResponse response = userDetailsService.resetPassword(email, code, newPassword);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok("Password reset successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response.getMessage());
+        }
+    }
+
+    @PostMapping("/passwordResetVerificationCode")
+    public ResponseEntity<String> passwordResetVerificationCode(
+            HttpServletRequest request,
+            @RequestParam("email") String email) throws LimitExceededException {
+        String ipAddress = userDetailsService.getClientIP(request);
+        // Generate password reset verification code
+        PasswordResetRequest pswResetReq = userDetailsService.generatePasswordResetCode(email, ipAddress);
+        userDetailsService.sendPasswordResetVerificationCode(pswResetReq);
+        return ResponseEntity.ok("Password reset verification code sent to " + pswResetReq.getEmail());
+    }
+
+    @PostMapping("/verifyPasswordResetCode")
+    public ResponseEntity<String> verifyPasswordResetCode(
+            @RequestParam("email") String email,
+            @RequestParam("code") String code) throws AuthenticationException, LimitExceededException {
+        // Verify password reset code
+        boolean isVerified = userDetailsService.verifyPasswordResetCode(email, code);
+        if (isVerified) {
+            return ResponseEntity.ok("Password reset code verified successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid password reset code.");
+        }
+    }
+
 
 }

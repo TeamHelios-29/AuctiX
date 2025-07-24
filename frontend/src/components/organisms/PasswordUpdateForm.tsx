@@ -8,17 +8,18 @@ import { FormSection } from '@/components/molecules/FormSection';
 import { FormField } from '@/components/atoms/FormField';
 import { AnimatedButton } from '@/components/atoms/AnimatedButton';
 import { Separator } from '@/components/ui/separator';
-import { ZodError, z } from 'zod';
+import { ZodError, set, z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+import { changePassword, IChangePasswordData } from '@/services/userService';
+import { AxiosInstance } from 'axios';
+import AxiosRequest from '@/services/axiosInspector';
 
 const passwordUpdateSchema = z
   .object({
     currentPassword: z.string().min(1, 'Current password is required'),
     newPassword: z
       .string()
-      .min(8, 'Password must be at least 8 characters long')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one number'),
+      .min(6, 'Password must be at least 6 characters long'),
     confirmPassword: z.string().min(1, 'Please confirm your new password'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -47,7 +48,8 @@ export function PasswordUpdateForm() {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const { toast } = useToast();
+  const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
 
   const validateForm = (): boolean => {
     try {
@@ -75,11 +77,39 @@ export function PasswordUpdateForm() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const data: IChangePasswordData = {
+      oldPassword: formData.currentPassword,
+      newPassword: formData.newPassword,
+    };
 
-    setIsLoading(false);
-    setIsSuccess(true);
+    changePassword(data, axiosInstance)
+      .then(() => {
+        toast({
+          title: 'Success',
+          description: 'Your password has been updated successfully.',
+          variant: 'default',
+        });
+      })
+      .catch((error) => {
+        if (error.response?.status === 500) {
+          toast({
+            title: 'Error',
+            description:
+              'An unexpected error occurred. Please try again later.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description:
+              error.response?.data?.message || 'Failed to update password.',
+            variant: 'destructive',
+          });
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
 
     // Reset form on success
     setFormData({
@@ -87,9 +117,6 @@ export function PasswordUpdateForm() {
       newPassword: '',
       confirmPassword: '',
     });
-
-    // Hide success message after 3 seconds
-    setTimeout(() => setIsSuccess(false), 3000);
 
     console.log('Password updated successfully!');
   };
@@ -127,20 +154,6 @@ export function PasswordUpdateForm() {
               sure to choose a strong password.
             </p>
           </motion.div>
-
-          {/* Success Message */}
-          {isSuccess && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg text-center"
-            >
-              <p className="text-green-800 font-medium">
-                Password updated successfully!
-              </p>
-            </motion.div>
-          )}
 
           {/* Form */}
           <motion.form

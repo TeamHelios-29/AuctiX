@@ -53,20 +53,23 @@ public class User {
     private UserRole role;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id", nullable = false, referencedColumnName = "id")
     private Seller seller;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id", nullable = false, referencedColumnName = "id")
     private Admin admin;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id", nullable = false, referencedColumnName = "id")
     private Bidder bidder;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id")
     private UserAddress userAddress;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PasswordResetRequest> passwordResetRequest;
 
     // helper method to make it cleaner to get the role enum
     @JsonProperty("role")

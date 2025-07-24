@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AxiosInstance } from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'react-toastify';
+import { useToast } from '@/hooks/use-toast';
 import AxiosRequest from '@/services/axiosInspector';
 
 interface AuctionUpdateFormDTO {
@@ -28,12 +28,125 @@ interface ValidationErrors {
   endTime?: string;
   category?: string;
   images?: string;
+  [key: string]: string | undefined;
 }
+
+// Move FormField component outside of AuctionForm
+const FormField = ({
+  label,
+  children,
+  fieldName,
+  required = false,
+  constraint = '',
+  touched,
+  validationErrors,
+  isEditMode,
+}: {
+  label: string;
+  children: React.ReactNode;
+  fieldName: string;
+  required?: boolean;
+  constraint?: string;
+  touched: Record<string, boolean>;
+  validationErrors: ValidationErrors;
+  isEditMode: boolean;
+}) => (
+  <div>
+    <label className="block font-medium mb-2">
+      {label}
+      {required && !isEditMode && <span className="text-red-500 ml-1">*</span>}
+    </label>
+    {children}
+    {constraint && !isEditMode && (
+      <p className="text-sm text-gray-600 mt-1">{constraint}</p>
+    )}
+    {touched[fieldName] && validationErrors[fieldName] && (
+      <p className="text-sm text-red-500 mt-1">{validationErrors[fieldName]}</p>
+    )}
+  </div>
+);
+
+// Add this helper function to extract error messages
+const getErrorMessage = (error: any): string => {
+  console.error('Full error object:', error);
+
+  // If it's a network error
+  if (!error.response) {
+    return 'Network error. Please check your connection and try again.';
+  }
+
+  const { response } = error;
+  const status = response.status;
+  const data = response.data;
+
+  // Handle different status codes with specific messages
+  switch (status) {
+    case 401:
+      return 'Your session has expired. Please log in again.';
+    case 403:
+      // Check if it's the seller role error
+      if (data && data.message) {
+        return data.message;
+      }
+      return 'Access denied. You do not have permission to perform this action.';
+    case 404:
+      return 'The requested resource was not found.';
+    case 413:
+      return 'File size too large. Please use smaller images.';
+    case 422:
+      return 'Validation failed. Please check your input.';
+    case 429:
+      return 'Too many requests. Please wait a moment and try again.';
+    case 500:
+      return 'Server error. Please try again later.';
+    case 502:
+    case 503:
+    case 504:
+      return 'Service temporarily unavailable. Please try again later.';
+    default:
+      break;
+  }
+
+  // Try to extract message from response data
+  if (data) {
+    // If data is a string, return it directly
+    if (typeof data === 'string') {
+      return data;
+    }
+
+    // If data has a message property
+    if (data.message) {
+      return data.message;
+    }
+
+    // If data has an error property
+    if (data.error) {
+      return data.error;
+    }
+
+    // If data has errors array (for validation errors)
+    if (data.errors && Array.isArray(data.errors)) {
+      return data.errors.join(', ');
+    }
+
+    // If data is an object, try to stringify it meaningfully
+    if (typeof data === 'object') {
+      try {
+        return JSON.stringify(data);
+      } catch {
+        return 'An error occurred but details could not be parsed.';
+      }
+    }
+  }
+
+  // Default fallback
+  return 'Something went wrong. Please try again.';
+};
 
 const AuctionForm: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startingPrice, setStartingPrice] = useState<number>(0);
+  const [startingPrice, setStartingPrice] = useState<string>(''); // Changed to string for better control
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -50,7 +163,7 @@ const AuctionForm: React.FC = () => {
     {},
   );
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-
+  const { toast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
@@ -105,11 +218,17 @@ const AuctionForm: React.FC = () => {
     return '';
   };
 
-  const validateStartingPrice = (value: number): string => {
-    if (value === null || value === undefined || isNaN(value))
-      return 'Starting price is required';
-    if (value < 0) return 'Starting price cannot be negative';
-    if (value > 10000000) return 'Starting price cannot exceed 10,000,000 LKR';
+  const validateStartingPrice = (value: string): string => {
+    if (!value || value.trim() === '') return 'Starting price is required';
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return 'Starting price must be a valid number';
+    if (numValue <= 0) return 'Starting price must be greater than 0';
+    if (numValue > 10000000)
+      return 'Starting price cannot exceed 10,000,000 LKR';
+    // Check for reasonable decimal places (max 2)
+    if (value.includes('.') && value.split('.')[1].length > 2) {
+      return 'Starting price cannot have more than 2 decimal places';
+    }
     return '';
   };
 
@@ -127,9 +246,16 @@ const AuctionForm: React.FC = () => {
     const startDate = new Date(startTimeValue);
     const endDate = new Date(value);
     if (endDate <= startDate) return 'End time must be after start time';
+
+    const duration = endDate.getTime() - startDate.getTime();
     const minDuration = 60 * 60 * 1000; // 1 hour in milliseconds
-    if (endDate.getTime() - startDate.getTime() < minDuration) {
+    const maxDuration = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+
+    if (duration < minDuration) {
       return 'Auction must run for at least 1 hour';
+    }
+    if (duration > maxDuration) {
+      return 'Auction cannot run for more than 30 days';
     }
     return '';
   };
@@ -151,6 +277,21 @@ const AuctionForm: React.FC = () => {
     for (const file of newImages) {
       if (file.size > 5 * 1024 * 1024) {
         return 'Each image must be less than 5MB';
+      }
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        return 'Only image files are allowed';
+      }
+      // Check specific image formats
+      const allowedTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+      ];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        return 'Only JPG, PNG, GIF, and WebP images are allowed';
       }
     }
     return '';
@@ -216,16 +357,35 @@ const AuctionForm: React.FC = () => {
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    let numValue = 0;
-    if (value !== '' && value !== null && value !== undefined) {
-      numValue = parseFloat(value);
-      if (isNaN(numValue) || numValue < 0) {
-        numValue = 0;
+
+    // Allow empty string for clearing the field
+    if (value === '') {
+      setStartingPrice('');
+      if (touched.startingPrice || !isEditMode) {
+        validateField('startingPrice', value);
       }
+      return;
     }
-    setStartingPrice(numValue);
+
+    // Only allow numbers and decimal point
+    const numericRegex = /^\d*\.?\d*$/;
+    if (!numericRegex.test(value)) {
+      return; // Don't update state if invalid characters
+    }
+
+    // Prevent multiple decimal points
+    if ((value.match(/\./g) || []).length > 1) {
+      return;
+    }
+
+    // Limit decimal places to 2
+    if (value.includes('.') && value.split('.')[1].length > 2) {
+      return;
+    }
+
+    setStartingPrice(value);
     if (touched.startingPrice || !isEditMode) {
-      validateField('startingPrice', numValue);
+      validateField('startingPrice', value);
     }
   };
 
@@ -277,6 +437,13 @@ const AuctionForm: React.FC = () => {
     validateField('images', newImages);
   };
 
+  const removeExistingImage = (index: number) => {
+    const newExistingImages = existingImageIds.filter((_, i) => i !== index);
+    setExistingImageIds(newExistingImages);
+    validateField('images', images); // Revalidate with new existing images count
+  };
+
+  // Updated handleSubmit function with better error handling
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -309,7 +476,17 @@ const AuctionForm: React.FC = () => {
       !categoryValid ||
       !imagesValid
     ) {
-      toast.error('Please fix all validation errors before submitting');
+      // Scroll to first error
+      const firstErrorField = document.querySelector('.border-red-500');
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form before submitting.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -318,7 +495,7 @@ const AuctionForm: React.FC = () => {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description);
-      formData.append('startingPrice', String(startingPrice));
+      formData.append('startingPrice', startingPrice);
       formData.append('startTime', new Date(startTime).toISOString());
       formData.append('endTime', new Date(endTime).toISOString());
       formData.append('isPublic', isPublic.toString());
@@ -326,6 +503,11 @@ const AuctionForm: React.FC = () => {
 
       if (images.length > 0) {
         images.forEach((image) => formData.append('images', image));
+      }
+
+      // Add existing image IDs to retain them
+      if (isEditMode && existingImageIds.length > 0) {
+        existingImageIds.forEach((id) => formData.append('existingImages', id));
       }
 
       const endpoint = isEditMode
@@ -338,23 +520,50 @@ const AuctionForm: React.FC = () => {
         url: endpoint,
         data: formData,
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000, // Increase timeout for file uploads
       });
 
-      toast.success(
-        isEditMode
+      toast({
+        title: 'Success',
+        description: isEditMode
           ? 'Auction updated successfully!'
           : 'Auction created successfully!',
-      );
+        variant: 'default',
+      });
 
       setTimeout(() => {
         navigate('/manage-auctions');
       }, 1500);
     } catch (error: any) {
       console.error('Error submitting form:', error);
-      if (error.response?.data) {
-        toast.error(error.response.data);
-      } else {
-        toast.error('Something went wrong.');
+
+      const errorMessage = getErrorMessage(error);
+
+      // Show different toast styles based on error type
+      const isValidationError = error.response?.status === 400;
+      const isForbiddenError = error.response?.status === 403;
+      const isAuthError = error.response?.status === 401;
+
+      let toastTitle = 'Error';
+      if (isValidationError) {
+        toastTitle = 'Validation Error';
+      } else if (isForbiddenError) {
+        toastTitle = 'Access Denied';
+      } else if (isAuthError) {
+        toastTitle = 'Authentication Error';
+      }
+
+      toast({
+        title: toastTitle,
+        description: errorMessage,
+        variant: 'destructive',
+      });
+
+      // If it's an auth error, redirect to login after a delay
+      if (isAuthError) {
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       }
     } finally {
       setIsSubmitting(false);
@@ -363,7 +572,6 @@ const AuctionForm: React.FC = () => {
 
   // Process description to format timestamps
   const processDescription = (desc: string): string => {
-    // Pattern to match the timestamp format [Edited on: 2025-07-17T16:30:44.455596300Z]
     const timestampPattern =
       /\[Edited on: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\]/g;
 
@@ -373,6 +581,7 @@ const AuctionForm: React.FC = () => {
     });
   };
 
+  // Also update the useEffect error handling for loading auction data
   useEffect(() => {
     if (id && !dataLoaded) {
       setIsEditMode(true);
@@ -385,7 +594,7 @@ const AuctionForm: React.FC = () => {
 
           setTitle(data.title || '');
           setDescription(processDescription(data.description || ''));
-          setStartingPrice(data.startingPrice || 0);
+          setStartingPrice(data.startingPrice?.toString() || '');
           setStartTime(convertToDatetimeLocal(data.startTime));
           setEndTime(convertToDatetimeLocal(data.endTime));
           setCategory(data.category || '');
@@ -404,18 +613,35 @@ const AuctionForm: React.FC = () => {
         })
         .catch((error) => {
           console.error('Error fetching auction data:', error);
-          if (error.code === 'ECONNABORTED') {
-            toast.error('Request timed out. Please try again.');
-          } else {
-            toast.error('Failed to load auction data');
+
+          const errorMessage = getErrorMessage(error);
+          let toastTitle = 'Error Loading Auction';
+
+          // Handle specific error types
+          if (error.response?.status === 404) {
+            toastTitle = 'Auction Not Found';
+          } else if (error.response?.status === 403) {
+            toastTitle = 'Access Denied';
+          } else if (error.code === 'ECONNABORTED') {
+            toastTitle = 'Timeout Error';
           }
-          navigate('/manage-auctions');
+
+          toast({
+            title: toastTitle,
+            description: errorMessage,
+            variant: 'destructive',
+          });
+
+          // Add a delay before redirecting to let user read the error
+          setTimeout(() => {
+            navigate('/manage-auctions');
+          }, 3000);
         })
         .finally(() => {
           setLoading(false);
         });
     }
-  }, [id, axiosInstance, navigate]);
+  }, [id, axiosInstance, navigate, dataLoaded]);
 
   if (loading) {
     return (
@@ -424,38 +650,6 @@ const AuctionForm: React.FC = () => {
       </div>
     );
   }
-
-  const FormField = ({
-    label,
-    children,
-    fieldName,
-    required = false,
-    constraint = '',
-  }: {
-    label: string;
-    children: React.ReactNode;
-    fieldName: string;
-    required?: boolean;
-    constraint?: string;
-  }) => (
-    <div>
-      <label className="block font-medium mb-2">
-        {label}
-        {required && !isEditMode && (
-          <span className="text-red-500 ml-1">*</span>
-        )}
-      </label>
-      {children}
-      {constraint && !isEditMode && (
-        <p className="text-sm text-gray-600 mt-1">{constraint}</p>
-      )}
-      {touched[fieldName] && validationErrors[fieldName] && (
-        <p className="text-sm text-red-500 mt-1">
-          {validationErrors[fieldName]}
-        </p>
-      )}
-    </div>
-  );
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
@@ -484,6 +678,9 @@ const AuctionForm: React.FC = () => {
           fieldName="title"
           required={true}
           constraint="Must be at least 5 words long and not exceed 100 characters"
+          touched={touched}
+          validationErrors={validationErrors}
+          isEditMode={isEditMode}
         >
           <Input
             value={title}
@@ -502,6 +699,9 @@ const AuctionForm: React.FC = () => {
           fieldName="category"
           required={true}
           constraint="Select from available categories"
+          touched={touched}
+          validationErrors={validationErrors}
+          isEditMode={isEditMode}
         >
           <select
             value={category}
@@ -516,19 +716,36 @@ const AuctionForm: React.FC = () => {
           >
             <option value="">Select a category</option>
             <option value="Electronics">Electronics</option>
-            <option value="Fashion">Fashion</option>
+            <option value="Computers & Tech">Computers & Tech</option>
+            <option value="Fashion & Clothing">Fashion & Clothing</option>
             <option value="Home & Garden">Home & Garden</option>
-            <option value="Art">Art</option>
+            <option value="Sports & Recreation">Sports & Recreation</option>
+            <option value="Books & Media">Books & Media</option>
+            <option value="Toys & Games">Toys & Games</option>
+            <option value="Musical Instruments">Musical Instruments</option>
+            <option value="Tools & Equipment">Tools & Equipment</option>
+            <option value="Collectibles & Antiques">
+              Collectibles & Antiques
+            </option>
+            <option value="Art & Crafts">Art & Crafts</option>
+            <option value="Automotive">Automotive</option>
+            <option value="Jewelry & Watches">Jewelry & Watches</option>
+            <option value="Health & Beauty">Health & Beauty</option>
+            <option value="Business & Industrial">Business & Industrial</option>
+            <option value="Traditional Items">Traditional Items</option>
             <option value="Other">Other</option>
           </select>
         </FormField>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             label="Start Time"
             fieldName="startTime"
             required={true}
             constraint="Must be in the future"
+            touched={touched}
+            validationErrors={validationErrors}
+            isEditMode={isEditMode}
           >
             <Input
               type="datetime-local"
@@ -541,6 +758,7 @@ const AuctionForm: React.FC = () => {
                   ? 'border-red-500'
                   : ''
               }
+              style={{ colorScheme: 'light' }} // Improve calendar visibility
             />
           </FormField>
 
@@ -548,7 +766,10 @@ const AuctionForm: React.FC = () => {
             label="End Time"
             fieldName="endTime"
             required={true}
-            constraint="Must be after start time, minimum 1 hour duration"
+            constraint="Must be after start time, minimum 1 hour, maximum 30 days duration"
+            touched={touched}
+            validationErrors={validationErrors}
+            isEditMode={isEditMode}
           >
             <Input
               type="datetime-local"
@@ -561,6 +782,7 @@ const AuctionForm: React.FC = () => {
                   ? 'border-red-500'
                   : ''
               }
+              style={{ colorScheme: 'light' }} // Improve calendar visibility
             />
           </FormField>
         </div>
@@ -569,17 +791,19 @@ const AuctionForm: React.FC = () => {
           label="Starting Price (LKR)"
           fieldName="startingPrice"
           required={true}
-          constraint="Must be a positive number, maximum 10,000,000 LKR"
+          constraint="Must be greater than 0, maximum 10,000,000 LKR, up to 2 decimal places"
+          touched={touched}
+          validationErrors={validationErrors}
+          isEditMode={isEditMode}
         >
           <Input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={startingPrice}
             onChange={handlePriceChange}
             onBlur={() => handleFieldBlur('startingPrice')}
             disabled={isEditMode && !canFullyEdit}
-            min="0"
-            step="0.01"
-            placeholder="Enter starting price"
+            placeholder="Enter starting price (e.g., 1000.50)"
             className={
               touched.startingPrice && validationErrors.startingPrice
                 ? 'border-red-500'
@@ -592,18 +816,26 @@ const AuctionForm: React.FC = () => {
           label="Images"
           fieldName="images"
           required={true}
-          constraint="1-5 images required, each under 5MB, supported formats: JPG, PNG, GIF"
+          constraint="1-5 images required, each under 5MB, supported formats: JPG, PNG, GIF, WebP. First image will be the main display image."
+          touched={touched}
+          validationErrors={validationErrors}
+          isEditMode={isEditMode}
         >
           <input
             type="file"
             multiple
             onChange={handleImageUpload}
-            accept="image/*"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
             disabled={isEditMode && !canFullyEdit}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
           <p className="text-sm text-gray-500 mt-1">
             Current: {existingImageIds.length + images.length}/5 images
+            {(existingImageIds.length > 0 || images.length > 0) && (
+              <span className="ml-2 text-blue-600 font-medium">
+                (First image will be the main display)
+              </span>
+            )}
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -611,34 +843,48 @@ const AuctionForm: React.FC = () => {
               <div key={`existing-${idx}`} className="relative">
                 <img
                   src={`http://localhost:8080/api/auctions/getAuctionImages?file_uuid=${id}`}
-                  alt="existing"
+                  alt={`existing-${idx}`}
                   className="w-20 h-20 object-cover rounded-md border"
                 />
                 <span className="absolute top-0 left-0 bg-blue-500 text-white text-xs px-1 rounded">
-                  Existing
+                  {idx === 0 ? 'Main' : 'Existing'}
                 </span>
+                {canFullyEdit && (
+                  <button
+                    type="button"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    onClick={() => removeExistingImage(idx)}
+                    title="Remove existing image"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
 
-            {images.map((file, idx) => (
-              <div key={`upload-${idx}`} className="relative">
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt="preview"
-                  className="w-20 h-20 object-cover rounded-md border"
-                />
-                <button
-                  type="button"
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                  onClick={() => removeImage(idx)}
-                >
-                  ×
-                </button>
-                <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 rounded">
-                  New
-                </span>
-              </div>
-            ))}
+            {images.map((file, idx) => {
+              const isMainImage = existingImageIds.length === 0 && idx === 0;
+              return (
+                <div key={`upload-${idx}`} className="relative">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`preview-${idx}`}
+                    className="w-20 h-20 object-cover rounded-md border"
+                  />
+                  <button
+                    type="button"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    onClick={() => removeImage(idx)}
+                    title="Remove new image"
+                  >
+                    ×
+                  </button>
+                  <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 rounded">
+                    {isMainImage ? 'Main' : 'New'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </FormField>
 
@@ -646,53 +892,60 @@ const AuctionForm: React.FC = () => {
           label="Description"
           fieldName="description"
           required={true}
-          constraint="Must be 20-1000 characters long"
+          constraint="Must be 20-1000 characters long. Provide detailed information about the item."
+          touched={touched}
+          validationErrors={validationErrors}
+          isEditMode={isEditMode}
         >
           <textarea
             value={description}
             onChange={handleDescriptionChange}
             onBlur={() => handleFieldBlur('description')}
-            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical ${
               touched.description && validationErrors.description
                 ? 'border-red-500'
                 : ''
             }`}
             rows={5}
-            placeholder="Enter detailed description (minimum 20 characters)"
+            placeholder="Enter detailed description including condition, features, dimensions, etc. (minimum 20 characters)"
+            maxLength={1000}
           />
           <div className="flex justify-between text-sm text-gray-500 mt-1">
             <span>Characters: {description.length}/1000</span>
             {isEditMode && hasBids && (
-              <span>Note: Updated descriptions will include a timestamp</span>
+              <span className="text-amber-600">
+                Note: Updated descriptions will include a timestamp
+              </span>
             )}
           </div>
         </FormField>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-start space-x-3">
           <input
             type="checkbox"
             id="isPublic"
             checked={isPublic}
             onChange={handlePublicChange}
             disabled={isEditMode && !canFullyEdit}
-            className="w-4 h-4"
+            className="w-4 h-4 mt-0.5"
           />
           <label htmlFor="isPublic" className="font-medium">
-            Make Public
+            <span>Make this auction public</span>
             {!isEditMode && (
-              <span className="text-sm text-gray-600 ml-2">
-                (Public auctions are visible to all users)
-              </span>
+              <p className="text-sm text-gray-600 font-normal mt-1">
+                Public auctions are visible to all users and can be found in
+                searches. Private auctions are only visible to invited users.
+              </p>
             )}
             {isEditMode && !canFullyEdit && (
-              <span className="text-sm text-gray-500 ml-2">
-                (Cannot be changed after bids are placed)
-              </span>
+              <p className="text-sm text-gray-500 font-normal mt-1">
+                Visibility cannot be changed after bids are placed
+              </p>
             )}
           </label>
         </div>
 
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 pt-4">
           <Button
             type="button"
             variant="outline"

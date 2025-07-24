@@ -1,20 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { VerificationHeader } from '@/components/molecules/VerificationHeader';
 import { AxiosInstance } from 'axios';
 import AxiosRequest from '@/services/axiosInspector';
 import { uploadVerificationDocs } from '@/services/userService';
 import UploadAreaBody from '../molecules/UploadAreaBody';
-import { VerificationStatusContent } from '../molecules/VerificationStatusContent';
+import {
+  VerificationStatusContent,
+  VerificationSubmission,
+} from '../molecules/VerificationStatusContent';
+import { VerificationFormSkeleton } from './VerificationFormSkeleton';
+import {
+  getSellerVerificationStatus,
+  submitSellerVerificationDocuments,
+} from '@/services/sellerVerificationService';
+import { toast } from 'react-toastify';
+import { useToast } from '@/hooks/use-toast';
+
+export enum VerificationStatus {
+  NO_VERIFICATION_REQUESTED = 'NO_VERIFICATION_REQUESTED',
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
 
 export function VerificationForm() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const axiosInstance: AxiosInstance = AxiosRequest().axiosInstance;
-  const [verificationStatus] = useState<'pending' | 'approved' | 'rejected'>(
-    'rejected',
-  );
+  const [verificationStatus, setVerificationStatus] =
+    useState<VerificationStatus>(VerificationStatus.NO_VERIFICATION_REQUESTED);
+  const [verificationSubmissions, setVerificationSubmissions] = useState<
+    VerificationSubmission[]
+  >([]);
+  const { toast } = useToast();
 
   const handleFileSelect = (newFiles: File[]) => {
     setSelectedFiles((prev) => [...prev, ...newFiles]);
@@ -28,15 +49,21 @@ export function VerificationForm() {
     if (selectedFiles.length === 0) return;
 
     setIsSubmitting(true);
-    uploadVerificationDocs(selectedFiles, axiosInstance)
+    submitSellerVerificationDocuments(selectedFiles, axiosInstance)
       .then((response) => {
         console.log('Files uploaded successfully:', response);
+        toast({
+          variant: 'default',
+          title: 'Files Uploaded',
+          description:
+            'Your verification documents have been successfully uploaded.',
+        });
       })
       .catch((error) => {
         console.error('Error uploading files:', error);
       })
       .finally(() => {
-        setIsSubmitting(false);
+        setTimeout(() => setIsSubmitting(false), 1000);
       });
     // Reset form
     setSelectedFiles([]);
@@ -46,6 +73,32 @@ export function VerificationForm() {
     // TODO: Implement back navigation
     console.log('Navigate back');
   };
+
+  useEffect(() => {
+    if (isSubmitting) {
+      return;
+    }
+    // fetch initial verification status
+    getSellerVerificationStatus(axiosInstance)
+      .then((status) => {
+        if (status) {
+          setVerificationStatus(status.status);
+          setVerificationSubmissions(status.submissions);
+        } else {
+          throw new Error('No verification status received');
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching verification status:', error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [getSellerVerificationStatus, isSubmitting]);
+
+  if (isLoading) {
+    return <VerificationFormSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -63,19 +116,23 @@ export function VerificationForm() {
           transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
           className="space-y-6"
         >
-          {/* <UploadAreaBody
-            handleFileSelect={handleFileSelect}
-            selectedFiles={selectedFiles}
-            handleRemoveFile={handleRemoveFile}
-            handleSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            handleBack={handleBack}
-          /> */}
-
-          <VerificationStatusContent
-            status={verificationStatus}
-            onBack={handleBack}
-          />
+          {verificationStatus ===
+          VerificationStatus.NO_VERIFICATION_REQUESTED ? (
+            <UploadAreaBody
+              handleFileSelect={handleFileSelect}
+              selectedFiles={selectedFiles}
+              handleRemoveFile={handleRemoveFile}
+              handleSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              handleBack={handleBack}
+            />
+          ) : (
+            <VerificationStatusContent
+              status={verificationStatus}
+              submissions={verificationSubmissions}
+              onBack={handleBack}
+            />
+          )}
         </motion.div>
       </motion.div>
     </div>

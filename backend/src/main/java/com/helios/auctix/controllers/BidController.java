@@ -16,9 +16,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Logger;
 
 @RestController
@@ -90,21 +88,55 @@ public class BidController {
                     .getContext()
                     .getAuthentication();
 
+            // Check if user is authenticated
+            if (authentication == null || !authentication.isAuthenticated() ||
+                    authentication.getPrincipal().equals("anonymousUser")) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "AUTHENTICATION_REQUIRED");
+                errorResponse.put("message", "Please log in to place a bid");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+
+            }
+
             User bidder = userDetailsService
                     .getAuthenticatedUser(authentication);
 
+            // Additional null check for bidder
+            if (bidder == null) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "USER_NOT_FOUND");
+                errorResponse.put("message", "User session invalid. Please log in again");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+
             BidDTO placedBid = bidService.placeBid(request, bidder);
             return ResponseEntity.ok(placedBid);
+
         } catch (IllegalArgumentException e) {
             log.warning("Bad request in place bid: " + e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "INVALID_BID");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (IllegalStateException e) {
             log.warning("Conflict in place bid: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "BID_CONFLICT");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        } catch (SecurityException e) {
+            log.warning("Security violation in place bid: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "ACCESS_DENIED");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
         } catch (Exception e) {
             log.severe("Error placing bid: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to place bid: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "INTERNAL_ERROR");
+            errorResponse.put("message", "An unexpected error occurred. Please try again later.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 

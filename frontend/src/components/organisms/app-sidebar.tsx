@@ -74,6 +74,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items: [
             { title: 'Profile Settings', url: '/settings/profile' },
             { title: 'Security Settings', url: '/settings/security' },
+            {
+              title: 'Get Verified',
+              url: '/seller-verification-submit',
+              roles: ['SELLER'],
+            },
           ],
         },
       ],

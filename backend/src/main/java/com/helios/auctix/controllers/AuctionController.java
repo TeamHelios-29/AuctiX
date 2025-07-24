@@ -46,9 +46,37 @@ public class AuctionController {
     @Autowired
     private FileUploadService uploader;
 
+    // First, create an ErrorResponse class for consistent error responses
+    public class ErrorResponse {
+        private String message;
+        private String error;
+        private int status;
+        private long timestamp;
+
+        public ErrorResponse(String message, String error, int status) {
+            this.message = message;
+            this.error = error;
+            this.status = status;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        // Getters and setters
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+
+        public String getError() { return error; }
+        public void setError(String error) { this.error = error; }
+
+        public int getStatus() { return status; }
+        public void setStatus(int status) { this.status = status; }
+
+        public long getTimestamp() { return timestamp; }
+        public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+    }
+
     // Create a new auction with multipart/form-data
     @PostMapping("/create")
-    public ResponseEntity<Auction> createAuction(
+    public ResponseEntity<?> createAuction(
             @RequestParam("title") String title,
             @RequestParam("description") String description,
             @RequestParam("startingPrice") double startingPrice,
@@ -70,15 +98,131 @@ public class AuctionController {
             User seller = userDetailsService
                     .getAuthenticatedUser(authentication);
 
+            // Check if user is a seller
             if (seller.getRole().getId() != SELLER_ROLE_ID) {
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "Access denied. Only sellers can create auctions.",
+                        "FORBIDDEN",
+                        HttpStatus.FORBIDDEN.value()
+                );
                 return ResponseEntity
-                        .status(HttpStatus.FORBIDDEN) //returning 403 status code if user isn't a seller
-                        .body(null);
+                        .status(HttpStatus.FORBIDDEN)
+                        .body(errorResponse);
             }
 
-            // Parse dates with timezone support
-            Instant startInstant = Instant.parse(startTime);
-            Instant endInstant = Instant.parse(endTime);
+            // Validate images
+            if (images == null || images.isEmpty()) {
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "At least one image is required.",
+                        "VALIDATION_ERROR",
+                        HttpStatus.BAD_REQUEST.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
+
+            if (images.size() > 5) {
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "Maximum 5 images are allowed.",
+                        "VALIDATION_ERROR",
+                        HttpStatus.BAD_REQUEST.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
+
+            // Validate image files
+            for (MultipartFile image : images) {
+                if (image.getSize() > 5 * 1024 * 1024) { // 5MB limit
+                    ErrorResponse errorResponse = new ErrorResponse(
+                            "Each image must be less than 5MB.",
+                            "VALIDATION_ERROR",
+                            HttpStatus.BAD_REQUEST.value()
+                    );
+                    return ResponseEntity
+                            .status(HttpStatus.BAD_REQUEST)
+                            .body(errorResponse);
+                }
+
+                String contentType = image.getContentType();
+                if (contentType == null || !contentType.startsWith("image/")) {
+                    ErrorResponse errorResponse = new ErrorResponse(
+                            "Only image files are allowed.",
+                            "VALIDATION_ERROR",
+                            HttpStatus.BAD_REQUEST.value()
+                    );
+                    return ResponseEntity
+                            .status(HttpStatus.BAD_REQUEST)
+                            .body(errorResponse);
+                }
+            }
+
+            // Parse and validate dates
+            Instant startInstant;
+            Instant endInstant;
+
+            try {
+                startInstant = Instant.parse(startTime);
+                endInstant = Instant.parse(endTime);
+            } catch (DateTimeParseException e) {
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "Invalid date format. Please use ISO 8601 format.",
+                        "VALIDATION_ERROR",
+                        HttpStatus.BAD_REQUEST.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
+
+            // Additional date validations
+            Instant now = Instant.now();
+            if (startInstant.isBefore(now)) {
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "Start time must be in the future.",
+                        "VALIDATION_ERROR",
+                        HttpStatus.BAD_REQUEST.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
+
+            if (endInstant.isBefore(startInstant)) {
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "End time must be after start time.",
+                        "VALIDATION_ERROR",
+                        HttpStatus.BAD_REQUEST.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
+
+            long durationHours = java.time.Duration.between(startInstant, endInstant).toHours();
+            if (durationHours < 1) {
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "Auction must run for at least 1 hour.",
+                        "VALIDATION_ERROR",
+                        HttpStatus.BAD_REQUEST.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
+
+            if (durationHours > 30 * 24) { // 30 days
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "Auction cannot run for more than 30 days.",
+                        "VALIDATION_ERROR",
+                        HttpStatus.BAD_REQUEST.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(errorResponse);
+            }
 
             Auction auction = Auction.builder()
                     .title(title)
@@ -91,25 +235,63 @@ public class AuctionController {
                     .seller(seller.getSeller())
                     .build();
 
-            List<UUID> imagePaths = images.stream()
-                    .map(this::saveImage)
-                    .collect(Collectors.toList());
-            auction.setImagePaths(imagePaths);
+            // Save images
+            List<UUID> imagePaths;
+            try {
+                imagePaths = images.stream()
+                        .map(this::saveImage)
+                        .collect(Collectors.toList());
+                auction.setImagePaths(imagePaths);
+            } catch (Exception e) {
+                log.severe("Error saving images: " + e.getMessage());
+                ErrorResponse errorResponse = new ErrorResponse(
+                        "Failed to save images. Please try again.",
+                        "IMAGE_SAVE_ERROR",
+                        HttpStatus.INTERNAL_SERVER_ERROR.value()
+                );
+                return ResponseEntity
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(errorResponse);
+            }
 
             Auction createdAuction = auctionService.createAuction(auction);
 
             log.info("Auction created successfully with ID: " + createdAuction.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAuction);
 
-        } catch (DateTimeParseException e) {
-            log.warning("Invalid date format");
-            return ResponseEntity.badRequest().build();
         } catch (AuthenticationException e) {
-            // handle AuthenticationException gives when user is not authenticated
-            return ResponseEntity.badRequest().build();
+            log.warning("Authentication failed: " + e.getMessage());
+            ErrorResponse errorResponse = new ErrorResponse(
+                    "Authentication failed. Please log in again.",
+                    "AUTHENTICATION_ERROR",
+                    HttpStatus.UNAUTHORIZED.value()
+            );
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(errorResponse);
+
+        } catch (IllegalArgumentException e) {
+            log.warning("Validation error: " + e.getMessage());
+            ErrorResponse errorResponse = new ErrorResponse(
+                    e.getMessage(),
+                    "VALIDATION_ERROR",
+                    HttpStatus.BAD_REQUEST.value()
+            );
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(errorResponse);
+
         } catch (Exception e) {
-            log.warning("Error creating auction");
-            return ResponseEntity.internalServerError().build();
+            log.severe("Unexpected error creating auction: " + e.getMessage());
+            e.printStackTrace(); // For debugging
+            ErrorResponse errorResponse = new ErrorResponse(
+                    "An unexpected error occurred. Please try again later.",
+                    "INTERNAL_SERVER_ERROR",
+                    HttpStatus.INTERNAL_SERVER_ERROR.value()
+            );
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorResponse);
         }
     }
 
@@ -200,24 +382,32 @@ public class AuctionController {
 
     @GetMapping("/all")
     public ResponseEntity<List<AuctionDetailsDTO>> getAllAuctions(
-            @RequestParam(value = "filter", defaultValue = "active") String filter) {
+            @RequestParam(value = "filter", defaultValue = "active") String filter,
+            @RequestParam(value = "category", required = false) String category)
+    {
+        // DEBUG LOG
+        System.out.println("Received filter: " + filter + ", category: " + category);
+
         try {
             List<AuctionDetailsDTO> auctions;
 
             switch (filter.toLowerCase()) {
                 case "active":
-                    auctions = auctionService.getActiveAuctionsDTO();
+                    auctions = auctionService.getActiveAuctionsDTO(category);
                     break;
                 case "expired":
-                    auctions = auctionService.getExpiredAuctionsDTO();
+                    auctions = auctionService.getExpiredAuctionsDTO(category);
                     break;
                 case "upcoming":  // Add new case for upcoming
-                    auctions = auctionService.getUpcomingAuctionsDTO();
+                    auctions = auctionService.getUpcomingAuctionsDTO(category);
                     break;
                 default:
-                    auctions = auctionService.getAllAuctionsDTO();
+                    auctions = auctionService.getAllAuctionsDTO(category);
                     break;
             }
+
+            // DEBUG LOG
+            System.out.println("Returning " + auctions.size() + " auctions");
 
             return ResponseEntity.ok(auctions);
         } catch (Exception e) {
