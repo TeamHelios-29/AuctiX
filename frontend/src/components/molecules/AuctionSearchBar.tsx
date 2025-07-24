@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '@/services/axiosInstance';
 
 interface Seller {
@@ -26,12 +26,38 @@ const getImageUrl = (uuid?: string) => {
 };
 
 export default function AuctionSearchBar() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') ?? '';
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<AuctionResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  const setupAndSyncSearchQuery = (q: string) => {
+    const trimmed = q.trim();
+
+    if (location.pathname.startsWith('/explore-auctions')) {
+      setQuery(q);
+
+      const searchParams = new URLSearchParams(location.search);
+      searchParams.set('q', trimmed);
+      setSearchParams(searchParams);
+    } else {
+      setQuery(q);
+    }
+  };
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/explore-auctions')) {
+      const initialQTrimmed = initialQuery.trim();
+      setQuery(initialQTrimmed);
+    }
+  }, [initialQuery, location.pathname]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -40,7 +66,9 @@ export default function AuctionSearchBar() {
           .get(`/auctions/search?q=${encodeURIComponent(query)}`)
           .then((res) => {
             setResults(res.data);
-            setShowDropdown(true);
+            if (isFocused) {
+              setShowDropdown(true);
+            }
           })
           .catch(() => {
             setResults([]);
@@ -53,7 +81,7 @@ export default function AuctionSearchBar() {
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [query]);
+  }, [query, isFocused]);
 
   // Hide dropdown when clicking outside input or dropdown
   useEffect(() => {
@@ -71,8 +99,8 @@ export default function AuctionSearchBar() {
   }, []);
 
   const handleSelect = (auctionId: string) => {
-    setShowDropdown(false);
     navigate(`/auction-details/${auctionId}`);
+    setShowDropdown(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -110,8 +138,12 @@ export default function AuctionSearchBar() {
           className="w-full px-4 py-2 border rounded-lg pr-8"
           placeholder="Search auctions..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query && setShowDropdown(true)}
+          onChange={(e) => setupAndSyncSearchQuery(e.target.value)}
+          onFocus={() => {
+            setShowDropdown(true);
+            setIsFocused(true);
+          }}
+          onBlur={() => setIsFocused(false)}
           ref={inputRef}
           autoComplete="off"
         />
