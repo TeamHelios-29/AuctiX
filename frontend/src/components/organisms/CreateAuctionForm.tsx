@@ -716,16 +716,23 @@ const AuctionForm: React.FC = () => {
           >
             <option value="">Select a category</option>
             <option value="Electronics">Electronics</option>
-            <option value="Fashion">Fashion</option>
+            <option value="Computers & Tech">Computers & Tech</option>
+            <option value="Fashion & Clothing">Fashion & Clothing</option>
             <option value="Home & Garden">Home & Garden</option>
             <option value="Sports & Recreation">Sports & Recreation</option>
             <option value="Books & Media">Books & Media</option>
+            <option value="Toys & Games">Toys & Games</option>
+            <option value="Musical Instruments">Musical Instruments</option>
+            <option value="Tools & Equipment">Tools & Equipment</option>
             <option value="Collectibles & Antiques">
               Collectibles & Antiques
             </option>
             <option value="Art & Crafts">Art & Crafts</option>
             <option value="Automotive">Automotive</option>
             <option value="Jewelry & Watches">Jewelry & Watches</option>
+            <option value="Health & Beauty">Health & Beauty</option>
+            <option value="Business & Industrial">Business & Industrial</option>
+            <option value="Traditional Items">Traditional Items</option>
             <option value="Other">Other</option>
           </select>
         </FormField>
