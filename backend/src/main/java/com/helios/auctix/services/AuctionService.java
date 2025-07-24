@@ -186,30 +186,30 @@ public class AuctionService {
     }
 
 
-    public List<AuctionDetailsDTO> getActiveAuctionsDTO() {
-        // Only return auctions that have started but not ended
+    public List<AuctionDetailsDTO> getActiveAuctionsDTO(String category) {
         return getActiveAuctions().stream()
+                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO() {
-        // Only return auctions that haven't started yet
+    public List<AuctionDetailsDTO> getUpcomingAuctionsDTO(String category) {
         return getUpcomingAuctions().stream()
+                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public List<AuctionDetailsDTO> getExpiredAuctionsDTO() {
-        // Only return auctions that have ended
+    public List<AuctionDetailsDTO> getExpiredAuctionsDTO(String category) {
         return getExpiredAuctions().stream()
+                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    // Get all auctions as DTOs for the frontend
-    public List<AuctionDetailsDTO> getAllAuctionsDTO() {
+    public List<AuctionDetailsDTO> getAllAuctionsDTO(String category) {
         return getAllAuctions().stream()
+                .filter(auction -> category == null || category.isEmpty() || auction.getCategory().equalsIgnoreCase(category))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

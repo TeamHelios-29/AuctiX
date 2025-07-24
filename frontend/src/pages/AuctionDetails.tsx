@@ -222,9 +222,32 @@ function calculateBidIncrement(
   startingPrice: number,
   currentBid: number,
 ): number {
-  const base = Math.max(startingPrice, currentBid || startingPrice);
-  const increment = base * 0.05;
-  return Math.ceil(increment / 100) * 100;
+  const effectiveBid = Math.max(startingPrice, currentBid || 0);
+
+  // Industry-standard tiered increment system
+  if (effectiveBid < 1000) {
+    return 50; // LKR 50 increments for bids under 1K
+  } else if (effectiveBid < 5000) {
+    return 100; // LKR 100 increments for 1K-5K
+  } else if (effectiveBid < 10000) {
+    return 250; // LKR 250 increments for 5K-10K
+  } else if (effectiveBid < 25000) {
+    return 500; // LKR 500 increments for 10K-25K
+  } else if (effectiveBid < 50000) {
+    return 1000; // LKR 1K increments for 25K-50K
+  } else if (effectiveBid < 100000) {
+    return 2500; // LKR 2.5K increments for 50K-100K
+  } else if (effectiveBid < 250000) {
+    return 5000; // LKR 5K increments for 100K-250K
+  } else if (effectiveBid < 500000) {
+    return 10000; // LKR 10K increments for 250K-500K
+  } else if (effectiveBid < 1000000) {
+    return 25000; // LKR 25K increments for 500K-1M
+  } else if (effectiveBid < 2500000) {
+    return 50000; // LKR 50K increments for 1M-2.5M
+  } else {
+    return 100000; // LKR 100K increments for 2.5M+
+  }
 }
 
 const AuctionDetailsPage = () => {
@@ -373,13 +396,17 @@ const AuctionDetailsPage = () => {
           timestamp: bid.bidTime || new Date().toISOString(),
         }));
 
+        // Recalculate increment with new system
         updatedProduct.bidIncrement = calculateBidIncrement(
           updatedProduct.startingPrice,
           updatedProduct.currentBid,
         );
 
         setProduct(updatedProduct);
-        setBidAmount(updatedProduct.currentBid + updatedProduct.bidIncrement);
+        // 🔥 KEY FIX: Update bid amount input when new bid comes in
+        const newMinimumBid =
+          updatedProduct.currentBid + updatedProduct.bidIncrement;
+        setBidAmount(newMinimumBid);
       } catch (error) {
         console.error('Error processing WebSocket update:', error);
       }
@@ -411,15 +438,42 @@ const AuctionDetailsPage = () => {
     if (!product) return;
 
     const minAllowedBid =
-      Math.max(product.startingPrice, product.currentBid) +
-      product.bidIncrement;
+      product.currentBid > 0
+        ? product.currentBid + product.bidIncrement
+        : product.startingPrice;
 
-    // Ensure the bid doesn't go below the minimum allowed bid
-    if (bidAmount - product.bidIncrement >= minAllowedBid) {
-      setBidAmount(bidAmount - product.bidIncrement);
+    // Decrease by one increment, but don't go below minimum
+    const newBidAmount = bidAmount - product.bidIncrement;
+    if (newBidAmount >= minAllowedBid) {
+      setBidAmount(newBidAmount);
     } else {
       setBidAmount(minAllowedBid);
     }
+  };
+
+  // Updated bid validation with better UX
+  const validateBidAmount = (
+    amount: number,
+  ): { isValid: boolean; message?: string } => {
+    if (!product) return { isValid: false, message: 'Product not loaded' };
+
+    const minAllowedBid =
+      product.currentBid > 0
+        ? product.currentBid + product.bidIncrement
+        : product.startingPrice;
+
+    if (amount < minAllowedBid) {
+      return {
+        isValid: false,
+        message: `Minimum bid is LKR ${minAllowedBid.toLocaleString()}${product.currentBid > 0 ? ` (${product.bidIncrement.toLocaleString()} increment)` : ''}`,
+      };
+    }
+
+    if (amount > 999_999_999) {
+      return { isValid: false, message: 'Bid amount too large' };
+    }
+
+    return { isValid: true };
   };
 
   const handlePlaceBid = async () => {
@@ -439,8 +493,10 @@ const AuctionDetailsPage = () => {
     }
 
     const minAllowedBid =
-      Math.max(product.startingPrice, product.currentBid) +
-      product.bidIncrement;
+      product.currentBid > 0
+        ? product.currentBid + product.bidIncrement
+        : product.startingPrice;
+
     if (bidAmount < minAllowedBid) {
       toast({
         title: 'Invalid Bid Amount',
@@ -547,25 +603,39 @@ const AuctionDetailsPage = () => {
       );
     }
 
+    const validation = validateBidAmount(bidAmount);
     const minAllowedBid =
-      Math.max(product.startingPrice, product.currentBid) +
-      product.bidIncrement;
-    const isBidValid = bidAmount >= minAllowedBid;
+      product.currentBid > 0
+        ? product.currentBid + product.bidIncrement
+        : product.startingPrice;
 
     return (
-      <Button
-        onClick={handlePlaceBid}
-        disabled={!isBidValid}
-        className={`w-full ${
-          isBidValid
-            ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
-            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-        }`}
-      >
-        {isBidValid
-          ? `Place Bid - LKR ${bidAmount.toLocaleString()}`
-          : `Minimum: LKR ${minAllowedBid.toLocaleString()}`}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          onClick={handlePlaceBid}
+          disabled={!validation.isValid}
+          className={`w-full ${
+            validation.isValid
+              ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
+              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+          }`}
+        >
+          {validation.isValid
+            ? `Place Bid - LKR ${bidAmount.toLocaleString()}`
+            : `Minimum: LKR ${minAllowedBid.toLocaleString()}`}
+        </Button>
+
+        {/* Show increment info */}
+        <p className="text-xs text-gray-500 text-center">
+          Bid increments: LKR {product.bidIncrement.toLocaleString()}
+        </p>
+
+        {!validation.isValid && validation.message && (
+          <p className="text-xs text-red-500 text-center">
+            {validation.message}
+          </p>
+        )}
+      </div>
     );
   };
 
