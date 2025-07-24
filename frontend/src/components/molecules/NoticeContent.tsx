@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import sanitizeHtml from 'sanitize-html';
 
 interface NoticeContentProps {
   content: string;
@@ -15,10 +16,9 @@ export function NoticeContent({ content }: NoticeContentProps) {
     >
       <div
         dangerouslySetInnerHTML={{
-          __html: content.replace(
-            /<(?!\/?(i|u|b|strong|sub|sup|h[1-6]|p|br|ul|li|ol)\b)[^>]+>/gi,
-            '',
-          ),
+          __html: sanitizeHtml(content, {
+            allowedTags: ['i', 'u', 'b', 'strong', 'sub', 'sup', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'ul', 'li', 'ol'],
+          }),
         }}
       />
     </motion.div>
