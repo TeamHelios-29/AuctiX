@@ -2,13 +2,12 @@ package com.helios.auctix.services;
 
 import com.helios.auctix.domain.auction.Auction;
 import com.helios.auctix.domain.auction.Bid;
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRoleEnum;
-import com.helios.auctix.dtos.BidUpdateMessageDTO;
+import com.helios.auctix.dtos.*;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.services.user.UserDetailsService;
-import com.helios.auctix.dtos.BidDTO;
-import com.helios.auctix.dtos.PlaceBidRequest;
-import com.helios.auctix.dtos.UserDTO;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.AuctionRepository;
 import com.helios.auctix.repositories.BidRepository;
@@ -17,12 +16,13 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 
 @AllArgsConstructor
@@ -37,7 +37,8 @@ public class BidService {
     private final UserMapperImpl userMapperImpl;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
-
+    private final NotificationEventPublisher notificationEventPublisher;
+    private final WatchListNotifyService watchListNotifyService;
 
     // Get bid history for an auction
     public List<Bid> getBidHistoryForAuction(UUID auctionId) {
@@ -80,6 +81,7 @@ public class BidService {
 
         UUID auctionId = request.getAuctionId();
         Double amount = request.getAmount();
+        List<User> excludedFromWatchlistNotify = new ArrayList<>();
 
         UUID bidderId = bidder.getId();
         String bidderName = bidder.getFirstName() + " " + bidder.getLastName();
@@ -171,6 +173,28 @@ public class BidService {
                             highestBid.get().getAmount(),
                             "Outbid on auction " + auctionId
                     );
+
+
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            String title = "You've been outbid";
+                            String message = "Your bid of LKR " +
+                                    highestBid.get().getAmount()  + " on auction " +
+                                    auction.getTitle() + " was outbid by a user placing a bid of LKR" + amount + " ! " +
+                                    "Reclaim the highest bid to secure the win!" ;
+                            User userToNotify = userDetailsService.getUserById(highestBid.get().getBidderId());
+                            excludedFromWatchlistNotify.add(userToNotify);
+                            notificationEventPublisher.publishNotificationEvent(
+                                    title,
+                                    message,
+                                    NotificationCategory.OUTBID,
+                                    userToNotify,
+                                    "/auctions/" + auction.getId()
+                            );
+                        }
+                    });
+
                 } catch (Exception e) {
                     log.severe("Failed to unfreeze previous bidder's funds: " + e.getMessage());
                     throw new IllegalStateException("Failed to unfreeze previous bidder's funds: " + e.getMessage());
@@ -202,6 +226,37 @@ public class BidService {
                 .amount(amount)
                 .bidTime(now)
                 .build();
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                String title = "New bid placed on auction " + auction.getTitle() ;
+                String message = "A bidder has placed a bid of " + bid.getAmount() + " on the auction " + auction.getTitle()  + "check it out on AuctiX" ;
+
+                // notify seller
+                notificationEventPublisher.publishNotificationEvent(
+                        title,
+                        message,
+                        NotificationCategory.NEW_BID_RECEIVED_SELLER,
+                        auction.getSeller().getUser(),
+                        "/auctions/" + auction.getId()
+                );
+
+                // notify watchlist users
+                excludedFromWatchlistNotify.add(bidder);
+
+                
+                watchListNotifyService.notifySubscribers(
+                        auction,
+                        excludedFromWatchlistNotify,
+                        title,
+                        message,
+                        NotificationCategory.NEW_BID_RECEIVED_WATCHER,
+                        "/auctions/" + auction.getId()
+                );
+
+            }
+        });
 
         Bid savedBid = bidRepository.save(bid);
 
@@ -254,6 +309,74 @@ public class BidService {
             // Logic to transfer funds to seller would go here in a production app
         }
     }
+
+    public List<MyBidAuctionDTO> getMyBidAuctions(UUID userId, String status) {
+        // Get all bids by user
+        List<Bid> userBids = bidRepository.findByBidderId(userId);
+
+        // Group bids by auction
+        Map<UUID, List<Bid>> bidsByAuction = userBids.stream()
+                .collect(Collectors.groupingBy(bid -> bid.getAuction().getId()));
+
+        return bidsByAuction.entrySet().stream()
+                .map(entry -> {
+                    UUID auctionId = entry.getKey();
+                    List<Bid> auctionBids = entry.getValue();
+                    Auction auction = auctionRepository.findById(auctionId).orElse(null);
+
+                    if (auction == null) return null;
+
+                    // Get user's highest bid for this auction
+                    double highestUserBid = auctionBids.stream()
+                            .mapToDouble(Bid::getAmount)
+                            .max()
+                            .orElse(0.0);
+
+                    // Get current highest bid for auction
+                    Optional<Bid> highestBid = getHighestBidForAuction(auctionId);
+                    double currentHighestBid = highestBid
+                            .map(Bid::getAmount)
+                            .orElse(auction.getStartingPrice());
+
+
+                    // Determine auction status
+                    String auctionStatus = determineAuctionStatus(auction, userId, highestUserBid, currentHighestBid);
+
+                    // Filter based on requested status
+                    if (!status.equalsIgnoreCase("all") && !status.equalsIgnoreCase(auctionStatus)) {
+                        return null;
+                    }
+
+                    return MyBidAuctionDTO.builder()
+                            .auctionId(auctionId)
+                            .title(auction.getTitle())
+                            .currentPrice(currentHighestBid)
+                            .yourHighestBid(highestUserBid)
+                            .status(auctionStatus)
+                            .endTime(auction.getEndTime())
+                            .isLeadingBid(highestUserBid >= currentHighestBid)
+                            .category(auction.getCategory())
+                            .imagePaths(auction.getImagePaths())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private String determineAuctionStatus(Auction auction, UUID userId, double userHighestBid, double currentHighestBid) {
+        Instant now = Instant.now();
+
+        if (auction.getEndTime().isAfter(now)) {
+            return "active";
+        }
+
+        if (userHighestBid >= currentHighestBid) {
+            return "won";
+        }
+
+        return "lost";
+    }
+
 
     // Add these methods to your existing BidService
 

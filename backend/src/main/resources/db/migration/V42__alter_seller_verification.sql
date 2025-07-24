@@ -1,0 +1,3 @@
+ALTER TABLE seller_verification_reqs
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ADD COLUMN reviewed_at TIMESTAMP;

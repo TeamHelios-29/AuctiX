@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useEffect } from 'react';
 import { Command } from 'lucide-react';
 import { CollapsibleNavItem } from '../molecules/collapsible-navitem';
@@ -34,11 +32,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         { title: 'Overview', url: '/dashboard', isActive: true },
         {
           title: 'Auctions',
-          items: [
-            { title: 'Ongoing', url: '/auctions/ongoing' },
-            { title: 'Upcoming', url: '/auctions/upcoming' },
-            { title: 'Closed', url: '/auctions/closed' },
-          ],
+          url: '/manage-auctions',
+          roles: ['SELLER'],
+        },
+        {
+          title: 'My Bids',
+          url: '/my-bids',
+          roles: ['BIDDER'],
         },
         {
           title: 'Watch List',
@@ -72,6 +72,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items: [
             { title: 'Profile Settings', url: '/settings/profile' },
             { title: 'Security Settings', url: '/settings/security' },
+            {
+              title: 'Get Verified',
+              url: '/seller-verification-submit',
+              roles: ['SELLER'],
+            },
           ],
         },
       ],

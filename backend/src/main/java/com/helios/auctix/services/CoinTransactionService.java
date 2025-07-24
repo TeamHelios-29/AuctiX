@@ -1,9 +1,11 @@
 package com.helios.auctix.services;
 
+import com.helios.auctix.domain.notification.NotificationCategory;
 import com.helios.auctix.domain.transaction.Transaction;
 import com.helios.auctix.domain.transaction.Wallet;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.dtos.TransactionResponseDTO;
+import com.helios.auctix.events.notification.NotificationEventPublisher;
 import com.helios.auctix.repositories.TransactionRepository;
 import com.helios.auctix.repositories.UserRepository;
 import com.helios.auctix.repositories.WalletRepository;
@@ -13,9 +15,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +34,7 @@ public class CoinTransactionService {
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final UserDetailsService userDetailsService;
+    private final NotificationEventPublisher notificationEventPublisher;
     private static final Logger log = Logger.getLogger(CoinTransactionService.class.getName());
 
     @Autowired
@@ -36,11 +42,13 @@ public class CoinTransactionService {
             TransactionRepository transactionRepository,
             WalletRepository walletRepository,
             UserRepository userRepository,
-            UserDetailsService userDetailsService) {
+            UserDetailsService userDetailsService,
+            NotificationEventPublisher notificationEventPublisher) {
         this.transactionRepository = transactionRepository;
         this.walletRepository = walletRepository;
         this.userRepository = userRepository;
         this.userDetailsService = userDetailsService;
+        this.notificationEventPublisher = notificationEventPublisher;
     }
 
     @Transactional
@@ -118,6 +126,25 @@ public class CoinTransactionService {
 
         transaction = transactionRepository.save(transaction);
 
+
+        Transaction finalTransaction = transaction;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                String title = "Wallet Recharged Successfully!";
+                String message = "Your wallet was successfully credited with " + finalTransaction.getAmount() +
+                        " at " + finalTransaction.getTransactionDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        + ". Description: " + finalTransaction.getDescription();
+                notificationEventPublisher.publishNotificationEvent(
+                        title,
+                        message,
+                        NotificationCategory.WALLET_RECHARGE_SUCCESS,
+                        currentUser,
+                        null
+                );
+            }
+        });
+
         return TransactionResponseDTO.builder()
                 .id(transaction.getId())
                 .walletId(wallet.getId())
@@ -166,6 +193,24 @@ public class CoinTransactionService {
                 .build();
 
         transaction = transactionRepository.save(transaction);
+
+        Transaction finalTransaction = transaction;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                String title = "Wallet withdrawal successful!";
+                String message = "Your wallet was successfully debited with " + finalTransaction.getAmount() +
+                        " at " + finalTransaction.getTransactionDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        + ". Description: " + finalTransaction.getDescription();
+                notificationEventPublisher.publishNotificationEvent(
+                        title,
+                        message,
+                        NotificationCategory.WALLET_WITHDRAWAL_SUCCESS,
+                        currentUser,
+                        null
+                );
+            }
+        });
 
         return TransactionResponseDTO.builder()
                 .id(transaction.getId())

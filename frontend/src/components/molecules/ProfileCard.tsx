@@ -1,5 +1,3 @@
-'use client';
-
 import { motion } from 'framer-motion';
 import type { ImageResult } from '../molecules/ImageUploadPopup';
 import ImageUploadPopup from '../molecules/ImageUploadPopup';

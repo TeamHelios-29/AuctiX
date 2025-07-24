@@ -1,30 +1,28 @@
-'use client';
-
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StatusIconProps {
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'success' | 'error' | 'email';
   className?: string;
 }
 
 export function StatusIcon({ status, className }: StatusIconProps) {
   const iconConfig = {
-    pending: {
-      icon: Clock,
-      color: 'text-yellow-500',
-      bgColor: 'bg-yellow-100',
-    },
-    approved: {
+    success: {
       icon: CheckCircle,
       color: 'text-green-500',
       bgColor: 'bg-green-100',
     },
-    rejected: {
+    error: {
       icon: XCircle,
       color: 'text-red-500',
       bgColor: 'bg-red-100',
+    },
+    email: {
+      icon: Mail,
+      color: 'text-yellow-500',
+      bgColor: 'bg-yellow-100',
     },
   };
 

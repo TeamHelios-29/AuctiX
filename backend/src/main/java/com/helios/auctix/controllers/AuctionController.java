@@ -388,6 +388,7 @@ public class AuctionController {
             @RequestParam(value = "searchQuery", required = false) String searchQuery,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "12") int limit)
+
     {
         // DEBUG LOG
         System.out.println("Received filter: " + filter + ", category: " + category);
@@ -400,6 +401,7 @@ public class AuctionController {
 
             switch (filter.toLowerCase()) {
                 case "active":
+
                     pagedAuctions = auctionService.getActiveAuctionsPaged(category, tsQuery, page, limit);
                     break;
                 case "expired":
@@ -410,6 +412,7 @@ public class AuctionController {
                     break;
                 default:
                     pagedAuctions = auctionService.getAllAuctionsPaged(category, tsQuery, page, limit);
+
                     break;
             }
 
@@ -635,6 +638,49 @@ public class AuctionController {
             log.warning("Error fetching auction for update: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+
+    @GetMapping("/seller/{id}")
+    public ResponseEntity<List<AuctionDetailsDTO>> getAuctionsBySeller(
+            @PathVariable UUID id,
+            @RequestParam(value = "filter", defaultValue = "total") String filter,
+            @RequestParam(value = "search", required = false) String searchTerm) {
+        try {
+            if (id == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            // Map frontend filter names to backend filter names (if needed)
+            String mappedFilter = mapFrontendFilterToBackend(filter);
+
+            // Get the basic auction list first
+            List<SellerAuctionDTO> auctions = auctionService.getSellerAuctions(id, mappedFilter, searchTerm);
+
+            // Convert each auction to detailed DTO
+            List<AuctionDetailsDTO> detailedAuctions = auctions.stream()
+                    .map(auction -> auctionService.getAuctionDetails(UUID.fromString(auction.getId())))
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(detailedAuctions);
+        } catch (IllegalArgumentException e) {
+            log.warning("Invalid argument provided: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.warning("Error fetching seller auctions: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<AuctionDetailsDTO>> searchAuctions(@RequestParam String q) {
+        List<Auction> results = auctionService.searchAuctions(q);
+
+        List<AuctionDetailsDTO> dtos = results.stream()
+                .map(auctionService::convertToDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
     }
 
 

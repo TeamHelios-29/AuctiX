@@ -162,6 +162,7 @@ public class AuctionService {
     }
     }
 
+
     public Page<Auction> getActiveAuctionsPaged(String category, String tsQuery, int page, int limit) {
         Instant now = Instant.now();
         Pageable pageable = PageRequest.of(page - 1, limit);
@@ -208,6 +209,7 @@ public class AuctionService {
 
     public List<Auction> getAllAuctions() {
         return auctionRepository.findAllPublicAuctions(); // Use the new method
+
     }
 
 
@@ -648,6 +650,43 @@ public class AuctionService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to save image: " + e.getMessage());
         }
+    }
+
+
+    public List<Auction> searchAuctions(String searchTerm) {
+        String tsQuery = buildTsQuery(searchTerm);
+        if (tsQuery == null) {
+            return auctionRepository.findAll();
+        }
+        return auctionRepository.searchByFullText(tsQuery);
+    }
+
+    /**
+     * Builds a PostgreSQL full-text search query (`tsquery`) from a raw search string.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Removes all non-alphanumeric characters except whitespace</li>
+     *   <li>Splits the cleaned string into words</li>
+     *   <li>Appends <code>:*</code> to each word to enable prefix matching</li>
+     *   <li>Joins all words using <code>&</code> for logical AND</li>
+     * </ul>
+     * <p>
+     * Example: <code>"vintage toy"</code> becomes <code>"vintage:* & toy:*"</code>
+     *
+     * @param searchTerm the raw user input search string; can be null or blank
+     * @return a formatted tsquery string for use in PostgreSQL's <code>to_tsquery</code>, or null if input is null/blank
+     */
+    private String buildTsQuery(String searchTerm) {
+        if (searchTerm == null || searchTerm.isBlank()) {
+            return null;
+        }
+
+        String sanitized = searchTerm.replaceAll("[^\\w\\s]", "");
+        // E.g. Convert: "vint toy car" => "vint:* & toy:* & car:*"
+        return Arrays.stream(sanitized.trim().split("\\s+"))
+                .map(word -> word + ":*") // append :* for prefix matching
+                .collect(Collectors.joining(" & "));
     }
 
 

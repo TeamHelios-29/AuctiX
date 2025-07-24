@@ -12,6 +12,7 @@ export interface Notification {
 export const NOTIFICATION_CATEGORY_GROUP_LABELS = {
   PROMO: 'Promotional',
   AUCTION: 'Auction',
+  WALLET: 'Wallet',
   DEFAULT: 'General',
 } as const;
 
@@ -111,6 +112,10 @@ export interface NotificationFetchParams {
 
 export interface NotificationPaginatedResponse {
   content: Notification[];
-  number: number;
-  totalPages: number;
+  page: {
+    number: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  };
 }

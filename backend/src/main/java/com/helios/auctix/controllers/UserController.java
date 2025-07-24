@@ -1,14 +1,19 @@
 package com.helios.auctix.controllers;
 
 import com.azure.core.util.BinaryData;
+import com.helios.auctix.domain.user.PasswordResetRequest;
 import com.helios.auctix.domain.user.User;
 import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
+import com.helios.auctix.exception.PermissionDeniedException;
+import com.helios.auctix.exception.UploadedFileCountMaxLimitExceedException;
+import com.helios.auctix.exception.UploadedFileSizeMaxLimitExceedException;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.services.fileUpload.*;
 import com.helios.auctix.services.user.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.context.annotation.Profile;
@@ -20,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.naming.LimitExceededException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -167,7 +173,7 @@ public class UserController {
         String userRole = user.getRole().getName().toString();
         log.info("user data requested by " + user.getEmail() + "," + userRole);
         if (!(UserRoleEnum.valueOf(userRole) == UserRoleEnum.ADMIN || UserRoleEnum.valueOf(userRole) == UserRoleEnum.SUPER_ADMIN)) {
-            throw new PermissionDeniedDataAccessException("You don't have permission to access this resource", new Throwable("Permission Denied"));
+            throw new PermissionDeniedException("You don't have permission to access this resource");
         }
 
         // decode from url encoded parameters
@@ -333,6 +339,38 @@ public class UserController {
                 .body(binaryFile.toBytes());
     }
 
+    @GetMapping("/getUserBannerPhoto")
+    public ResponseEntity<?> getUserBannerPhoto(@RequestParam("file_uuid") UUID file_uuid) throws AuthenticationException {
+        log.info("banner file get request: " + file_uuid);
+
+        // Authenticate user
+        User currentUser = null;
+        FileUploadResponse res = null;
+        if (!fileUploadService.isFilePublic(file_uuid)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            currentUser = userDetailsService.getAuthenticatedUser(authentication);
+            log.info("getting banner file by user " + currentUser.getEmail());
+
+            // Get file upload data
+            res = fileUploadService.getFile(file_uuid, currentUser.getEmail());
+        } else {
+            res = fileUploadService.getFile(file_uuid);
+        }
+
+        if (!res.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res.getMessage());
+        }
+
+        BinaryData binaryFile = res.getBinaryData();
+        String fileName = res.getUpload().getFileName();
+        String contentType = res.getUpload().getFileType().getContentType();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(binaryFile.toBytes());
+    }
+
     @DeleteMapping("/deleteUserProfilePhoto")
     public ResponseEntity<String> deleteUserProfilePhoto(@RequestParam("username") String username) throws AuthenticationException {
 
@@ -393,5 +431,59 @@ public class UserController {
         List<UserRequiredAction> requiredActions = userDetailsService.getRequiredActions(currentUser);
         return ResponseEntity.ok(requiredActions);
     }
+
+    @PostMapping("/changePassword")
+    public ResponseEntity<String> changePassword(@RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword) throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        // Change password
+        UserServiceResponse response = userDetailsService.changePassword(currentUser, oldPassword, newPassword);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok("Password changed successfully");
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response.getMessage());
+        }
+    }
+
+    @PostMapping("/resetPassword")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam("email") String email,
+            @RequestParam("code") String code,
+            @RequestParam("newPassword") String newPassword ) throws AuthenticationException{
+        // Reset password
+        UserServiceResponse response = userDetailsService.resetPassword(email, code, newPassword);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok("Password reset successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response.getMessage());
+        }
+    }
+
+    @PostMapping("/passwordResetVerificationCode")
+    public ResponseEntity<String> passwordResetVerificationCode(
+            HttpServletRequest request,
+            @RequestParam("email") String email) throws LimitExceededException {
+        String ipAddress = userDetailsService.getClientIP(request);
+        // Generate password reset verification code
+        PasswordResetRequest pswResetReq = userDetailsService.generatePasswordResetCode(email, ipAddress);
+        userDetailsService.sendPasswordResetVerificationCode(pswResetReq);
+        return ResponseEntity.ok("Password reset verification code sent to " + pswResetReq.getEmail());
+    }
+
+    @PostMapping("/verifyPasswordResetCode")
+    public ResponseEntity<String> verifyPasswordResetCode(
+            @RequestParam("email") String email,
+            @RequestParam("code") String code) throws AuthenticationException, LimitExceededException {
+        // Verify password reset code
+        boolean isVerified = userDetailsService.verifyPasswordResetCode(email, code);
+        if (isVerified) {
+            return ResponseEntity.ok("Password reset code verified successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid password reset code.");
+        }
+    }
+
 
 }

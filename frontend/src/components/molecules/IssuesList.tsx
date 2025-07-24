@@ -1,29 +1,23 @@
-'use client';
-
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { ActionButton } from '@/components/atoms/ActionButton';
-
-interface Issue {
-  id: string;
-  title: string;
-  description: string;
-  severity: 'high' | 'medium' | 'low';
-  fileName?: string;
-}
+import { VerificationSubmission } from './VerificationStatusContent';
+import { VerificationStatus } from '../organisms/VerificationForm';
 
 interface IssuesListProps {
-  issues: Issue[];
+  issues: VerificationSubmission[];
   onBack: () => void;
 }
 
 export function IssuesList({ issues, onBack }: IssuesListProps) {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'high':
+      case VerificationStatus.REJECTED:
         return 'text-red-600 bg-red-50 border-red-200';
-      case 'medium':
+      case VerificationStatus.PENDING:
         return 'text-orange-600 bg-orange-50 border-orange-200';
+      case VerificationStatus.APPROVED:
+        return 'text-green-600 bg-green-50 border-green-200';
       default:
         return 'text-yellow-600 bg-yellow-50 border-yellow-200';
     }
@@ -31,12 +25,14 @@ export function IssuesList({ issues, onBack }: IssuesListProps) {
 
   const getSeverityText = (severity: string) => {
     switch (severity) {
-      case 'high':
-        return 'High Priority';
-      case 'medium':
-        return 'Medium Priority';
+      case VerificationStatus.REJECTED:
+        return 'Rejected';
+      case VerificationStatus.PENDING:
+        return 'Pending';
+      case VerificationStatus.APPROVED:
+        return 'Approved';
       default:
-        return 'Low Priority';
+        return 'Under Review';
     }
   };
 
@@ -69,7 +65,7 @@ export function IssuesList({ issues, onBack }: IssuesListProps) {
         <AnimatePresence>
           {issues.map((issue, index) => (
             <motion.div
-              key={issue.id}
+              key={index}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 + 0.3 }}
@@ -81,19 +77,19 @@ export function IssuesList({ issues, onBack }: IssuesListProps) {
                     <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <h3 className="font-medium text-foreground">
-                        {issue.title}
+                        {issue.description}
                       </h3>
-                      {issue.fileName && (
+                      {issue.docTitle && (
                         <p className="text-sm text-muted-foreground">
-                          File: {issue.fileName}
+                          File: {issue.docTitle}
                         </p>
                       )}
                     </div>
                   </div>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium border ${getSeverityColor(issue.severity)}`}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border ${getSeverityColor(issue.status)}`}
                   >
-                    {getSeverityText(issue.severity)}
+                    {getSeverityText(issue.status)}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground pl-8">

@@ -17,6 +17,7 @@ const AuctionChat = ({ auctionId }: { auctionId: string }) => {
   const [messages, setMessages] = useState<ChatMessageProps[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [connected, setConnected] = useState(false);
+  const [isGuest, setIsGuest] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const previousScrollHeightRef = useRef(0);
@@ -179,10 +180,21 @@ const AuctionChat = ({ auctionId }: { auctionId: string }) => {
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       connectHeaders: isAuthenticated
-        ? { Authorization: `Bearer ${userAuth.token}` }
+        ? {
+            Authorization: `Bearer ${userAuth.token}`,
+            auctionId: auctionId,
+          }
         : {},
-      onConnect: () => {
+      onConnect: (frame) => {
         console.log('Connected to WebSocket');
+        const serverUserName = frame.headers['user-name'];
+        if (serverUserName?.startsWith('guest')) {
+          console.log('Connected as guest user:', serverUserName);
+          setIsGuest(true);
+        } else {
+          setIsGuest(false);
+          console.log('Authenticated user:', serverUserName);
+        }
         setConnected(true);
 
         // Subscribe to the auction chat topic only if not already subscribed
@@ -274,7 +286,7 @@ const AuctionChat = ({ auctionId }: { auctionId: string }) => {
   ]);
 
   const sendMessage = () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || isGuest) {
       console.error('Cannot send messages in guest mode');
       return;
     }
@@ -351,9 +363,9 @@ const AuctionChat = ({ auctionId }: { auctionId: string }) => {
         <h2 className="font-medium">Auction Chat</h2>
         <div className="flex items-center gap-2">
           <span className="text-sm">
-            {isAuthenticated
-              ? 'Connected to chat'
-              : 'Connected in Guest Mode (Read Only)'}
+            {isGuest
+              ? 'Connected in Guest Mode (Read Only)'
+              : 'Connected to chat'}
           </span>
           <div
             className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}
@@ -452,9 +464,9 @@ const AuctionChat = ({ auctionId }: { auctionId: string }) => {
               autoComplete="off"
               required
               className="flex-1"
-              disabled={!connected || !isAuthenticated}
+              disabled={!connected || isGuest}
             />
-            <Button type="submit" disabled={!connected || !isAuthenticated}>
+            <Button type="submit" disabled={!connected || isGuest}>
               Send
             </Button>
           </div>

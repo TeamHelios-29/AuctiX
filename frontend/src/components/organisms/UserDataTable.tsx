@@ -22,6 +22,8 @@ import RoleFilterDropdown from '../molecules/RoleFilterDropdown';
 import { RemoveProfilePictureModal } from './RemoveProfilePictureModal';
 import { IUser } from '@/types/IUser';
 import { useToast } from '@/hooks/use-toast';
+import { getServerErrorMessage } from '@/lib/errorMsg';
+import { banUser } from '@/services/adminService';
 const baseURL = import.meta.env.VITE_API_URL;
 
 interface IProfilePhoto {
@@ -443,6 +445,29 @@ export default function UserDataTable() {
     [setSearch],
   );
 
+  const banUserHandler = useCallback((username: string, reason: string) => {
+    console.log('Banning user:', username, 'Reason:', reason);
+    banUser(axiosInstance, username, reason)
+      .then((response) => {
+        console.log('User banned successfully:', response);
+        toast({
+          title: 'Success',
+          description: `User ${username} has been banned.`,
+        });
+      })
+      .catch((error: Error) => {
+        console.error('Error banning user:', error);
+        toast({
+          title: 'Error',
+          description: getServerErrorMessage(error),
+          variant: 'destructive',
+        });
+      })
+      .finally(() => {
+        setIsBanUserModalOpen(false);
+      });
+  }, []);
+
   const convertITableUserToIUser = useCallback((user: ITableUser): IUser => {
     return {
       username: user.username,
@@ -534,7 +559,7 @@ export default function UserDataTable() {
         <BanUserModal
           isOpen={isBanUserModalOpen}
           onClose={() => setIsBanUserModalOpen(false)}
-          onConfirm={() => {}} // Change to handle ban user
+          onConfirm={banUserHandler}
           user={selectedUser}
         />
       )}

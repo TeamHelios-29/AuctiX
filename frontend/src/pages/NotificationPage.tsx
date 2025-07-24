@@ -88,8 +88,8 @@ const NotificationPage: React.FC = () => {
         setError(null);
         const data = await fetchNotificationsService(params, axiosInstance);
         setNotifications(data.content);
-        setCurrentPage(data.number + 1);
-        setTotalPages(data.totalPages);
+        setCurrentPage(data.page.number + 1);
+        setTotalPages(data.page.totalPages);
       } catch (err) {
         const error = err as AxiosError<ErrorResponse>;
         setError(

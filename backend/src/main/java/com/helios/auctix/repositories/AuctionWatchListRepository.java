@@ -18,7 +18,8 @@ public interface AuctionWatchListRepository extends JpaRepository<AuctionWatchLi
 
     Optional<AuctionWatchList> findByUserAndAuction(User user, Auction auction);
 
-    List<User> findUsersByAuction_Id(UUID auctionId);
+    @Query("SELECT aw.user FROM AuctionWatchList aw WHERE aw.auction.id = :auctionId")
+    List<User> findUsersWatchingAuction(@Param("auctionId") UUID auctionId);
 
     @Query("""
         SELECT wl FROM AuctionWatchList wl
