@@ -45,6 +45,7 @@ public class UserController {
     private final FileUploadService fileUploadService;
     private final UserDetailsService userDetailsService;
     private final UserMapperImpl userMapper;
+    private final UserMapperImpl userMapperImpl;
 
     @Profile("dev")
     @GetMapping("/hello")
@@ -240,7 +241,7 @@ public class UserController {
         if (user == null) {
             return ResponseEntity.status(404).body("User not found");
         }
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userMapperImpl.mapTo(user));
     }
 
     @PostMapping("/uploadUserProfilePhoto")

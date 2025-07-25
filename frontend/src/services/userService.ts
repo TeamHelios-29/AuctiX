@@ -1,8 +1,5 @@
 import { IUser } from '@/types/IUser';
 import { AxiosInstance } from 'axios';
-import exp from 'constants';
-
-const baseURL = import.meta.env.VITE_API_URL;
 
 export interface IProfileUpdateData {
   bio: string;
