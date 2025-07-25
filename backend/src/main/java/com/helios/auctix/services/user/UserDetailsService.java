@@ -39,22 +39,36 @@ import java.util.UUID;
 @Service
 public class UserDetailsService {
 
+private final UserRepository userRepository;
+    private final UserRequiredActionRepository userRequiredActionRepository;
+    private final UserAddressRepository userAddressRepository;
+    private final UserMapperImpl userMapperImpl;
+    private final UserRoleRepository userRoleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final PasswordResetRequestRepository passwordResetRequestRepository;
+    private final EmailNotificationSender emailNotificationSender;
+
     @Autowired
-    UserRepository userRepository;
-    @Autowired
-    UserRequiredActionRepository userRequiredActionRepository;
-    @Autowired
-    UserAddressRepository userAddressRepository;
-    @Autowired
-    private UserMapperImpl userMapperImpl;
-    @Autowired
-    private UserRoleRepository userRoleRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private PasswordResetRequestRepository passwordResetRequestRepository;
-    @Autowired
-    private EmailNotificationSender emailNotificationSender;
+    public UserDetailsService(
+            UserRepository userRepository,
+            UserRequiredActionRepository userRequiredActionRepository,
+            UserAddressRepository userAddressRepository,
+            UserMapperImpl userMapperImpl,
+            UserRoleRepository userRoleRepository,
+            PasswordEncoder passwordEncoder,
+            PasswordResetRequestRepository passwordResetRequestRepository,
+            EmailNotificationSender emailNotificationSender
+    ) {
+        this.userRepository = userRepository;
+        this.userRequiredActionRepository = userRequiredActionRepository;
+        this.userAddressRepository = userAddressRepository;
+        this.userMapperImpl = userMapperImpl;
+        this.userRoleRepository = userRoleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.passwordResetRequestRepository = passwordResetRequestRepository;
+        this.emailNotificationSender = emailNotificationSender;
+    }
+
 
     /**
      * Retrieves a user by {@link Authentication}.
@@ -176,16 +190,10 @@ public class UserDetailsService {
 
                 Pageable pageable = PageRequest.of(offset, limit, sort);
 
-                if (search != null && !search.trim().isEmpty()) {
-                    userPage = userRepository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(search, search, search, search , pageable)
-                            .map(userMapperImpl::mapTo);
-                } else {
+                Specification<User> spec = getUserSpecification(search, filterByList, filterValues);
 
-                    Specification<User> spec = UserSpecification.getFilteredSpec(filterByList, filterValues, userRoleRepository);
-                    Page<User> temp = userRepository.findAll(spec, pageable);
-                    userPage = temp.map(userMapperImpl::mapTo);
-                }
-
+                Page<User> temp = userRepository.findAll(spec, pageable);
+                userPage = temp.map(userMapperImpl::mapTo);
 
             } catch (Exception e) {
                 throw new InvalidParameterException("Invalid filterBy format: " + e.getMessage());
@@ -196,7 +204,25 @@ public class UserDetailsService {
 
     }
 
-public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO profileData) {
+    private Specification<User> getUserSpecification(String search, List<String> filterByList, List<List<String>> filterValues) {
+        Specification<User> spec = UserSpecification.getFilteredSpec(filterByList, filterValues, userRoleRepository);
+
+        if (search != null && !search.trim().isEmpty()) {
+            Specification<User> searchSpec = (root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("username")), "%" + search.toLowerCase() + "%"),
+                    cb.like(cb.lower(root.get("email")), "%" + search.toLowerCase() + "%"),
+                    cb.like(cb.lower(root.get("firstName")), "%" + search.toLowerCase() + "%"),
+                    cb.like(cb.lower(root.get("lastName")), "%" + search.toLowerCase() + "%")
+            );
+
+            spec = spec == null ? searchSpec : spec.and(searchSpec);
+        }
+
+        return spec;
+    }
+
+
+    public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO profileData) {
     log.info("Updating user profile" + profileData.getBio() + "  " + profileData.getFirstName() + " " + profileData.getLastName());
 
     user.setFirstName(profileData.getFirstName());
