@@ -7,6 +7,7 @@ import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRoleEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
+import com.helios.auctix.dtos.UserStatsDTO;
 import com.helios.auctix.exception.PermissionDeniedException;
 import com.helios.auctix.exception.UploadedFileCountMaxLimitExceedException;
 import com.helios.auctix.exception.UploadedFileSizeMaxLimitExceedException;
@@ -485,5 +486,13 @@ public class UserController {
         }
     }
 
+    @GetMapping("/userStats")
+    public ResponseEntity<UserStatsDTO> getRegisteredUserCount() throws AuthenticationException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userDetailsService.getAuthenticatedUser(authentication);
+
+        UserStatsDTO count = userDetailsService.getRegisteredUserCount(currentUser);
+        return ResponseEntity.ok(count);
+    }
 
 }

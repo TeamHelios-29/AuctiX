@@ -8,10 +8,13 @@ import com.helios.auctix.domain.user.UserRequiredAction;
 import com.helios.auctix.domain.user.UserRequiredActionEnum;
 import com.helios.auctix.dtos.ProfileUpdateDataDTO;
 import com.helios.auctix.dtos.UserDTO;
+import com.helios.auctix.dtos.UserStatsDTO;
+import com.helios.auctix.exception.PermissionDeniedException;
 import com.helios.auctix.mappers.impl.UserMapperImpl;
 import com.helios.auctix.repositories.*;
 import com.helios.auctix.services.notification.senders.EmailNotificationSender;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -439,6 +442,26 @@ public UserServiceResponse updateUserProfile(User user, ProfileUpdateDataDTO pro
         emailNotificationSender.sendNotification(notif);
 
         log.info("Sending password reset verification code {} to email {}", pswResetReq.getCode(), pswResetReq.getEmail());
+    }
+
+    public UserStatsDTO getRegisteredUserCount(@NotNull User currentUser){
+        if (currentUser.getRole().getName() != UserRoleEnum.ADMIN && currentUser.getRole().getName() != UserRoleEnum.SUPER_ADMIN) {
+            throw new PermissionDeniedException("You don't have permission to access this resource");
+        }
+
+        List<UserRepository.RoleUserCount> counts = userRepository.countUsersByRole();
+        UserStatsDTO.UserStatsDTOBuilder builder = UserStatsDTO.builder();
+        long total = 0;
+        for (UserRepository.RoleUserCount c : counts) {
+            total += c.getUserCount();
+            switch (c.getRoleName()) {
+                case "SELLER" -> builder.sellers(c.getUserCount());
+                case "BIDDER" -> builder.bidders(c.getUserCount());
+                case "ADMIN" -> builder.admins(c.getUserCount());
+            }
+        }
+        builder.totalUsers(total);
+        return builder.build();
     }
 
     public boolean verifyPasswordResetCode(String email, String code) throws LimitExceededException {
