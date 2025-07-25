@@ -51,6 +51,21 @@ const ManageAuctions = () => {
   const token = userData?.token;
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!userData?.isUserLoggedIn || userData.role !== 'SELLER') {
+      toast.error('Access denied. Seller account required.');
+      navigate('/login', { replace: true });
+    }
+  }, [userData, navigate]);
+
+  if (!userData?.isUserLoggedIn || userData.role !== 'SELLER') {
+    return (
+      <div className="flex items-center justify-center h-screen text-red-500">
+        Access denied. Only sellers can view this page.
+      </div>
+    );
+  }
+
   // Fetch auctions based on filter and search
   const fetchAuctions = async (
     filter: FilterKey = 'total',
