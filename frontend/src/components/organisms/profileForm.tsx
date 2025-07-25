@@ -13,7 +13,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { ImageResult } from '../molecules/ImageUploadPopup';
+import { ImageResult } from '../molecules/ImageUploadModal';
 import {
   deleteBannerPhoto,
   deleteProfilePhoto,
