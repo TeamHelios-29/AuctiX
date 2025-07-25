@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
-import { AlertTriangle, BellRing, ExternalLink } from 'lucide-react';
+import { AlertTriangle, BellRing, ExternalLink, RefreshCw } from 'lucide-react';
 
 export function PushPermissionModal({
   open,
@@ -34,6 +34,10 @@ export function PushPermissionModal({
       setPermission(Notification.permission);
     }
   }, [open]);
+
+  const handleReload = () => {
+    window.location.reload();
+  };
 
   return (
     <>
@@ -70,14 +74,30 @@ export function PushPermissionModal({
             </Button>
 
             {permission === 'granted' && (
-              <Button
-                variant="outline"
-                className="w-full flex items-center gap-2 text-red-600 border-red-400 hover:bg-red-50"
-                onClick={() => setRevokeInfoOpen(true)}
-              >
-                <AlertTriangle className="h-4 w-4" />
-                How to Revoke Permission
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  className="w-full flex items-center gap-2 text-gray-800 border-gray-400 hover:bg-gray-50"
+                  onClick={handleReload}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Reload to Activate Notifications
+                </Button>
+
+                <div className="text-xs text-muted-foreground text-center">
+                  A page reload is required to fully activate push notifications
+                  and register the service worker.
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full flex items-center gap-2 text-red-600 border-red-400 hover:bg-red-50"
+                  onClick={() => setRevokeInfoOpen(true)}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  How to Revoke Permission
+                </Button>
+              </>
             )}
 
             {permission === 'denied' && (
