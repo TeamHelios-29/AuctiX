@@ -1,6 +1,7 @@
 // File: src/pages/Seller_Delivery.tsx
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   fetchSellerDeliveries,
   updateStatus,
@@ -27,10 +28,13 @@ import { ErrorDisplay } from '@/components/delivery/seller/ErrorDisplay';
 import { LoadingIndicator } from '@/components/delivery/shared/LoadingIndicator';
 import { DeliverySkeletons } from '@/components/delivery/shared/DeliverySkeletons';
 import { isValidDate } from '@/components/delivery/shared/DateHelper';
+import { Button } from '@/components/ui/button';
+import { Star } from 'lucide-react';
 
 
 const SellerDeliveryPage = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const deliveries = useSelector(selectSellerDeliveries);
   const isLoading = useSelector(selectDeliveryLoading);
   const error = useSelector(selectDeliveryError);
@@ -260,10 +264,21 @@ const SellerDeliveryPage = () => {
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto p-6">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Delivery Management</h1>
-          <p className="text-gray-500">
-            Track and manage your auction deliveries to buyers
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Delivery Management</h1>
+              <p className="text-gray-500">
+                Track and manage your auction deliveries to buyers
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/seller-reviews')}
+              className="bg-amber-500 hover:bg-amber-600 text-white flex items-center"
+            >
+              <Star className="w-4 h-4 mr-2" />
+              View My Reviews
+            </Button>
+          </div>
         </header>
 
         <DeliveryHeroBanner />
