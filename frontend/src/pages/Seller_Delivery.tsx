@@ -9,7 +9,6 @@ import {
   selectDeliveryLoading,
   selectDeliveryError,
   clearDeliveryError,
-  createNewDelivery,
 } from '@/store/slices/deliverySlice';
 import { AppDispatch } from '@/store/store'; // Added missing import
 import { toast } from '@/components/ui/use-toast';
@@ -20,7 +19,6 @@ import { DeliveryHeroBanner } from '@/components/delivery/seller/DeliveryHeroBan
 import { DeliveryStats } from '@/components/delivery/seller/DeliveryStats';
 import { DeliveryFilter } from '@/components/delivery/seller/DeliveryFilter';
 import { DeliveryCard } from '@/components/delivery/seller/DeliveryCard';
-import { NewDeliveryDialog } from '@/components/delivery/seller/NewDeliveryDialog';
 import { DatePickerDialog } from '@/components/delivery/seller/DatePickerDialog';
 import { DeliveryDetailsDialog } from '@/components/delivery/seller/DeliveryDetailsDialog';
 import { EmptyDeliveryState } from '@/components/delivery/seller/EmptyDeliveryState';
@@ -30,15 +28,6 @@ import { LoadingIndicator } from '@/components/delivery/shared/LoadingIndicator'
 import { DeliverySkeletons } from '@/components/delivery/shared/DeliverySkeletons';
 import { isValidDate } from '@/components/delivery/shared/DateHelper';
 
-// Define interface for new delivery data
-interface NewDeliveryData {
-  auctionId: string;
-  buyerId: string;
-  deliveryDate: string;
-  deliveryAddress: string;
-  notes?: string;
-  trackingNumber?: string;
-}
 
 const SellerDeliveryPage = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -61,8 +50,6 @@ const SellerDeliveryPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
-  const [showNewDeliveryModal, setShowNewDeliveryModal] =
-    useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(10);
 
@@ -255,27 +242,6 @@ const SellerDeliveryPage = () => {
     setSelectedDelivery(delivery);
   };
 
-  // Create new delivery
-  const handleCreateDelivery = (data: NewDeliveryData) => {
-    dispatch(createNewDelivery(data))
-      .unwrap()
-      .then(() => {
-        setShowNewDeliveryModal(false);
-        toast({
-          title: 'Delivery Created',
-          description: 'New delivery has been created successfully',
-          variant: 'default',
-        });
-      })
-      .catch((error) => {
-        toast({
-          title: 'Creation Failed',
-          description:
-            typeof error === 'string' ? error : 'Could not create delivery',
-          variant: 'destructive',
-        });
-      });
-  };
 
   const resetFilters = () => {
     setTypeFilter('all');
@@ -324,7 +290,6 @@ const SellerDeliveryPage = () => {
           setSearchTerm={setSearchTerm}
           showFilters={showFilters}
           setShowFilters={setShowFilters}
-          setShowNewDeliveryModal={setShowNewDeliveryModal}
           isLoading={isLoading}
           typeFilter={typeFilter}
           setTypeFilter={setTypeFilter}
@@ -341,8 +306,7 @@ const SellerDeliveryPage = () => {
         ) : filteredDeliveries.length === 0 ? (
           <EmptyDeliveryState
             activeTab={activeTab}
-            setShowNewDeliveryModal={setShowNewDeliveryModal}
-          />
+            />
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {currentDeliveries.map((delivery) => (
@@ -394,13 +358,6 @@ const SellerDeliveryPage = () => {
         openDatePicker={openDatePicker}
       />
 
-      {/* New Delivery Modal */}
-      <NewDeliveryDialog
-        isOpen={showNewDeliveryModal}
-        onClose={() => setShowNewDeliveryModal(false)}
-        onSubmit={handleCreateDelivery}
-        isLoading={isLoading}
-      />
     </div>
   );
 };
