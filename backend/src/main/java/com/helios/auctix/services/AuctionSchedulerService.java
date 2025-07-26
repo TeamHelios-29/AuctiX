@@ -102,19 +102,21 @@ public class AuctionSchedulerService {
             .withZone(ZoneId.of("Asia/Colombo"));
 
     /**
-     * Scheduled job to check for completed auctions every minute
+     * Scheduled job to check for completed auctions every second
      */
-    @Scheduled(fixedRate = 60000) // Run every minute
+    @Scheduled(fixedRate = 1000) // Run every 1 second
     @Transactional
     public void processCompletedAuctions() {
         try {
             Instant now = Instant.now();
-            logger.info("Running scheduled job to process completed auctions at " + now);
 
             // Find auctions that have ended but haven't been processed yet
             List<Auction> completedAuctions = auctionRepository.findByEndTimeBeforeAndCompletedFalse(now);
 
-            logger.info("Found " + completedAuctions.size() + " completed auctions to process");
+            // Only log when there are auctions to process (reduce log noise)
+            if (!completedAuctions.isEmpty()) {
+                logger.info("Found " + completedAuctions.size() + " completed auctions to process at " + now);
+            }
 
             for (Auction auction : completedAuctions) {
                 try {
